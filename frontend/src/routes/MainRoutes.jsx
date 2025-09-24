@@ -2,7 +2,9 @@ import { lazy } from 'react';
 
 // project imports
 import MainLayout from 'layout/MainLayout';
+import PrivateRoute from '../components/auth/PrivateRoute';
 import Loadable from 'ui-component/Loadable';
+import RedirectByRole from '../components/auth/RedirectByRole';
 
 // dashboard routing
 const DashboardDefault = Loadable(lazy(() => import('views/dashboard/Default')));
@@ -19,11 +21,15 @@ const SamplePage = Loadable(lazy(() => import('views/sample-page')));
 
 const MainRoutes = {
   path: '/',
-  element: <MainLayout />,
+  element: (
+    <PrivateRoute allowedRoles={["admin", "super_admin"]}>
+      <MainLayout />
+    </PrivateRoute>
+  ),
   children: [
     {
       path: '/',
-      element: <DashboardDefault />
+      element: <RedirectByRole />
     },
     {
       path: 'dashboard',

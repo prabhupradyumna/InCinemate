@@ -12,12 +12,22 @@ const dashboard = {
   type: 'group',
   children: [
     {
-      id: 'default',
-      title: 'Dashboard',
+      id: 'admin-dashboard',
+      title: 'Admin Dashboard',
       type: 'item',
-      url: '/dashboard/default',
+      url: '/admin/dashboard',
       icon: icons.IconDashboard,
-      breadcrumbs: false
+      breadcrumbs: false,
+      roles: ['admin']
+    },
+    {
+      id: 'super-admin-dashboard',
+      title: 'Super Admin Dashboard',
+      type: 'item',
+      url: '/super-admin/dashboard',
+      icon: icons.IconDashboard,
+      breadcrumbs: false,
+      roles: ['super_admin']
     }
   ]
 };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -17,6 +17,7 @@ import Box from '@mui/material/Box';
 
 // project imports
 import AnimateButton from 'ui-component/extended/AnimateButton';
+import { useAuth } from '../../../context/AuthContext';
 
 // assets
 import Visibility from '@mui/icons-material/Visibility';
@@ -26,6 +27,8 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
 export default function AuthLogin() {
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [checked, setChecked] = useState(true);
 
@@ -38,11 +41,36 @@ export default function AuthLogin() {
     event.preventDefault();
   };
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const user = await login(email, password, isSuperAdmin ? 'super_admin' : 'admin');
+      if (user?.role === 'super_admin') {
+        navigate('/super-admin/dashboard', { replace: true });
+      } else if (user?.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
+      <form onSubmit={onSubmit}>
       <FormControl fullWidth sx={{ ...theme.typography.customInput }}>
         <InputLabel htmlFor="outlined-adornment-email-login">Email Address / Username</InputLabel>
-        <OutlinedInput id="outlined-adornment-email-login" type="email" value="info@codedthemes.com" name="email" inputProps={{}} />
+        <OutlinedInput id="outlined-adornment-email-login" type="email" value={email} onChange={(e)=>setEmail(e.target.value)} name="email" inputProps={{}} />
       </FormControl>
 
       <FormControl fullWidth sx={{ ...theme.typography.customInput }}>
@@ -50,8 +78,9 @@ export default function AuthLogin() {
         <OutlinedInput
           id="outlined-adornment-password-login"
           type={showPassword ? 'text' : 'password'}
-          value="123456"
+          value={password}
           name="password"
+          onChange={(e)=>setPassword(e.target.value)}
           endAdornment={
             <InputAdornment position="end">
               <IconButton
@@ -78,6 +107,12 @@ export default function AuthLogin() {
           />
         </Grid>
         <Grid>
+          <FormControlLabel
+            control={<Checkbox checked={isSuperAdmin} onChange={(e)=>setIsSuperAdmin(e.target.checked)} name="superadmin" color="secondary" />}
+            label="Login as Super Admin"
+          />
+        </Grid>
+        <Grid>
           <Typography variant="subtitle1" component={Link} to="/forgot-password" color="secondary" sx={{ textDecoration: 'none' }}>
             Forgot Password?
           </Typography>
@@ -85,11 +120,12 @@ export default function AuthLogin() {
       </Grid>
       <Box sx={{ mt: 2 }}>
         <AnimateButton>
-          <Button color="secondary" fullWidth size="large" type="submit" variant="contained">
-            Sign In
+          <Button color="secondary" fullWidth size="large" type="submit" variant="contained" disabled={submitting}>
+            {submitting ? 'Signing In...' : 'Sign In'}
           </Button>
         </AnimateButton>
       </Box>
+      </form>
     </>
   );
 }

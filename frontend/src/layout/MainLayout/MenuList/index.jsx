@@ -8,6 +8,7 @@ import Box from '@mui/material/Box';
 import NavItem from './NavItem';
 import NavGroup from './NavGroup';
 import menuItems from 'menu-items';
+import { useAuth } from '../../../context/AuthContext';
 
 import { useGetMenuMaster } from 'api/menu';
 
@@ -16,6 +17,7 @@ import { useGetMenuMaster } from 'api/menu';
 function MenuList() {
   const { menuMaster } = useGetMenuMaster();
   const drawerOpen = menuMaster.isDashboardDrawerOpened;
+  const { user } = useAuth();
 
   const [selectedID, setSelectedID] = useState('');
 
@@ -38,7 +40,18 @@ function MenuList() {
     }));
   }
 
-  const navItems = menuItems.items.slice(0, lastItemIndex + 1).map((item, index) => {
+  const filterByRole = (node) => {
+    if (node.roles && user && !node.roles.includes(user.role)) return null;
+    if (node.children) {
+      const filteredChildren = node.children.map(filterByRole).filter(Boolean);
+      return { ...node, children: filteredChildren };
+    }
+    return node;
+  };
+
+  const roleAwareItems = menuItems.items.map(filterByRole).filter(Boolean);
+
+  const navItems = roleAwareItems.slice(0, lastItemIndex + 1).map((item, index) => {
     switch (item.type) {
       case 'group':
         if (item.url && item.id !== lastItemId) {

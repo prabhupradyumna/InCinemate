@@ -16,6 +16,7 @@ import Typography from '@mui/material/Typography';
 
 // project imports
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
+import { useAuth } from '../../../../context/AuthContext';
 import useConfig from 'hooks/useConfig';
 
 // assets
@@ -32,6 +33,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
   const { menuMaster } = useGetMenuMaster();
   const drawerOpen = menuMaster.isDashboardDrawerOpened;
   const isSelected = !!matchPath({ path: item?.link ? item.link : item.url, end: false }, pathname);
+  const { logout } = useAuth();
 
   const [hoverStatus, setHover] = useState(false);
 
@@ -58,11 +60,16 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
     itemTarget = '_blank';
   }
 
-  const itemHandler = () => {
+  const itemHandler = (e) => {
     if (downMD) handlerDrawerOpen(false);
 
     if (isParents && setSelectedID) {
       setSelectedID();
+    }
+
+    if (item.id === 'logout') {
+      e.preventDefault();
+      logout();
     }
   };
 
@@ -110,7 +117,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
           })
         }}
         selected={isSelected}
-        onClick={() => itemHandler()}
+        onClick={(e) => itemHandler(e)}
       >
         <ButtonBase aria-label="theme-icon" sx={{ borderRadius: `${borderRadius}px` }} disableRipple={drawerOpen}>
           <ListItemIcon

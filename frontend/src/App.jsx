@@ -7,6 +7,9 @@ import router from 'routes';
 import NavigationScroll from 'layout/NavigationScroll';
 
 import ThemeCustomization from 'themes';
+import { AuthProvider } from './context/AuthContext';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // auth provider
 
@@ -15,11 +18,13 @@ import ThemeCustomization from 'themes';
 export default function App() {
   return (
     <ThemeCustomization>
-      <NavigationScroll>
-        <>
-          <RouterProvider router={router} />
-        </>
-      </NavigationScroll>
+      <AuthProvider>
+        <NavigationScroll>
+          <>
+            <RouterProvider router={router} />
+          </>
+        </NavigationScroll>
+      </AuthProvider>
     </ThemeCustomization>
   );
 }

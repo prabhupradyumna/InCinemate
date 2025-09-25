@@ -1,6 +1,7 @@
 import { verifyToken } from '../util/auth.util.js'
+import TokenCacheService from '../services/tokenCache.js'
 
-export const authenticate = (req, res, next) => {
+export const authenticate = async (req, res, next) => {
   const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null
   
@@ -9,18 +10,33 @@ export const authenticate = (req, res, next) => {
   }
   
   try {
-    const user = verifyToken(token)
+    // First check if token is blacklisted
+    const isBlacklisted = await TokenCacheService.isTokenBlacklisted(token)
+    if (isBlacklisted) {
+      return res.status(401).json({ success: false, message: 'Token has been revoked' })
+    }
+
+    // Try to get user info from Redis cache first
+    let userInfo = await TokenCacheService.getAccessTokenInfo(token)
     
-    req.user = {
-      userId: user.userId,
-      email: user.email,
-      role: user.role || null,
-      tenantId: user.tenantId || null,
+    if (!userInfo) {
+      // Fallback to JWT verification if not in cache
+      const user = verifyToken(token)
+      userInfo = {
+        userId: user.userId,
+        email: user.email,
+        role: user.role || null,
+        tenantId: user.tenantId || null,
+      }
+      
+      // Cache the token for future requests
+      await TokenCacheService.storeAccessToken(token, userInfo)
     }
     
+    req.user = userInfo
     next()
   } catch (err) {
-    console.log('❌ JWT Verification Error:', err.message)
+    console.log('❌ Token Verification Error:', err.message)
     return res.status(401).json({ success: false, message: 'Invalid or expired token' })
   }
 }

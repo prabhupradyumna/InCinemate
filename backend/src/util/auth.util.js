@@ -1,7 +1,8 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
+import { PASSWORD_CONFIG, TOKEN_CONFIG } from '../constants.js'
 
-const SALT_ROUNDS = 10
+const SALT_ROUNDS = PASSWORD_CONFIG.SALT_ROUNDS
 
 export const hashPassword = async (password) => {
   return await bcrypt.hash(password, SALT_ROUNDS)
@@ -21,7 +22,7 @@ export const generateAccessToken = (payload) => {
         tenantId: payload.tenantId || null,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: TOKEN_CONFIG.ACCESS_TOKEN.EXPIRY }
     )
     return token
   } catch (error) {
@@ -35,7 +36,7 @@ export const generateRefreshToken = (payload) => {
     const token = jwt.sign(
       { userId: payload.userId, email: payload.email, tenantId: payload.tenantId || null },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: TOKEN_CONFIG.REFRESH_TOKEN.EXPIRY }
     )
     return token
   } catch (error) {

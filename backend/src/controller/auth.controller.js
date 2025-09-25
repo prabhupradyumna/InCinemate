@@ -2,6 +2,9 @@ import { defineUser } from '../models/User.js'
 import { defineRefreshToken } from '../models/RefreshToken.js'
 import { defineTenant } from '../models/Tenant.js'
 import { comparePassword, generateAccessToken, generateRefreshToken, verifyRefreshToken, hashPassword } from '../util/auth.util.js'
+import TokenCacheService from '../services/tokenCache.js'
+import { getRefreshTokenExpiry, addDays, moment } from '../util/date.util.js'
+import { ROLES, TOKEN_CONFIG, API_MESSAGES, HTTP_STATUS } from '../constants.js'
 
 export default class AuthController {
   static async superAdminLogin(req, res) {
@@ -9,7 +12,11 @@ export default class AuthController {
       const { email, password } = req.body
       
       if (!email || !password) {
-        return res.status(400).json({ success: false, error: 'Email and password required', message: 'Super-admin login failed' })
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
+          success: false, 
+          error: API_MESSAGES.ERROR.EMAIL_PASSWORD_REQUIRED, 
+          message: 'Super-admin login failed' 
+        })
       }
 
       const sequelize = req.db
@@ -17,22 +24,30 @@ export default class AuthController {
       await User.sync()
 
       const superAdmin = await User.findOne({ 
-        where: { email, role: 'super_admin' } 
+        where: { email, role: ROLES.SUPER_ADMIN } 
       })
       
       if (!superAdmin) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials', message: 'Super-admin login failed' })
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
+          success: false, 
+          error: API_MESSAGES.ERROR.INVALID_CREDENTIALS, 
+          message: 'Super-admin login failed' 
+        })
       }
 
       const isPasswordValid = await comparePassword(password, superAdmin.password_hash)
       if (!isPasswordValid) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials', message: 'Super-admin login failed' })
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
+          success: false, 
+          error: API_MESSAGES.ERROR.INVALID_CREDENTIALS, 
+          message: 'Super-admin login failed' 
+        })
       }
 
       const accessToken = generateAccessToken({
         userId: superAdmin.id,
         email: superAdmin.email,
-        role: 'super_admin',
+        role: ROLES.SUPER_ADMIN,
         tenantId: null,
       })
 
@@ -42,23 +57,32 @@ export default class AuthController {
         tenantId: null,
       })
 
-      // Store refresh token
+      // Store access token in Redis cache
+      const userInfo = {
+        userId: superAdmin.id,
+        email: superAdmin.email,
+        role: ROLES.SUPER_ADMIN,
+        tenantId: null,
+      }
+      await TokenCacheService.storeAccessToken(accessToken, userInfo)
+
+      // Store refresh token in database (long-lived)
       const RefreshToken = defineRefreshToken(sequelize)
       await RefreshToken.sync()
       
       await RefreshToken.create({
         user_id: superAdmin.id,
         token: refreshToken,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expires_at: getRefreshTokenExpiry(), // 7 days using moment.js
         tenant_id: null,
       })
 
       res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        httpOnly: TOKEN_CONFIG.COOKIE.HTTP_ONLY,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        sameSite: TOKEN_CONFIG.COOKIE.SAME_SITE,
+        secure: TOKEN_CONFIG.COOKIE.SECURE,
+        path: TOKEN_CONFIG.COOKIE.PATH
       })
 
       return res.json({
@@ -127,23 +151,32 @@ export default class AuthController {
         tenantId: admin.tenant_id,
       })
 
-      // Store refresh token
+      // Store access token in Redis cache
+      const userInfo = {
+        userId: admin.id,
+        email: admin.email,
+        role: 'admin',
+        tenantId: admin.tenant_id,
+      }
+      await TokenCacheService.storeAccessToken(accessToken, userInfo)
+
+      // Store refresh token in database (long-lived)
       const RefreshToken = defineRefreshToken(sequelize)
       await RefreshToken.sync()
       
       await RefreshToken.create({
         user_id: admin.id,
         token: refreshToken,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expires_at: getRefreshTokenExpiry(), // 7 days using moment.js
         tenant_id: admin.tenant_id,
       })
 
       res.cookie('refreshToken', refreshToken, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        httpOnly: TOKEN_CONFIG.COOKIE.HTTP_ONLY,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        sameSite: TOKEN_CONFIG.COOKIE.SAME_SITE,
+        secure: TOKEN_CONFIG.COOKIE.SECURE,
+        path: TOKEN_CONFIG.COOKIE.PATH
       })
 
       return res.json({
@@ -211,21 +244,30 @@ export default class AuthController {
         tenantId: user.tenant_id,
       })
 
-      // Revoke old token and create new one
+      // Store new access token in Redis cache
+      const userInfo = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        tenantId: user.tenant_id,
+      }
+      await TokenCacheService.storeAccessToken(newAccessToken, userInfo)
+
+      // Revoke old refresh token and create new one
       await RefreshToken.update({ revoked: true }, { where: { token: refreshToken } })
       await RefreshToken.create({
         user_id: user.id,
         token: newRefreshToken,
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        expires_at: getRefreshTokenExpiry(), // 7 days using moment.js
         tenant_id: user.tenant_id,
       })
 
       res.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        sameSite: 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        httpOnly: TOKEN_CONFIG.COOKIE.HTTP_ONLY,
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+        sameSite: TOKEN_CONFIG.COOKIE.SAME_SITE,
+        secure: TOKEN_CONFIG.COOKIE.SECURE,
+        path: TOKEN_CONFIG.COOKIE.PATH
       })
 
       return res.json({
@@ -244,6 +286,8 @@ export default class AuthController {
   static async logout(req, res) {
     try {
       const refreshToken = req.cookies?.refreshToken
+      const authHeader = req.headers['authorization']
+      const accessToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null
       
       if (!refreshToken) {
         return res.status(400).json({ success: false, error: 'Refresh token required', message: 'Logout failed' })
@@ -258,16 +302,21 @@ export default class AuthController {
       const RefreshToken = defineRefreshToken(sequelize)
       await RefreshToken.sync()
 
+      // Blacklist access token if provided
+      if (accessToken) {
+        await TokenCacheService.blacklistToken(accessToken)
+      }
+
       // Revoke refresh token
       await RefreshToken.update({ revoked: true }, {
         where: { token: refreshToken, user_id: payload.userId }
       })
 
       res.clearCookie('refreshToken', {
-        httpOnly: true,
-        sameSite: 'Lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/'
+        httpOnly: TOKEN_CONFIG.COOKIE.HTTP_ONLY,
+        sameSite: TOKEN_CONFIG.COOKIE.SAME_SITE,
+        secure: TOKEN_CONFIG.COOKIE.SECURE,
+        path: TOKEN_CONFIG.COOKIE.PATH
       })
 
       return res.json({ message: 'Logged out successfully' })

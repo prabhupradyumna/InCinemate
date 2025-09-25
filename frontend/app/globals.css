@@ -4,75 +4,75 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* ScreenLease Dark Cinematic Theme */
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --card: #121212;
-  --card-foreground: #ffffff;
-  --popover: #1a1a1a;
-  --popover-foreground: #ffffff;
+  /* ScreenLease Light Theme */
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
   --primary: #007bff;
   --primary-foreground: #ffffff;
-  --secondary: #1e1e1e;
-  --secondary-foreground: #ffffff;
-  --muted: #2a2a2a;
-  --muted-foreground: #a0a0a0;
-  --accent: #007bff;
-  --accent-foreground: #ffffff;
+  --secondary: #f4f4f5; /* neutral-100/200 */
+  --secondary-foreground: #0a0a0a;
+  --muted: #f3f4f6;
+  --muted-foreground: #4b5563;
+  --accent: #e8f0ff;
+  --accent-foreground: #0a0a0a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2a2a2a;
-  --input: #1e1e1e;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
   --ring: #007bff;
-  --chart-1: #007bff;
-  --chart-2: #00d4ff;
-  --chart-3: #0099cc;
-  --chart-4: #0066aa;
-  --chart-5: #004488;
+  --chart-1: #0ea5e9;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #a78bfa;
   --radius: 0.5rem;
-  --sidebar: #121212;
-  --sidebar-foreground: #ffffff;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #007bff;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e1e1e;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2a2a2a;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e5e7eb;
   --sidebar-ring: #007bff;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
+  --background: #0b0b0b;
+  --foreground: #f5f5f5;
   --card: #121212;
-  --card-foreground: #ffffff;
-  --popover: #1a1a1a;
-  --popover-foreground: #ffffff;
-  --primary: #007bff;
+  --card-foreground: #f5f5f5;
+  --popover: #171717;
+  --popover-foreground: #f5f5f5;
+  --primary: #3b82f6;
   --primary-foreground: #ffffff;
-  --secondary: #1e1e1e;
+  --secondary: #1f1f1f;
   --secondary-foreground: #ffffff;
-  --muted: #2a2a2a;
-  --muted-foreground: #a0a0a0;
-  --accent: #007bff;
-  --accent-foreground: #ffffff;
+  --muted: #222222;
+  --muted-foreground: #a3a3a3;
+  --accent: #1e293b;
+  --accent-foreground: #e5e7eb;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #2a2a2a;
-  --input: #1e1e1e;
-  --ring: #007bff;
-  --chart-1: #007bff;
-  --chart-2: #00d4ff;
-  --chart-3: #0099cc;
-  --chart-4: #0066aa;
-  --chart-5: #004488;
-  --sidebar: #121212;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #007bff;
+  --border: #262626;
+  --input: #262626;
+  --ring: #3b82f6;
+  --chart-1: #60a5fa;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #ef4444;
+  --chart-5: #a78bfa;
+  --sidebar: #0f0f0f;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e1e1e;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #2a2a2a;
-  --sidebar-ring: #007bff;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: #262626;
+  --sidebar-ring: #3b82f6;
 }
 
 @theme inline {
@@ -138,3 +138,22 @@
   transform: translateY(-4px);
   box-shadow: 0 8px 25px rgba(0, 123, 255, 0.2);
 }
+
+/* Sidebar menu utilities (ensures styles load with app CSS) */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  opacity: 0.8;
+}
+.menu-item:hover { background: var(--secondary); opacity: 1; }
+.menu-item-icon-size { display: inline-flex; width: 1.25rem; height: 1.25rem; align-items: center; justify-content: center; color: var(--muted-foreground); }
+.menu-item:hover .menu-item-icon-size { color: var(--foreground); }
+.menu-item-text { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-item-active { background: var(--secondary); color: var(--foreground); }
+.menu-section-title { padding: 0.5rem 0.75rem 0.25rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-foreground); }
+.menu-item + .menu-item { border-top: 1px solid rgba(255,255,255,0.06); }

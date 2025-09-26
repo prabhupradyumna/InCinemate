@@ -56,6 +56,16 @@ router.post('/theatres', SuperadminController.createTheatre)
 router.get('/theatres', SuperadminController.listTheatres)
 
 // ==============================
+// TENANT MANAGEMENT ROUTES
+// ==============================
+
+// Create or ensure tenant exists
+router.post('/tenants', SuperadminController.createTenant)
+
+// List tenants
+router.get('/tenants', SuperadminController.listTenants)
+
+// ==============================
 // AUDITORIUM REQUEST MANAGEMENT ROUTES
 // ==============================
 

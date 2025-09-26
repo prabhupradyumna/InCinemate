@@ -44,6 +44,9 @@ export function setupAssociations(sequelize) {
     otherKey: 'user_id'
   })
 
+  // Direct linkage for includes on Permission → AdminPermission
+  Permission.hasMany(AdminPermission, { foreignKey: 'permission_id', as: 'AdminPermissions' })
+
   // AdminPermission associations
   AdminPermission.belongsTo(User, { foreignKey: 'user_id', as: 'user' })
   AdminPermission.belongsTo(Permission, { foreignKey: 'permission_id', as: 'permission' })

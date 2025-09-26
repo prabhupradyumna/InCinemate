@@ -11,12 +11,53 @@ import { ROLES, API_MESSAGES, HTTP_STATUS } from '../constants.js'
 
 export default class SuperadminController {
   // ==============================
+  // TENANT MANAGEMENT
+  // ==============================
+
+  static async createTenant(req, res) {
+    try {
+      const { tenant_id, name, owner_name, email, phone, address, city, state, country, postal_code } = req.body
+
+      if (!tenant_id || !name) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'tenant_id and name are required', message: 'Tenant creation failed' })
+      }
+
+      const sequelize = req.db
+      const Tenant = defineTenant(sequelize)
+      await Tenant.sync()
+
+      const [tenant, created] = await Tenant.findOrCreate({
+        where: { tenant_id },
+        defaults: { tenant_id, name, owner_name, email, phone, address, city, state, country, postal_code, is_active: true }
+      })
+
+      return res.status(created ? HTTP_STATUS.CREATED : HTTP_STATUS.OK).json({ data: tenant, message: created ? 'Tenant created' : 'Tenant exists' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[createTenant]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Tenant creation failed' })
+    }
+  }
+
+  static async listTenants(req, res) {
+    try {
+      const sequelize = req.db
+      const Tenant = defineTenant(sequelize)
+      await Tenant.sync()
+
+      const tenants = await Tenant.findAll({ order: [['name', 'ASC']] })
+      return res.json({ data: tenants, message: 'Tenants retrieved' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[listTenants]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Failed to retrieve tenants' })
+    }
+  }
+  // ==============================
   // ADMIN MANAGEMENT
   // ==============================
 
   static async createAdmin(req, res) {
     try {
-      const { email, full_name, phone, tenant_id } = req.body
+      const { email, full_name, phone, tenant_id, password } = req.body
 
       if (!email || !full_name || !tenant_id) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -51,9 +92,9 @@ export default class SuperadminController {
         })
       }
 
-      // Generate temporary password
-      const temporaryPassword = generateTemporaryPassword()
-      const passwordHash = await hashPassword(temporaryPassword)
+      // Use provided password (dev convenience) or generate a temporary one
+      const plainPassword = password && String(password).trim().length >= 6 ? String(password).trim() : generateTemporaryPassword()
+      const passwordHash = await hashPassword(plainPassword)
 
       // Create admin user
       const admin = await User.create({
@@ -67,7 +108,7 @@ export default class SuperadminController {
       })
 
       // TODO: Send welcome email with credentials
-      console.log(`📧 Welcome email should be sent to ${email} with password: ${temporaryPassword}`)
+      console.log(`Admin created: ${email}. Temporary/dev password available in response (do not expose in prod).`)
 
       return res.status(HTTP_STATUS.CREATED).json({
         data: {
@@ -77,7 +118,7 @@ export default class SuperadminController {
           phone: admin.phone,
           tenant_id: admin.tenant_id,
           role: admin.role,
-          temporary_password: temporaryPassword // Remove in production
+          temporary_password: plainPassword // Dev-only; remove in production
         },
         message: 'Admin created successfully'
       })
@@ -96,17 +137,11 @@ export default class SuperadminController {
     try {
       const sequelize = req.db
       const User = defineUser(sequelize)
-      const Tenant = defineTenant(sequelize)
-      await Promise.all([User.sync(), Tenant.sync()])
+      await User.sync()
 
       const admins = await User.findAll({
         where: { role: ROLES.ADMIN },
-        include: [{
-          model: Tenant,
-          as: 'Tenant',
-          attributes: ['name', 'tenant_id']
-        }],
-        attributes: ['id', 'email', 'full_name', 'phone', 'tenant_id', 'is_active', 'created_at']
+        attributes: ['id', 'email', 'full_name', 'phone', 'tenant_id', 'is_active', 'createdAt']
       })
 
       return res.json({
@@ -211,6 +246,15 @@ export default class SuperadminController {
       const Permission = definePermission(sequelize)
       const AdminPermission = defineAdminPermission(sequelize)
       
+      // Ensure associations exist on this sequelize instance (req.db)
+      // These are needed because request-scoped sequelize may not have global associations applied
+      if (!('AdminPermissions' in Permission.associations)) {
+        Permission.hasMany(AdminPermission, { foreignKey: 'permission_id', as: 'AdminPermissions' })
+      }
+      if (!('permission' in AdminPermission.associations)) {
+        AdminPermission.belongsTo(Permission, { foreignKey: 'permission_id', as: 'permission' })
+      }
+
       await Promise.all([User.sync(), Permission.sync(), AdminPermission.sync()])
 
       const admin = await User.findOne({
@@ -228,6 +272,7 @@ export default class SuperadminController {
       const permissions = await Permission.findAll({
         include: [{
           model: AdminPermission,
+          as: 'AdminPermissions',
           where: { user_id: id },
           required: false,
           attributes: ['granted_at', 'granted_by']

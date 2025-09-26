@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import authRoutes from './auth.js'
+import superadminRoutes from './superadmin.js'
 import { createShowsRouter } from './shows.js'
 import { createBookingsRouter } from './bookings.js'
 
@@ -22,6 +23,7 @@ router.get('/health/db', async (req, res) => {
 
 // API Routes
 router.use('/auth', authRoutes)
+router.use('/superadmin', superadminRoutes)
 router.use('/shows', createShowsRouter())
 router.use('/bookings', createBookingsRouter())
 

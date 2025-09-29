@@ -1,198 +1,340 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Search, Filter, Settings, Building2, FileText, Clock, Check, Plus, Users } from "lucide-react"
-import { formatDate } from "@/lib/utils"
-import { listAuditoriumRequests, listTenants, listTheatres, createAuditoriumConfiguration } from "@/lib/superadmin"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Search,
+  Filter,
+  Settings,
+  Building2,
+  FileText,
+  Clock,
+  Check,
+  Plus,
+  Users,
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import {
+  listTheatres,
+  createAuditoriumConfiguration,
+  listAuditoriums,
+} from "@/lib/superadmin";
+import { useToast } from "@/hooks/use-toast";
 
 export function AuditoriumBuilder() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("approved")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isCreating, setIsCreating] = useState(false)
-  const [selectedTenant, setSelectedTenant] = useState("")
-  const [selectedTheatre, setSelectedTheatre] = useState("")
-  const [auditoriumName, setAuditoriumName] = useState("")
-  const [dialogTenants, setDialogTenants] = useState<any[]>([])
-  const [dialogTheatres, setDialogTheatres] = useState<any[]>([])
-  const [dialogTenantsLoading, setDialogTenantsLoading] = useState(false)
-  const [dialogTheatresLoading, setDialogTheatresLoading] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("approved");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [selectedTheatre, setSelectedTheatre] = useState("");
+  const [auditoriumName, setAuditoriumName] = useState("");
+  const [dialogTheatres, setDialogTheatres] = useState<any[]>([]);
+  const [dialogTheatresLoading, setDialogTheatresLoading] = useState(false);
 
   // Manual data fetching (like user management)
-  const [requests, setRequests] = useState<any[]>([])
-  const [tenants, setTenants] = useState<any[]>([])
-  const [theatres, setTheatres] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [tenantsLoading, setTenantsLoading] = useState(false)
-  const [theatresLoading, setTheatresLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [requests, setRequests] = useState<any[]>([]);
+  const [theatres, setTheatres] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [theatresLoading, setTheatresLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [auditoriums, setAuditoriums] = useState<any[]>([]);
 
   // Fetch data on component mount
   useEffect(() => {
-    let mounted = true
-    
+    let mounted = true;
+
     const fetchData = async () => {
       try {
-        setLoading(true)
-        setError("")
-        
-        // Fetch all data in parallel
-        const [requestsData, tenantsData, theatresData] = await Promise.all([
-          listAuditoriumRequests(),
-          listTenants(),
-          listTheatres()
-        ])
-        
+        setLoading(true);
+        setError("");
+
+        // Fetch theatres and auditoriums in parallel (drop requests)
+        const [theatresData, auditoriumsData] = await Promise.all([
+          listTheatres(),
+          listAuditoriums(),
+        ]);
+
         if (mounted) {
-          setRequests(requestsData || [])
-          setTenants(tenantsData || [])
-          setTheatres(theatresData || [])
+          setTheatres(theatresData || []);
+          setAuditoriums(auditoriumsData || []);
         }
       } catch (err: any) {
         if (mounted) {
-          setError(err.message || "Failed to load data")
-          console.error("Failed to fetch data:", err)
+          setError(err.message || "Failed to load data");
+          console.error("Failed to fetch data:", err);
         }
       } finally {
         if (mounted) {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    }
+    };
 
-    fetchData()
-    
+    fetchData();
+
     return () => {
-      mounted = false
-    }
-  }, [])
+      mounted = false;
+    };
+  }, []);
 
-  const refreshRequests = async () => {
+  const refreshAuditoriums = async () => {
     try {
-      const requestsData = await listAuditoriumRequests()
-      setRequests(requestsData || [])
+      const data = await listAuditoriums();
+      setAuditoriums(data || []);
     } catch (err: any) {
-      console.error("Failed to refresh requests:", err)
+      console.error("Failed to refresh auditoriums:", err);
     }
-  }
+  };
 
   const fetchDialogData = async () => {
     try {
-      console.log("🔍 Fetching dialog data...")
-      setDialogTenantsLoading(true)
-      setDialogTheatresLoading(true)
-      
-      // Fetch tenants and theatres for the dialog
-      const [tenantsData, theatresData] = await Promise.all([
-        listTenants(),
-        listTheatres()
-      ])
-      
+      console.log("🔍 Fetching dialog data...");
+      setDialogTheatresLoading(true);
+
+      // Fetch theatres for the dialog
+      const theatresData = await listTheatres();
+
       console.log("📊 Dialog data fetched:", {
-        tenants: tenantsData?.length || 0,
-        theatres: theatresData?.length || 0
-      })
-      
-      setDialogTenants(tenantsData || [])
-      setDialogTheatres(theatresData || [])
-      
+        theatres: theatresData?.length || 0,
+      });
+
+      setDialogTheatres(theatresData || []);
     } catch (err: any) {
-      console.error("❌ Failed to fetch dialog data:", err)
+      console.error("❌ Failed to fetch dialog data:", err);
       toast({
         title: "Error",
-        description: "Failed to load tenant and theatre data"
-      })
+        description: "Failed to load theatre data",
+      });
     } finally {
-      setDialogTenantsLoading(false)
-      setDialogTheatresLoading(false)
+      setDialogTheatresLoading(false);
     }
-  }
+  };
 
   const handleOpenCreateDialog = () => {
-    setIsCreateDialogOpen(true)
-    fetchDialogData() // Fetch fresh data when dialog opens
-  }
+    setIsCreateDialogOpen(true);
+    fetchDialogData(); // Fetch fresh data when dialog opens
+  };
 
   const handleCloseCreateDialog = () => {
-    setIsCreateDialogOpen(false)
+    setIsCreateDialogOpen(false);
     // Reset form state
-    setSelectedTenant("")
-    setSelectedTheatre("")
-    setAuditoriumName("")
-    setDialogTenants([])
-    setDialogTheatres([])
-  }
+    setSelectedTheatre("");
+    setAuditoriumName("");
+    setDialogTheatres([]);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40"><Clock className="h-3 w-3 mr-1" />Pending</Badge>
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40">
+            <Clock className="h-3 w-3 mr-1" />
+            Pending
+          </Badge>
+        );
       case "approved":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/40"><Check className="h-3 w-3 mr-1" />Approved</Badge>
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/40">
+            <Check className="h-3 w-3 mr-1" />
+            Approved
+          </Badge>
+        );
       case "configured":
-        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40"><Settings className="h-3 w-3 mr-1" />Configured</Badge>
+        return (
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40">
+            <Settings className="h-3 w-3 mr-1" />
+            Configured
+          </Badge>
+        );
       case "rejected":
-        return <Badge className="bg-red-500/20 text-red-400 border-red-500/40">Rejected</Badge>
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/40">
+            Rejected
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   const filteredRequests = requests.filter((request: any) => {
-    const matchesSearch = 
+    const matchesSearch =
       request.theatre?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.tenant_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.notes?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || request.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      request.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || request.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleConfigure = (requestId: string) => {
-    router.push(`/super-admin/auditoriums/configure/${requestId}`)
-  }
+    router.push(`/super-admin/auditoriums/configure/${requestId}`);
+  };
 
   const handleCreateAuditorium = async () => {
-    if (!selectedTenant || !selectedTheatre || !auditoriumName.trim()) {
+    if (!selectedTheatre || !auditoriumName.trim()) {
       toast({
         title: "Validation Error",
-        description: "Please select tenant, theatre, and provide auditorium name"
-      })
-      return
+        description: "Please select theatre and provide auditorium name",
+      });
+      return;
     }
 
     try {
-      setIsCreating(true)
-      
+      setIsCreating(true);
+
       // Create a mock auditorium configuration with basic seat layout
       const basicSeatMap = [
-        { row: "A", number: 1, category: "vip", x_position: 50, y_position: 100, is_active: true },
-        { row: "A", number: 2, category: "vip", x_position: 80, y_position: 100, is_active: true },
-        { row: "A", number: 3, category: "vip", x_position: 110, y_position: 100, is_active: true },
-        { row: "A", number: 4, category: "vip", x_position: 140, y_position: 100, is_active: true },
-        { row: "A", number: 5, category: "vip", x_position: 170, y_position: 100, is_active: true },
-        { row: "B", number: 1, category: "premium", x_position: 50, y_position: 140, is_active: true },
-        { row: "B", number: 2, category: "premium", x_position: 80, y_position: 140, is_active: true },
-        { row: "B", number: 3, category: "premium", x_position: 110, y_position: 140, is_active: true },
-        { row: "B", number: 4, category: "premium", x_position: 140, y_position: 140, is_active: true },
-        { row: "B", number: 5, category: "premium", x_position: 170, y_position: 140, is_active: true },
-        { row: "C", number: 1, category: "regular", x_position: 50, y_position: 180, is_active: true },
-        { row: "C", number: 2, category: "regular", x_position: 80, y_position: 180, is_active: true },
-        { row: "C", number: 3, category: "regular", x_position: 110, y_position: 180, is_active: true },
-        { row: "C", number: 4, category: "regular", x_position: 140, y_position: 180, is_active: true },
-        { row: "C", number: 5, category: "regular", x_position: 170, y_position: 180, is_active: true },
-      ]
+        {
+          row: "A",
+          number: 1,
+          category: "vip",
+          x_position: 50,
+          y_position: 100,
+          is_active: true,
+        },
+        {
+          row: "A",
+          number: 2,
+          category: "vip",
+          x_position: 80,
+          y_position: 100,
+          is_active: true,
+        },
+        {
+          row: "A",
+          number: 3,
+          category: "vip",
+          x_position: 110,
+          y_position: 100,
+          is_active: true,
+        },
+        {
+          row: "A",
+          number: 4,
+          category: "vip",
+          x_position: 140,
+          y_position: 100,
+          is_active: true,
+        },
+        {
+          row: "A",
+          number: 5,
+          category: "vip",
+          x_position: 170,
+          y_position: 100,
+          is_active: true,
+        },
+        {
+          row: "B",
+          number: 1,
+          category: "premium",
+          x_position: 50,
+          y_position: 140,
+          is_active: true,
+        },
+        {
+          row: "B",
+          number: 2,
+          category: "premium",
+          x_position: 80,
+          y_position: 140,
+          is_active: true,
+        },
+        {
+          row: "B",
+          number: 3,
+          category: "premium",
+          x_position: 110,
+          y_position: 140,
+          is_active: true,
+        },
+        {
+          row: "B",
+          number: 4,
+          category: "premium",
+          x_position: 140,
+          y_position: 140,
+          is_active: true,
+        },
+        {
+          row: "B",
+          number: 5,
+          category: "premium",
+          x_position: 170,
+          y_position: 140,
+          is_active: true,
+        },
+        {
+          row: "C",
+          number: 1,
+          category: "regular",
+          x_position: 50,
+          y_position: 180,
+          is_active: true,
+        },
+        {
+          row: "C",
+          number: 2,
+          category: "regular",
+          x_position: 80,
+          y_position: 180,
+          is_active: true,
+        },
+        {
+          row: "C",
+          number: 3,
+          category: "regular",
+          x_position: 110,
+          y_position: 180,
+          is_active: true,
+        },
+        {
+          row: "C",
+          number: 4,
+          category: "regular",
+          x_position: 140,
+          y_position: 180,
+          is_active: true,
+        },
+        {
+          row: "C",
+          number: 5,
+          category: "regular",
+          x_position: 170,
+          y_position: 180,
+          is_active: true,
+        },
+      ];
 
       const auditoriumData = {
         request_id: `manual-${Date.now()}`, // Mock request ID for manual creation
@@ -205,52 +347,52 @@ export function AuditoriumBuilder() {
           seat_categories: {
             vip: 5,
             premium: 5,
-            regular: 5
-          }
-        }
-      }
+            regular: 5,
+          },
+        },
+      };
 
-      await createAuditoriumConfiguration(auditoriumData)
-      
+      await createAuditoriumConfiguration(auditoriumData);
+
       toast({
         title: "Success",
-        description: `Auditorium "${auditoriumName}" created successfully with basic seat layout`
-      })
-      
-      setIsCreateDialogOpen(false)
-      setSelectedTenant("")
-      setSelectedTheatre("")
-      setAuditoriumName("")
-      
+        description: `Auditorium "${auditoriumName}" created successfully with basic seat layout`,
+      });
+
+      setIsCreateDialogOpen(false);
+      setSelectedTheatre("");
+      setAuditoriumName("");
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create auditorium"
-      })
+        description: error.message || "Failed to create auditorium",
+      });
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
+  };
 
   const stats = {
     total: requests.length,
-    pending: requests.filter((r: any) => r.status === 'pending').length,
-    approved: requests.filter((r: any) => r.status === 'approved').length,
-    configured: requests.filter((r: any) => r.status === 'configured').length,
-    rejected: requests.filter((r: any) => r.status === 'rejected').length,
-  }
+    pending: requests.filter((r: any) => r.status === "pending").length,
+    approved: requests.filter((r: any) => r.status === "approved").length,
+    configured: requests.filter((r: any) => r.status === "configured").length,
+    rejected: requests.filter((r: any) => r.status === "rejected").length,
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-foreground">Auditorium Builder</h2>
+          <h2 className="text-2xl font-bold text-foreground">
+            Auditorium Builder
+          </h2>
           <p className="text-muted-foreground">
             Create auditoriums manually or configure approved requests
           </p>
         </div>
-        <Button 
+        <Button
           onClick={handleOpenCreateDialog}
           className="bg-blue-600 hover:bg-blue-700"
         >
@@ -269,25 +411,33 @@ export function AuditoriumBuilder() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+            <div className="text-2xl font-bold text-yellow-600">
+              {stats.pending}
+            </div>
             <p className="text-sm text-muted-foreground">Pending</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+            <div className="text-2xl font-bold text-green-600">
+              {stats.approved}
+            </div>
             <p className="text-sm text-muted-foreground">Ready to Configure</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.configured}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {stats.configured}
+            </div>
             <p className="text-sm text-muted-foreground">Configured</p>
           </CardContent>
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {stats.rejected}
+            </div>
             <p className="text-sm text-muted-foreground">Rejected</p>
           </CardContent>
         </Card>
@@ -327,12 +477,12 @@ export function AuditoriumBuilder() {
         </CardContent>
       </Card>
 
-      {/* Requests Table */}
+      {/* Auditoriums Table */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Auditorium Configuration Requests
+            Auditoriums
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -342,85 +492,50 @@ export function AuditoriumBuilder() {
             </div>
           ) : error ? (
             <div className="text-center py-8 text-destructive">
-              Failed to load auditorium requests
+              Failed to load auditoriums
             </div>
-          ) : filteredRequests.length === 0 ? (
+          ) : auditoriums.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {statusFilter === "approved" 
-                ? "No approved requests ready for configuration"
-                : "No auditorium requests found"
-              }
+              No auditoriums found
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Auditorium</TableHead>
                   <TableHead>Theatre</TableHead>
-                  <TableHead>Tenant</TableHead>
-                  <TableHead>Request Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead>Capacity</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRequests.map((request: any) => (
-                  <TableRow key={request.id}>
+                {auditoriums.map((aud: any) => (
+                  <TableRow key={aud.id}>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          {request.theatre?.name || 'Unknown Theatre'}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {request.theatre?.address || 'No address'}
-                        </div>
-                      </div>
+                      <div className="font-medium">{aud.name}</div>
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium text-sm">{request.tenant_id}</div>
-                        <div className="text-xs text-muted-foreground">Tenant ID</div>
-                      </div>
+                    <TableCell>{aud.Theatre?.name || "-"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {aud.Theatre?.city || "-"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(request.created_at)}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate text-sm text-muted-foreground">
-                        {request.notes || 'No notes provided'}
-                      </div>
+                      {aud.capacity ?? 0}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {request.status === 'approved' && (
-                          <Button 
-                            variant="default" 
-                            size="sm"
-                            onClick={() => handleConfigure(request.id)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            Configure
-                          </Button>
-                        )}
-                        {request.status === 'configured' && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleConfigure(request.id)}
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            View/Edit
-                          </Button>
-                        )}
-                        {request.status === 'pending' && (
-                          <span className="text-sm text-muted-foreground">Awaiting approval</span>
-                        )}
-                        {request.status === 'rejected' && (
-                          <span className="text-sm text-muted-foreground">Request rejected</span>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(
+                              `/super-admin/auditoriums/configure/${aud.id}`
+                            )
+                          }
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Configure
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -438,24 +553,23 @@ export function AuditoriumBuilder() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => router.push('/super-admin?tab=auditorium-requests')}
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push("/super-admin?tab=auditorium-requests")
+              }
             >
               <FileText className="h-4 w-4 mr-2" />
               Manage All Requests
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => setStatusFilter('approved')}
+            <Button
+              variant="outline"
+              onClick={() => setStatusFilter("approved")}
             >
               <Check className="h-4 w-4 mr-2" />
               Show Ready to Configure
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={refreshRequests}
-            >
+            <Button variant="outline" onClick={refreshAuditoriums}>
               Refresh Data
             </Button>
           </div>
@@ -463,77 +577,40 @@ export function AuditoriumBuilder() {
       </Card>
 
       {/* Create Auditorium Dialog */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => open ? handleOpenCreateDialog() : handleCloseCreateDialog()}>
+      <Dialog
+        open={isCreateDialogOpen}
+        onOpenChange={(open) =>
+          open ? handleOpenCreateDialog() : handleCloseCreateDialog()
+        }
+      >
         <DialogContent className="bg-card border-border max-w-2xl">
           <DialogHeader>
             <DialogTitle>Create New Auditorium</DialogTitle>
             <DialogDescription>
-              Manually create an auditorium for any tenant and venue with a basic seat layout
+              Manually create an auditorium for any theatre with a basic seat
+              layout
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Tenant Selection */}
-            <div className="space-y-2">
-              <Label htmlFor="tenant">Select Tenant</Label>
-              <Select value={selectedTenant} onValueChange={setSelectedTenant}>
-                <SelectTrigger className="bg-input border-border">
-                  <SelectValue placeholder={dialogTenantsLoading ? "Loading tenants..." : "Choose a tenant..."} />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border">
-                  {dialogTenantsLoading ? (
-                    <SelectItem value="loading" disabled>
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                        Loading tenants...
-                      </div>
-                    </SelectItem>
-                  ) : dialogTenants.length > 0 ? (
-                    dialogTenants.map((tenant: any) => (
-                      <SelectItem key={tenant.tenant_id} value={tenant.tenant_id}>
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          {tenant.name} ({tenant.tenant_id})
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-tenants" disabled>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        No tenants found
-                      </div>
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              {dialogTenants.length === 0 && !dialogTenantsLoading && (
-                <p className="text-sm text-muted-foreground">
-                  No tenants available. Please create a tenant first using the tenant management section.
-                </p>
-              )}
-            </div>
 
+          <div className="space-y-6">
             {/* Theatre Selection */}
             <div className="space-y-2">
               <Label htmlFor="theatre">Select Theatre/Venue</Label>
-              <Select value={selectedTheatre} onValueChange={setSelectedTheatre} disabled={!selectedTenant}>
+              <Select
+                value={selectedTheatre}
+                onValueChange={setSelectedTheatre}
+              >
                 <SelectTrigger className="bg-input border-border">
-                  <SelectValue placeholder={
-                    !selectedTenant ? "Select tenant first" : 
-                    dialogTheatresLoading ? "Loading theatres..." : 
-                    "Choose a theatre..."
-                  } />
+                  <SelectValue
+                    placeholder={
+                      dialogTheatresLoading
+                        ? "Loading theatres..."
+                        : "Choose a theatre..."
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
-                  {!selectedTenant ? (
-                    <SelectItem value="no-tenant" disabled>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        Please select a tenant first
-                      </div>
-                    </SelectItem>
-                  ) : dialogTheatresLoading ? (
+                  {dialogTheatresLoading ? (
                     <SelectItem value="loading" disabled>
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -559,11 +636,6 @@ export function AuditoriumBuilder() {
                   )}
                 </SelectContent>
               </Select>
-              {selectedTenant && dialogTheatres.length === 0 && !dialogTheatresLoading && (
-                <p className="text-sm text-muted-foreground">
-                  No theatres available for this tenant. Please create a theatre first.
-                </p>
-              )}
             </div>
 
             {/* Auditorium Name */}
@@ -596,21 +668,21 @@ export function AuditoriumBuilder() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Total: 15 seats. You can customize the layout after creation using the Visual Builder.
+                Total: 15 seats. You can customize the layout after creation
+                using the Visual Builder.
               </p>
             </div>
           </div>
 
           <DialogFooter className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleCloseCreateDialog}
-            >
+            <Button variant="outline" onClick={handleCloseCreateDialog}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleCreateAuditorium}
-              disabled={isCreating || !selectedTenant || !selectedTheatre || !auditoriumName.trim()}
+              disabled={
+                isCreating || !selectedTheatre || !auditoriumName.trim()
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isCreating ? "Creating..." : "Create Auditorium"}
@@ -619,5 +691,5 @@ export function AuditoriumBuilder() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

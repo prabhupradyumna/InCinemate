@@ -47,6 +47,10 @@ export function defineTheatre(sequelize) {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      owner_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,

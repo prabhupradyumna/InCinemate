@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { MovieBrowser } from "@/components/movie-browser"
-import { Header } from "@/components/header"
+import { MovieBrowser } from "@/components/movie-browser";
+import { Header } from "@/components/header";
 
 export default function HomePage() {
   return (
@@ -11,5 +11,5 @@ export default function HomePage() {
         <MovieBrowser />
       </main>
     </div>
-  )
+  );
 }

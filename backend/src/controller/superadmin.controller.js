@@ -416,7 +416,7 @@ export default class SuperadminController {
 
   static async createTheatre(req, res) {
     try {
-      const { name, address, city, state, country, postal_code, tax_rate_percent, contact_phone, contact_email } = req.body
+      const { name, address, city, state, country, postal_code, tax_rate_percent, contact_phone, contact_email, owner_name } = req.body
 
       if (!name || !address || !city) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -440,6 +440,7 @@ export default class SuperadminController {
         tax_rate_percent: tax_rate_percent || 0,
         contact_phone,
         contact_email,
+        owner_name,
         is_active: true
       })
 
@@ -479,6 +480,66 @@ export default class SuperadminController {
         success: false,
         error: err.message,
         message: 'Failed to retrieve theatres'
+      })
+    }
+  }
+
+  // List all auditoriums with theatre info
+  static async listAuditoriums(req, res) {
+    try {
+      const sequelize = req.db
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      await Promise.all([Auditorium.sync(), Theatre.sync()])
+
+      // Ensure association exists
+      if (!('Theatre' in Auditorium.associations)) {
+        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id', targetKey: 'id' })
+      }
+
+      const auditoriums = await Auditorium.findAll({
+        include: [{ model: Theatre, attributes: ['id', 'name', 'city', 'address'] }],
+        order: [[Theatre, 'city', 'ASC'], ['name', 'ASC']]
+      })
+
+      return res.json({ data: auditoriums, message: 'Auditoriums retrieved successfully' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[listAuditoriums]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve auditoriums'
+      })
+    }
+  }
+
+  static async getAuditorium(req, res) {
+    try {
+      const { id } = req.params
+      const sequelize = req.db
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      await Promise.all([Auditorium.sync(), Theatre.sync()])
+
+      if (!('Theatre' in Auditorium.associations)) {
+        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id', targetKey: 'id' })
+      }
+
+      const auditorium = await Auditorium.findByPk(id, {
+        include: [{ model: Theatre, attributes: ['id', 'name', 'city', 'address'] }]
+      })
+
+      if (!auditorium) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Auditorium not found' })
+      }
+
+      return res.json({ data: auditorium, message: 'Auditorium retrieved successfully' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[getAuditorium]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve auditorium'
       })
     }
   }

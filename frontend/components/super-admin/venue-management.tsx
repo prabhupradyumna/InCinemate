@@ -1,30 +1,63 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, MapPin, Users, DollarSign, Building2, Eye, RefreshCw } from "lucide-react"
-import { formatDate } from "@/lib/utils"
-import { listTenants, createTenant, listTheatres, createTheatre } from "@/lib/superadmin"
-import { useToast } from "@/hooks/use-toast"
-import { useApiCall } from "@/lib/hooks"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  MapPin,
+  Users,
+  DollarSign,
+  Building2,
+  Eye,
+  RefreshCw,
+} from "lucide-react";
+import { formatDate } from "@/lib/utils";
+import { listTheatres, createTheatre } from "@/lib/superadmin";
+import { useToast } from "@/hooks/use-toast";
+import { useApiCall } from "@/lib/hooks";
 
 export function VenueManagement() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [isCreating, setIsCreating] = useState(false)
-  const { toast } = useToast()
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
 
   // Fetch real data
-  const { data: tenants, loading: tenantsLoading, execute: refreshTenants } = useApiCall(listTenants, [])
-  const { data: theatres, loading: theatresLoading, execute: refreshTheatres } = useApiCall(listTheatres, [])
+  const {
+    data: theatres,
+    loading: theatresLoading,
+    execute: refreshTheatres,
+  } = useApiCall(listTheatres, []);
 
   const [newVenue, setNewVenue] = useState({
     name: "",
@@ -37,72 +70,86 @@ export function VenueManagement() {
     contact_email: "",
     owner_name: "",
     tax_rate_percent: 18,
-  })
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/40">Active</Badge>
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/40">
+            Active
+          </Badge>
+        );
       case "pending":
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40">Pending</Badge>
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/40">
+            Pending
+          </Badge>
+        );
       case "suspended":
-        return <Badge className="bg-red-500/20 text-red-400 border-red-500/40">Suspended</Badge>
+        return (
+          <Badge className="bg-red-500/20 text-red-400 border-red-500/40">
+            Suspended
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
-  // Combine tenants and theatres data
-  const venues = (tenants || []).map((tenant: any) => ({
-    id: tenant.tenant_id,
-    name: tenant.name,
-    address: tenant.address || 'No address',
-    city: tenant.city || 'Unknown',
-    state: tenant.state || '',
-    country: tenant.country || 'India',
-    postal_code: tenant.postal_code || '',
-    contact_phone: tenant.phone || '',
-    contact_email: tenant.email || '',
-    tax_rate_percent: 18, // Default tax rate
-    status: "active", // All tenants are considered active
-    joinedDate: tenant.created_at || new Date().toISOString(),
-    owner: tenant.owner_name || 'Unknown',
-  }))
+  // Map theatres to venues for display
+  const venues = (theatres || []).map((theatre: any) => ({
+    id: theatre.id,
+    name: theatre.name,
+    address: theatre.address || "No address",
+    city: theatre.city || "Unknown",
+    state: theatre.state || "",
+    country: theatre.country || "India",
+    postal_code: theatre.postal_code || "",
+    contact_phone: theatre.contact_phone || "",
+    contact_email: theatre.contact_email || "",
+    tax_rate_percent: theatre.tax_rate_percent ?? 0,
+    status: theatre.is_active ? "active" : "suspended",
+    joinedDate:
+      theatre.createdAt || theatre.created_at || new Date().toISOString(),
+    owner: theatre.owner_name || "-",
+  }));
 
   const filteredVenues = venues.filter((venue: any) => {
     const matchesSearch =
       venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       venue.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
       venue.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      venue.contact_email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || venue.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      venue.contact_email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || venue.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const handleCreateVenue = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newVenue.name || !newVenue.address || !newVenue.city || !newVenue.owner_name || !newVenue.contact_email) {
-      toast({ description: "Name, address, city, owner name, and email are required" })
-      return
+    e.preventDefault();
+    if (!newVenue.name || !newVenue.address || !newVenue.city) {
+      toast({ description: "Name, address, and city are required" });
+      return;
     }
 
     try {
-      setIsCreating(true)
-      await createTenant({
-        tenant_id: newVenue.name.toLowerCase().replace(/\s+/g, '-'),
+      setIsCreating(true);
+      await createTheatre({
         name: newVenue.name,
-        owner_name: newVenue.owner_name,
-        email: newVenue.contact_email,
-        phone: newVenue.contact_phone,
         address: newVenue.address,
         city: newVenue.city,
         state: newVenue.state,
         country: newVenue.country,
         postal_code: newVenue.postal_code,
-      })
-      
-      toast({ description: "Venue created successfully" })
-      setIsCreateDialogOpen(false)
+        tax_rate_percent: newVenue.tax_rate_percent,
+        contact_phone: newVenue.contact_phone,
+        contact_email: newVenue.contact_email,
+        owner_name: newVenue.owner_name,
+      });
+
+      toast({ description: "Venue created successfully" });
+      setIsCreateDialogOpen(false);
       setNewVenue({
         name: "",
         address: "",
@@ -114,14 +161,14 @@ export function VenueManagement() {
         contact_email: "",
         owner_name: "",
         tax_rate_percent: 18,
-      })
-      await refreshTenants()
+      });
+      await refreshTheatres();
     } catch (error: any) {
-      toast({ description: error?.message || "Failed to create venue" })
+      toast({ description: error?.message || "Failed to create venue" });
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -129,134 +176,188 @@ export function VenueManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Venue Management</h2>
-          <p className="text-muted-foreground">Manage all venues on the platform</p>
+          <p className="text-muted-foreground">
+            Manage all venues on the platform
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={refreshTenants} variant="outline">
+          <Button onClick={refreshTheatres} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button className="cinema-glow">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Venue
               </Button>
             </DialogTrigger>
-          <DialogContent className="bg-card border-border max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Venue</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleCreateVenue} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DialogContent className="bg-card border-border max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add New Venue</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleCreateVenue} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="venueName">Venue Name *</Label>
+                    <Input
+                      id="venueName"
+                      value={newVenue.name}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerName">Owner Name *</Label>
+                    <Input
+                      id="ownerName"
+                      value={newVenue.owner_name}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          owner_name: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="contactEmail">Contact Email *</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      value={newVenue.contact_email}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          contact_email: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="contactPhone">Contact Phone</Label>
+                    <Input
+                      id="contactPhone"
+                      value={newVenue.contact_phone}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          contact_phone: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="venueName">Venue Name *</Label>
+                  <Label htmlFor="venueAddress">Address *</Label>
                   <Input
-                    id="venueName"
-                    value={newVenue.name}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, name: e.target.value }))}
+                    id="venueAddress"
+                    value={newVenue.address}
+                    onChange={(e) =>
+                      setNewVenue((prev) => ({
+                        ...prev,
+                        address: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ownerName">Owner Name *</Label>
-                  <Input
-                    id="ownerName"
-                    value={newVenue.owner_name}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, owner_name: e.target.value }))}
-                    className="bg-input border-border"
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="contactEmail">Contact Email *</Label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={newVenue.contact_email}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, contact_email: e.target.value }))}
-                    className="bg-input border-border"
-                    required
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City *</Label>
+                    <Input
+                      id="city"
+                      value={newVenue.city}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          city: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={newVenue.state}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          state: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      value={newVenue.country}
+                      onChange={(e) =>
+                        setNewVenue((prev) => ({
+                          ...prev,
+                          country: e.target.value,
+                        }))
+                      }
+                      className="bg-input border-border"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="contactPhone">Contact Phone</Label>
-                  <Input
-                    id="contactPhone"
-                    value={newVenue.contact_phone}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, contact_phone: e.target.value }))}
-                    className="bg-input border-border"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="venueAddress">Address *</Label>
-                <Input
-                  id="venueAddress"
-                  value={newVenue.address}
-                  onChange={(e) => setNewVenue((prev) => ({ ...prev, address: e.target.value }))}
-                  className="bg-input border-border"
-                  required
-                />
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="postalCode">Postal Code</Label>
                   <Input
-                    id="city"
-                    value={newVenue.city}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, city: e.target.value }))}
-                    className="bg-input border-border"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={newVenue.state}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, state: e.target.value }))}
+                    id="postalCode"
+                    value={newVenue.postal_code}
+                    onChange={(e) =>
+                      setNewVenue((prev) => ({
+                        ...prev,
+                        postal_code: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={newVenue.country}
-                    onChange={(e) => setNewVenue((prev) => ({ ...prev, country: e.target.value }))}
-                    className="bg-input border-border"
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="postalCode">Postal Code</Label>
-                <Input
-                  id="postalCode"
-                  value={newVenue.postal_code}
-                  onChange={(e) => setNewVenue((prev) => ({ ...prev, postal_code: e.target.value }))}
-                  className="bg-input border-border"
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? "Creating..." : "Create Venue"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsCreateDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? "Creating..." : "Create Venue"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -293,10 +394,12 @@ export function VenueManagement() {
           <CardTitle>All Venues</CardTitle>
         </CardHeader>
         <CardContent>
-          {tenantsLoading && (
-            <div className="text-sm text-muted-foreground">Loading venues...</div>
+          {theatresLoading && (
+            <div className="text-sm text-muted-foreground">
+              Loading venues...
+            </div>
           )}
-          {!tenantsLoading && (
+          {!theatresLoading && (
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
@@ -325,7 +428,8 @@ export function VenueManagement() {
                       <div className="space-y-1">
                         <div className="font-medium text-sm">{venue.city}</div>
                         <div className="text-xs text-muted-foreground">
-                          {venue.state && `${venue.state}, `}{venue.country}
+                          {venue.state && `${venue.state}, `}
+                          {venue.country}
                         </div>
                         {venue.postal_code && (
                           <div className="text-xs text-muted-foreground">
@@ -337,10 +441,14 @@ export function VenueManagement() {
                     <TableCell>
                       <div className="space-y-1">
                         {venue.contact_email && (
-                          <div className="text-sm text-muted-foreground">{venue.contact_email}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {venue.contact_email}
+                          </div>
                         )}
                         {venue.contact_phone && (
-                          <div className="text-xs text-muted-foreground">{venue.contact_phone}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {venue.contact_phone}
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -359,7 +467,11 @@ export function VenueManagement() {
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -372,5 +484,5 @@ export function VenueManagement() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

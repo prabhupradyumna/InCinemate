@@ -1,6 +1,6 @@
-import { api } from './api';
+import { api } from "./api";
 
-export type Role = 'customer' | 'admin' | 'super-admin' | 'super_admin';
+export type Role = "customer" | "admin" | "super-admin" | "super_admin";
 
 export interface AdminUserDTO {
   id: string;
@@ -29,47 +29,84 @@ export interface PermissionDTO {
 }
 
 export async function listAdmins(): Promise<AdminUserDTO[]> {
-  const res = await api.get('/superadmin/admins');
+  const res = await api.get("/superadmin/admins");
   return res.data?.data || [];
 }
 
 export async function createAdmin(payload: CreateAdminPayload) {
-  const res = await api.post('/superadmin/admins', payload);
+  const res = await api.post("/superadmin/admins", payload);
   return res.data?.data;
 }
 
 export async function listPermissions(): Promise<PermissionDTO[]> {
-  const res = await api.get('/superadmin/permissions');
+  const res = await api.get("/superadmin/permissions");
   return res.data?.data || [];
 }
 
-export async function getAdminPermissions(adminId: string): Promise<{ admin: any; permissions: PermissionDTO[]; }> {
+export async function getAdminPermissions(
+  adminId: string
+): Promise<{ admin: any; permissions: PermissionDTO[] }> {
   const res = await api.get(`/superadmin/admins/${adminId}/permissions`);
   return res.data?.data;
 }
 
-export async function updateAdminPermissions(adminId: string, permissions: number[]) {
-  const res = await api.put(`/superadmin/admins/${adminId}/permissions`, { permissions });
+export async function updateAdminPermissions(
+  adminId: string,
+  permissions: number[]
+) {
+  const res = await api.put(`/superadmin/admins/${adminId}/permissions`, {
+    permissions,
+  });
   return res.data;
 }
 
 export async function listTheatres() {
-  const res = await api.get('/superadmin/theatres');
+  const res = await api.get("/superadmin/theatres");
   return res.data?.data || [];
 }
 
-export async function createTheatre(payload: { name: string; address: string; city: string; state?: string; country?: string; postal_code?: string; tax_rate_percent?: number; contact_phone?: string; contact_email?: string; }) {
-  const res = await api.post('/superadmin/theatres', payload);
+export async function listAuditoriums() {
+  const res = await api.get("/superadmin/auditoriums");
+  return res.data?.data || [];
+}
+
+export async function getAuditorium(auditoriumId: string) {
+  const res = await api.get(`/superadmin/auditoriums/${auditoriumId}`);
   return res.data?.data;
 }
 
-export async function listAuditoriumRequests(params?: { status?: 'pending'|'approved'|'rejected' }) {
-  const res = await api.get('/superadmin/auditorium-requests', { params });
+export async function createTheatre(payload: {
+  name: string;
+  address: string;
+  city: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+  tax_rate_percent?: number;
+  contact_phone?: string;
+  contact_email?: string;
+  owner_name?: string;
+}) {
+  const res = await api.post("/superadmin/theatres", payload);
+  return res.data?.data;
+}
+
+export async function listAuditoriumRequests(params?: {
+  status?: "pending" | "approved" | "rejected";
+}) {
+  const res = await api.get("/superadmin/auditorium-requests", { params });
   return res.data?.data || [];
 }
 
-export async function updateAuditoriumRequestStatus(id: string, status: 'approved'|'rejected', rejection_reason?: string) {
-  const res = await api.put(`/superadmin/auditorium-requests/${id}/status`, { status, rejection_reason });
+export async function updateAuditoriumRequestStatus(
+  id: string,
+  status: "approved" | "rejected",
+  rejection_reason?: string
+) {
+  const res = await api.put(`/superadmin/auditorium-requests/${id}/status`, {
+    status,
+    rejection_reason,
+  });
   return res.data?.data;
 }
 
@@ -93,19 +130,28 @@ export async function createAuditoriumConfiguration(payload: {
   total_seats: number;
   configuration: any;
 }) {
-  const res = await api.post('/superadmin/auditoriums/configure', payload);
+  const res = await api.post("/superadmin/auditoriums/configure", payload);
   return res.data?.data;
 }
 
 // Tenants
 export async function listTenants() {
-  const res = await api.get('/superadmin/tenants');
+  const res = await api.get("/superadmin/tenants");
   return res.data?.data || [];
 }
 
-export async function createTenant(payload: { tenant_id: string; name: string; owner_name?: string; email?: string; phone?: string; address?: string; city?: string; state?: string; country?: string; postal_code?: string; }) {
-  const res = await api.post('/superadmin/tenants', payload);
+export async function createTenant(payload: {
+  tenant_id: string;
+  name: string;
+  owner_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postal_code?: string;
+}) {
+  const res = await api.post("/superadmin/tenants", payload);
   return res.data?.data;
 }
-
-

@@ -44,6 +44,10 @@ router.post('/theatres', SuperadminController.createTheatre)
 // List all theatres
 router.get('/theatres', SuperadminController.listTheatres)
 
+// Auditoriums listing for superadmin (manage across theatres)
+router.get('/auditoriums', SuperadminController.listAuditoriums)
+router.get('/auditoriums/:id', SuperadminController.getAuditorium)
+
 // ==============================
 // TENANT MANAGEMENT ROUTES
 // ==============================

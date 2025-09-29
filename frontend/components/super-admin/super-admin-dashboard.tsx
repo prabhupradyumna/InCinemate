@@ -1,13 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { VenueManagement } from "@/components/super-admin/venue-management"
 import { PlatformAnalytics } from "@/components/super-admin/platform-analytics"
 import { UserManagement } from "@/components/super-admin/user-management"
 import { PlatformSettings } from "@/components/super-admin/platform-settings"
+import { AuditoriumRequests } from "@/components/super-admin/auditorium-requests"
+import { AuditoriumBuilder } from "@/components/super-admin/auditorium-builder"
 import { Building2, DollarSign, Users, TrendingUp, Activity, Globe } from "lucide-react"
+import { listTenants, listAdmins, listAuditoriumRequests } from "@/lib/superadmin"
+import { useApiCall } from "@/lib/hooks"
 
 // Mock platform-wide data
 const platformStats = {
@@ -30,7 +35,39 @@ const platformStats = {
 }
 
 export function SuperAdminDashboard() {
-  const [activeTab, setActiveTab] = useState("overview")
+  const searchParams = useSearchParams()
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview")
+
+  // Fetch real platform data
+  const { data: tenants, loading: tenantsLoading } = useApiCall(listTenants, [])
+  const { data: admins, loading: adminsLoading } = useApiCall(listAdmins, [])
+  const { data: auditoriumRequests, loading: requestsLoading } = useApiCall(listAuditoriumRequests, [])
+
+  // Update active tab when URL changes
+  useEffect(() => {
+    const tab = searchParams.get("tab") || "overview"
+    setActiveTab(tab)
+  }, [searchParams])
+
+  // Calculate real platform stats
+  const platformStats = {
+    totalVenues: tenants?.length || 0,
+    totalScreens: auditoriumRequests?.filter((req: any) => req.status === 'approved').length || 0,
+    totalRevenue: 45200.75, // TODO: Calculate from real booking data
+    totalUsers: (admins?.length || 0) + 12450, // TODO: Add customer count
+    activeBookings: 1834, // TODO: Calculate from real booking data
+    monthlyGrowth: 15.3, // TODO: Calculate from real data
+    topPerformingVenues: tenants?.slice(0, 3).map((tenant: any) => ({
+      name: tenant.name,
+      revenue: Math.random() * 10000, // TODO: Calculate from real data
+      bookings: Math.floor(Math.random() * 500), // TODO: Calculate from real data
+    })) || [],
+    recentActivity: [
+      { type: "venue_added", message: "New venue 'Sunset Cinema' added", time: "2 hours ago" },
+      { type: "high_revenue", message: "Downtown Cinema exceeded $1000 daily revenue", time: "4 hours ago" },
+      { type: "user_milestone", message: "Platform reached 12,000 registered users", time: "1 day ago" },
+    ],
+  }
 
   return (
     <div className="space-y-8">
@@ -41,12 +78,18 @@ export function SuperAdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 bg-secondary">
+        <TabsList className="grid w-full grid-cols-7 bg-secondary">
           <TabsTrigger
             value="overview"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             Overview
+          </TabsTrigger>
+          <TabsTrigger
+            value="users"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Users
           </TabsTrigger>
           <TabsTrigger
             value="venues"
@@ -55,10 +98,16 @@ export function SuperAdminDashboard() {
             Venues
           </TabsTrigger>
           <TabsTrigger
-            value="users"
+            value="auditorium-requests"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            Users
+            Requests
+          </TabsTrigger>
+          <TabsTrigger
+            value="auditorium-builder"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Builder
           </TabsTrigger>
           <TabsTrigger
             value="analytics"
@@ -153,7 +202,7 @@ export function SuperAdminDashboard() {
                 <CardTitle>Top Performing Venues</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {platformStats.topPerformingVenues.map((venue, index) => (
+                {platformStats.topPerformingVenues.map((venue: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                     <div className="space-y-1">
                       <p className="font-medium text-sm">{venue.name}</p>
@@ -187,12 +236,20 @@ export function SuperAdminDashboard() {
           </div>
         </TabsContent>
 
+        <TabsContent value="users">
+          <UserManagement />
+        </TabsContent>
+
         <TabsContent value="venues">
           <VenueManagement />
         </TabsContent>
 
-        <TabsContent value="users">
-          <UserManagement />
+        <TabsContent value="auditorium-requests">
+          <AuditoriumRequests />
+        </TabsContent>
+
+        <TabsContent value="auditorium-builder">
+          <AuditoriumBuilder />
         </TabsContent>
 
         <TabsContent value="analytics">

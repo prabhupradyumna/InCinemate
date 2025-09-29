@@ -1,42 +1,97 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosResponse } from 'axios';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api';
+
 export const api = axios.create({
   baseURL: BASE_URL,
   withCredentials: true,
+  timeout: 30000, // 30 seconds timeout
 });
 
-api.interceptors.request.use((config) => {
-  if (!((config.headers as any)['Content-Type'])) (config.headers as any)['Content-Type'] = 'application/json';
-  const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-  if (token) (config.headers as any).Authorization = `Bearer ${token}`;
-  return config;
-});
+// Request interceptor
+api.interceptors.request.use(
+  (config) => {
+    // Set default content type
+    if (!((config.headers as any)['Content-Type'])) {
+      (config.headers as any)['Content-Type'] = 'application/json';
+    }
+    
+    // Add authorization token
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (token) {
+      (config.headers as any).Authorization = `Bearer ${token}`;
+    }
+    
+    // Add request timestamp for debugging
+    (config as any).requestTimestamp = Date.now();
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
-let isRefreshing = false as boolean;
+// Response interceptor
+let isRefreshing = false;
 let pendingResolvers: Array<() => void> = [];
 
 api.interceptors.response.use(
-  (res) => res,
-  async (error) => {
+  (response: AxiosResponse) => {
+    // Log response time for debugging
+    const requestTimestamp = (response.config as any).requestTimestamp;
+    if (requestTimestamp) {
+      const responseTime = Date.now() - requestTimestamp;
+      console.log(`API Response time: ${responseTime}ms for ${response.config.method?.toUpperCase()} ${response.config.url}`);
+    }
+    
+    return response;
+  },
+  async (error: AxiosError) => {
     const original = error.config as any;
+    
+    // Handle 401 errors with token refresh
     if (error?.response?.status === 401 && !original._retry) {
       if (isRefreshing) {
         await new Promise<void>((resolve) => pendingResolvers.push(resolve));
         original._retry = true;
         return api(original);
       }
+      
       isRefreshing = true;
       original._retry = true;
+      
       try {
         const ok = await refreshToken();
         pendingResolvers.forEach((r) => r());
         pendingResolvers = [];
         return ok ? api(original) : Promise.reject(error);
+      } catch (refreshError) {
+        // If refresh fails, clear token and redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('screenlease_user');
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
+    
+    // Handle other errors
+    if (error.response) {
+      // Server responded with error status
+      const errorMessage = (error.response.data as any)?.message || (error.response.data as any)?.error || 'An error occurred';
+      console.error(`API Error ${error.response.status}:`, errorMessage);
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('Network Error:', error.message);
+    } else {
+      // Something else happened
+      console.error('Request Error:', error.message);
+    }
+    
     return Promise.reject(error);
   }
 );

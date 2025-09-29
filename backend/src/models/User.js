@@ -19,7 +19,7 @@ export function defineUser(sequelize) {
         allowNull: false,
       },
       role: {
-        type: DataTypes.ENUM('super_admin', 'admin', 'customer'),
+        type: DataTypes.ENUM('super_admin', 'admin', 'customer', 'ticket_checker'),
         allowNull: false,
         defaultValue: 'customer',
       },

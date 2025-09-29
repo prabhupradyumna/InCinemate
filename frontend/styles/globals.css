@@ -123,3 +123,31 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sidebar menu item styles for better visuals */
+.menu-item {
+  @apply flex items-center gap-3 rounded-md px-3 py-2 text-sm text-foreground/80 hover:bg-secondary hover:text-foreground transition-colors;
+  line-height: 1.25rem;
+}
+.menu-item-icon-size {
+  @apply inline-flex h-5 w-5 items-center justify-center text-muted-foreground;
+}
+.menu-item-text {
+  @apply font-medium truncate;
+}
+
+/* Active/hover states and subtle separators */
+.menu-item:hover .menu-item-icon-size {
+  @apply text-foreground;
+}
+.menu-item-active {
+  @apply bg-secondary text-foreground;
+}
+.menu-section-title {
+  @apply px-3 pt-2 pb-1 text-xs uppercase tracking-wide text-muted-foreground/70;
+}
+
+/* Add separators between items for clearer grouping */
+.menu-item + .menu-item {
+  @apply border-t border-border/50;
+}

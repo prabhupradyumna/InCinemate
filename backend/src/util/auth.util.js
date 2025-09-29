@@ -66,3 +66,23 @@ export const verifyRefreshToken = (token) => {
     throw error
   }
 }
+
+export const generateTemporaryPassword = () => {
+  // Generate a secure temporary password
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
+  let password = ''
+  
+  // Ensure at least one character from each category
+  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)] // uppercase
+  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)] // lowercase
+  password += '0123456789'[Math.floor(Math.random() * 10)] // number
+  password += '!@#$%^&*'[Math.floor(Math.random() * 8)] // special char
+  
+  // Fill the rest randomly
+  for (let i = 4; i < 12; i++) {
+    password += chars[Math.floor(Math.random() * chars.length)]
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('')
+}

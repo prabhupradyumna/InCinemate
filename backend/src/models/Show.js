@@ -4,52 +4,72 @@ export function defineShow(sequelize) {
   return sequelize.define(
     'Show',
     {
-      tenantId: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        index: true,
-      },
       id: {
         type: DataTypes.UUID,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true,
       },
-      movieTitle: {
-        type: DataTypes.STRING,
+      movie_id: {
+        type: DataTypes.UUID,
         allowNull: false,
+        references: {
+          model: 'movies',
+          key: 'id'
+        },
+        comment: 'Reference to the movie being shown'
       },
-      venueName: {
-        type: DataTypes.STRING,
+      auditorium_id: {
+        type: DataTypes.UUID,
         allowNull: false,
+        references: {
+          model: 'auditoriums',
+          key: 'id'
+        },
+        comment: 'Reference to the auditorium where show is running'
       },
-      screenName: {
-        type: DataTypes.STRING,
+      show_datetime: {
+        type: DataTypes.DATE,
         allowNull: false,
+        comment: 'Date and time of the show'
       },
-      showDate: {
-        type: DataTypes.DATEONLY,
+      pricing: {
+        type: DataTypes.JSONB,
         allowNull: false,
-      },
-      showTime: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      pricingPremium: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        defaultValue: 20,
-      },
-      pricingRegular: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        defaultValue: 10,
+        comment: 'Dynamic pricing structure: { "Standard": 250, "VIP": 500 } or { "row_A": 300, "row_B": 250 }'
       },
       status: {
-        type: DataTypes.ENUM('pending', 'approved', 'live', 'completed'),
+        type: DataTypes.ENUM('scheduled', 'live', 'completed', 'cancelled'),
         allowNull: false,
-        defaultValue: 'pending',
+        defaultValue: 'scheduled',
+      },
+      tenant_id: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        index: true,
+        comment: 'Admin tenant who scheduled this show'
+      },
+      created_by: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        comment: 'Admin user who created this show'
       },
     },
-    { tableName: 'shows' },
+    { 
+      tableName: 'shows',
+      indexes: [
+        {
+          fields: ['tenant_id', 'status']
+        },
+        {
+          fields: ['movie_id']
+        },
+        {
+          fields: ['auditorium_id']
+        },
+        {
+          fields: ['show_datetime']
+        }
+      ]
+    },
   )
 }

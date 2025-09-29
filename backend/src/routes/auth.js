@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import AuthController from '../controller/auth.controller.js'
-import { authenticate } from '../middleware/auth.middleware.js'
+import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
 import TokenCacheService from '../services/tokenCache.js'
 
 const router = Router()
@@ -15,7 +15,7 @@ router.post('/logout', AuthController.logout)
 router.get('/me', authenticate, AuthController.getCurrentUser)
 
 // Cache management routes (admin only)
-router.get('/cache/stats', authenticate, async (req, res) => {
+router.get('/cache/stats', authenticate, authorizeRoles('admin', 'super_admin'), async (req, res) => {
   try {
     const stats = await TokenCacheService.getCacheStats()
     res.json({ data: stats, message: 'Cache statistics retrieved' })
@@ -24,13 +24,8 @@ router.get('/cache/stats', authenticate, async (req, res) => {
   }
 })
 
-router.post('/cache/clear', authenticate, async (req, res) => {
+router.post('/cache/clear', authenticate, authorizeRoles('super_admin'), async (req, res) => {
   try {
-    // Only allow super admin to clear cache
-    if (req.user.role !== 'super_admin') {
-      return res.status(403).json({ success: false, message: 'Only super admin can clear cache' })
-    }
-    
     await TokenCacheService.clearAllTokenCache()
     res.json({ message: 'Token cache cleared successfully' })
   } catch (error) {

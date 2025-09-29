@@ -1,11 +1,16 @@
 import { Router } from 'express'
 import { defineBooking } from '../models/Booking.js'
 import { defineShow } from '../models/Show.js'
+import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
 
 export function createBookingsRouter() {
   const router = Router()
 
-  router.get('/', async (req, res) => {
+  // All booking routes require authentication
+  router.use(authenticate)
+
+  // GET /bookings - accessible by admin, super_admin, and customer (for their own bookings)
+  router.get('/', authorizeRoles('admin', 'super_admin', 'customer'), async (req, res) => {
     const sequelize = req.db
     const Booking = defineBooking(sequelize)
     await Booking.sync()
@@ -14,7 +19,8 @@ export function createBookingsRouter() {
     res.json(bookings)
   })
 
-  router.post('/', async (req, res) => {
+  // POST /bookings - accessible by admin, super_admin, and customer (for creating bookings)
+  router.post('/', authorizeRoles('admin', 'super_admin', 'customer'), async (req, res) => {
     const sequelize = req.db
     const Booking = defineBooking(sequelize)
     const Show = defineShow(sequelize)

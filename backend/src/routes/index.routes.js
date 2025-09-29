@@ -1,5 +1,9 @@
 import { Router } from 'express'
 import authRoutes from './auth.js'
+import superadminRoutes from './superadmin.js'
+import adminRoutes from './admin.js'
+import customerRoutes from './customer.js'
+import publicRoutes from './public.js'
 import { createShowsRouter } from './shows.js'
 import { createBookingsRouter } from './bookings.js'
 
@@ -22,6 +26,12 @@ router.get('/health/db', async (req, res) => {
 
 // API Routes
 router.use('/auth', authRoutes)
+router.use('/superadmin', superadminRoutes)
+router.use('/admin', adminRoutes)
+router.use('/customer', customerRoutes)
+router.use('/public', publicRoutes)
+
+// Legacy routes (for backward compatibility)
 router.use('/shows', createShowsRouter())
 router.use('/bookings', createBookingsRouter())
 

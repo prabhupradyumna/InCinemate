@@ -1,4 +1,7 @@
 import { Sequelize } from 'sequelize'
+import dotenv from "dotenv";
+dotenv.config();
+import { setupAssociations } from './models/associations.js'
 
 // Prefer DATABASE_URL; fall back to legacy env names if provided
 const databaseUrl =
@@ -24,3 +27,6 @@ export const sequelize = new Sequelize(databaseUrl, {
   pool,
   retry: { max: Number(process.env.DB_RETRY_MAX || 3) },
 })
+
+// Initialize models and associations
+export const models = setupAssociations(sequelize)

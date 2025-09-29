@@ -131,16 +131,16 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
       {/* Booking Summary */}
       <Card className="bg-card border-border sticky top-24">
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-base md:text-lg">
             <span>Booking Summary</span>
-            <Badge variant="outline">Step {step === "summary" ? "1" : step === "details" ? "2" : "3"} of 3</Badge>
+            <Badge variant="outline" className="text-xs">Step {step === "summary" ? "1" : step === "details" ? "2" : "3"} of 3</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 md:space-y-4">
           {/* Movie Details */}
           <div className="space-y-2">
-            <h3 className="font-semibold">{showData.movie.title}</h3>
-            <div className="space-y-1 text-sm text-muted-foreground">
+            <h3 className="font-semibold text-sm md:text-base">{showData.movie.title}</h3>
+            <div className="space-y-1 text-xs md:text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <MapPin className="h-3 w-3" />
                 <span>{showData.venue.name}</span>
@@ -161,10 +161,10 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
           {/* Selected Seats */}
           {mockSelectedSeats.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium">Selected Seats</h4>
+              <h4 className="font-medium text-sm md:text-base">Selected Seats</h4>
               <div className="space-y-1">
                 {mockSelectedSeats.map((seat, index) => (
-                  <div key={index} className="flex justify-between text-sm">
+                  <div key={index} className="flex justify-between text-xs md:text-sm">
                     <span>
                       {seat.row}
                       {seat.seat} ({seat.type})
@@ -180,16 +180,16 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
 
           {/* Price Breakdown */}
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs md:text-sm">
               <span>Subtotal</span>
               <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-xs md:text-sm">
               <span>Convenience Fee</span>
               <span>${convenienceFee.toFixed(2)}</span>
             </div>
             <Separator />
-            <div className="flex justify-between font-semibold">
+            <div className="flex justify-between font-semibold text-sm md:text-base">
               <span>Total</span>
               <span className="text-primary">${total.toFixed(2)}</span>
             </div>
@@ -200,7 +200,7 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
             <>
               <Separator />
               <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2">
+                <h4 className="font-medium flex items-center gap-2 text-sm md:text-base">
                   <User className="h-4 w-4" />
                   Customer Details
                 </h4>
@@ -254,7 +254,7 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
             <>
               <Separator />
               <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2">
+                <h4 className="font-medium flex items-center gap-2 text-sm md:text-base">
                   <CreditCard className="h-4 w-4" />
                   Payment Details
                 </h4>

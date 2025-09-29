@@ -1,79 +1,37 @@
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Clock, Calendar } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
 import Link from "next/link"
-import { formatDate } from "@/lib/utils"
-
-interface Movie {
-  id: string
-  title: string
-  genre: string
-  duration: number
-  rating: string
-  releaseDate: string
-  posterUrl: string
-  director: string
-  cast: string[]
-  description: string
-  showtimes: string[]
-  price: string
-}
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface MovieCardProps {
-  movie: Movie
+  movie: {
+    id: string
+    title: string
+    posterUrl: string
+  }
 }
 
 export function MovieCard({ movie }: MovieCardProps) {
   return (
-    <Card className="movie-card-hover bg-card border-border overflow-hidden">
-      <div className="relative aspect-[2/3] overflow-hidden">
-        <Image src={movie.posterUrl || "/placeholder.svg"} alt={movie.title} fill className="object-cover" />
-        <div className="absolute top-4 right-4">
-          <Badge variant="secondary" className="bg-black/70 text-white">
-            {movie.rating}
-          </Badge>
-        </div>
-      </div>
-
-      <CardContent className="p-4 space-y-3">
-        <div className="space-y-2">
-          <h3 className="font-semibold text-lg text-balance leading-tight">{movie.title}</h3>
-          <p className="text-sm text-muted-foreground">{movie.genre}</p>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            <span>{movie.duration}m</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            <span>{formatDate(movie.releaseDate)}</span>
+    <Link href={`/movie/${movie.id}`} className="block">
+      <Card className="group bg-card border-border overflow-hidden transition-transform duration-200 hover:shadow-md hover:-translate-y-0.5 active:scale-95">
+        <div className="relative">
+          <div className="relative w-full h-[180px] sm:h-[210px] md:h-[270px]">
+            <Image
+              src={movie.posterUrl || "/placeholder.svg"}
+              alt={movie.title}
+              fill
+              sizes="(max-width: 640px) 120px, (max-width: 768px) 140px, 180px"
+              className="object-cover"
+              placeholder="empty"
+            />
           </div>
         </div>
 
-        <p className="text-sm text-muted-foreground line-clamp-2">{movie.description}</p>
-
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Showtimes:</p>
-          <div className="flex flex-wrap gap-2">
-            {movie.showtimes.map((time, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {time}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <div className="text-lg font-semibold text-primary">{movie.price}</div>
-        <Link href={`/booking/${movie.id}`}>
-          <Button className="bg-primary hover:bg-primary/90">Book Now</Button>
-        </Link>
-      </CardFooter>
-    </Card>
+        <CardContent className="p-3 md:p-4">
+          <h3 className="font-semibold text-sm sm:text-base md:text-lg leading-tight truncate">{movie.title}</h3>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }

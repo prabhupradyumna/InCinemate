@@ -1,108 +1,89 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { MovieCard } from "@/components/movie-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { HeroCarousel } from "@/components/hero-carousel"
 
-// Mock data - in real app this would come from API
-const movies = [
-  {
-    id: "1",
-    title: "The Dark Knight Returns",
-    genre: "Action/Drama",
-    duration: 165,
-    rating: "PG-13",
-    releaseDate: "2024-12-15",
-    posterUrl: "/dark-knight-poster.png",
-    director: "Christopher Nolan",
-    cast: ["Christian Bale", "Heath Ledger", "Aaron Eckhart"],
-    description: "Batman faces his greatest challenge yet in this epic conclusion to the trilogy.",
-    showtimes: ["7:00 PM", "10:00 PM"],
-    price: "$12.00",
-  },
-  {
-    id: "2",
-    title: "Cosmic Journey",
-    genre: "Sci-Fi/Adventure",
-    duration: 142,
-    rating: "PG-13",
-    releaseDate: "2024-12-20",
-    posterUrl: "/space-adventure-movie-poster.jpg",
-    director: "Denis Villeneuve",
-    cast: ["Ryan Gosling", "Emma Stone", "Oscar Isaac"],
-    description: "A thrilling space adventure that takes audiences to the edge of the universe.",
-    showtimes: ["8:00 PM"],
-    price: "$14.00",
-  },
-  {
-    id: "3",
-    title: "Love in Paris",
-    genre: "Romance/Comedy",
-    duration: 118,
-    rating: "PG",
-    releaseDate: "2024-12-25",
-    posterUrl: "/romantic-paris-movie-poster.jpg",
-    director: "Nancy Meyers",
-    cast: ["Anne Hathaway", "Hugh Jackman", "Meryl Streep"],
-    description: "A romantic comedy set in the beautiful streets of Paris.",
-    showtimes: ["6:30 PM", "9:15 PM"],
-    price: "$10.00",
-  },
-]
+type PublicMovie = {
+  id: string
+  title: string
+  poster_url: string
+  genres: string[]
+  duration: string
+  release_date: string
+  rating: number
+}
 
 const genres = ["All", "Action", "Comedy", "Drama", "Sci-Fi", "Romance", "Thriller"]
 
 export function MovieBrowser() {
   const [selectedGenre, setSelectedGenre] = useState("All")
-  const [filteredMovies, setFilteredMovies] = useState(movies)
+  const [allMovies, setAllMovies] = useState<PublicMovie[]>([])
+
+  useEffect(() => {
+    fetch("/Movie_data/movies_dummy_dataset.json")
+      .then((r) => r.json())
+      .then((data: PublicMovie[]) => setAllMovies(data))
+      .catch(() => setAllMovies([]))
+  }, [])
 
   const handleGenreFilter = (genre: string) => {
     setSelectedGenre(genre)
-    if (genre === "All") {
-      setFilteredMovies(movies)
-    } else {
-      setFilteredMovies(movies.filter((movie) => movie.genre.includes(genre)))
-    }
   }
+
+  const nowShowing = allMovies.slice(0, 10)
+  const comingSoon = allMovies.slice(10, 20)
+  const trending = allMovies.slice(20, 30)
 
   return (
     <div className="space-y-8">
-      {/* Hero Section */}
-      <section className="text-center space-y-4 py-12">
-        <h1 className="text-4xl md:text-6xl font-bold text-balance">Experience Cinema Like Never Before</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto text-pretty">
-          Book your tickets for the latest blockbusters and indie films at premium theaters near you
-        </p>
-        <Button size="lg" className="cinema-glow">
-          Explore Movies
-        </Button>
-      </section>
+      {/* Hero Carousel */}
+      <HeroCarousel movies={allMovies} />
 
-      {/* Filters */}
-      <section className="space-y-4">
-        <h2 className="text-2xl font-semibold">Now Showing</h2>
-        <div className="flex flex-wrap gap-2">
-          {genres.map((genre) => (
-            <Badge
-              key={genre}
-              variant={selectedGenre === genre ? "default" : "secondary"}
-              className={`cursor-pointer transition-colors ${
-                selectedGenre === genre ? "bg-primary text-primary-foreground" : "hover:bg-primary/20"
-              }`}
-              onClick={() => handleGenreFilter(genre)}
-            >
-              {genre}
-            </Badge>
+      {/* Now Showing */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl md:text-2xl font-semibold">Now Showing</h2>
+          <Link href="#" className="text-sm text-primary hover:underline">View All</Link>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+          {nowShowing.map((m) => (
+            <MovieCard key={m.id} movie={{ id: m.id, title: m.title, posterUrl: m.poster_url }} />
           ))}
         </div>
       </section>
 
-      {/* Movie Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredMovies.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} />
-        ))}
+      {/* Coming Soon */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl md:text-2xl font-semibold">Coming Soon</h2>
+          <Link href="#" className="text-sm text-primary hover:underline">View All</Link>
+        </div>
+        <div className="-mx-4 px-4 overflow-x-auto scrollbar-none">
+          <div className="grid grid-flow-col auto-cols-[120px] sm:auto-cols-[140px] md:auto-cols-[180px] gap-3 md:gap-4">
+            {comingSoon.map((m) => (
+              <MovieCard key={`up-${m.id}`} movie={{ id: m.id, title: m.title, posterUrl: m.poster_url }} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Trending / Recommended */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl md:text-2xl font-semibold">Trending</h2>
+          <Link href="#" className="text-sm text-primary hover:underline">View All</Link>
+        </div>
+        <div className="-mx-4 px-4 overflow-x-auto scrollbar-none">
+          <div className="grid grid-flow-col auto-cols-[120px] sm:auto-cols-[140px] md:auto-cols-[180px] gap-3 md:gap-4">
+            {trending.map((m) => (
+              <MovieCard key={`tr-${m.id}`} movie={{ id: m.id, title: m.title, posterUrl: m.poster_url }} />
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Load More */}

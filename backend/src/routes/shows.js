@@ -1,10 +1,15 @@
 import { Router } from 'express'
 import { defineShow } from '../models/Show.js'
+import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
 
 export function createShowsRouter() {
   const router = Router()
 
-  router.get('/', async (req, res) => {
+  // All show routes require authentication
+  router.use(authenticate)
+
+  // GET /shows - accessible by all authenticated users (public viewing)
+  router.get('/', authorizeRoles('admin', 'super_admin', 'customer', 'ticket_checker'), async (req, res) => {
     const sequelize = req.db
     const Show = defineShow(sequelize)
     await Show.sync()
@@ -13,7 +18,8 @@ export function createShowsRouter() {
     res.json(shows)
   })
 
-  router.post('/', async (req, res) => {
+  // POST /shows - only admin and super_admin can create shows
+  router.post('/', authorizeRoles('admin', 'super_admin'), async (req, res) => {
     const sequelize = req.db
     const Show = defineShow(sequelize)
     await Show.sync()

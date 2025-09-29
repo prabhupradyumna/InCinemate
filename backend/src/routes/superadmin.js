@@ -1,23 +1,12 @@
 import { Router } from 'express'
 import SuperadminController from '../controller/superadmin.controller.js'
-import { authenticate } from '../middleware/auth.middleware.js'
+import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
 
 const router = Router()
 
-// All routes require super admin authentication
+// All routes require super admin authentication and authorization
 router.use(authenticate)
-
-// Middleware to ensure only super admin can access these routes
-router.use((req, res, next) => {
-  if (req.user.role !== 'super_admin') {
-    return res.status(403).json({
-      success: false,
-      error: 'Access denied. Super admin role required.',
-      message: 'Forbidden'
-    })
-  }
-  next()
-})
+router.use(authorizeRoles('super_admin'))
 
 // ==============================
 // ADMIN MANAGEMENT ROUTES
@@ -72,7 +61,17 @@ router.get('/tenants', SuperadminController.listTenants)
 // List all auditorium requests
 router.get('/auditorium-requests', SuperadminController.listAuditoriumRequests)
 
+// Get specific auditorium request
+router.get('/auditorium-requests/:id', SuperadminController.getAuditoriumRequest)
+
 // Update auditorium request status (approve/reject)
 router.put('/auditorium-requests/:id/status', SuperadminController.updateAuditoriumRequestStatus)
+
+// ==============================
+// AUDITORIUM CONFIGURATION ROUTES
+// ==============================
+
+// Create auditorium configuration from approved request
+router.post('/auditoriums/configure', SuperadminController.createAuditoriumConfiguration)
 
 export default router

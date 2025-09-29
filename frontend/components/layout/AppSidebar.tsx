@@ -13,6 +13,11 @@ import {
   Users,
   LogOut,
   Home,
+  Building2,
+  BarChart3,
+  FileText,
+  Shield,
+  Wrench,
 } from "lucide-react";
 
 type NavItem = {
@@ -40,13 +45,30 @@ export default function AppSidebar() {
         },
         {
           icon: <Users className="h-4 w-4" />,
-          name: "Users",
-          path: "/super-admin",
+          name: "User Management",
+          subItems: [
+            { name: "Admins", path: "/super-admin?tab=users", icon: <Shield className="h-3 w-3" /> },
+            { name: "Customers", path: "/super-admin?tab=customers", icon: <Users className="h-3 w-3" /> },
+          ],
+        },
+        {
+          icon: <Building2 className="h-4 w-4" />,
+          name: "Venue Management",
+          subItems: [
+            { name: "All Venues", path: "/super-admin?tab=venues", icon: <Building2 className="h-3 w-3" /> },
+            { name: "Auditorium Requests", path: "/super-admin?tab=auditorium-requests", icon: <FileText className="h-3 w-3" /> },
+            { name: "Auditorium Builder", path: "/super-admin?tab=auditorium-builder", icon: <Wrench className="h-3 w-3" /> },
+          ],
+        },
+        {
+          icon: <BarChart3 className="h-4 w-4" />,
+          name: "Analytics",
+          path: "/super-admin?tab=analytics",
         },
         {
           icon: <Settings className="h-4 w-4" />,
           name: "Settings",
-          path: "/super-admin",
+          path: "/super-admin?tab=settings",
         },
         {
           icon: <LogOut className="h-4 w-4" />,

@@ -7,8 +7,11 @@ import { defineTheatre } from './Theatre.js'
 import { defineAuditoriumRequest } from './AuditoriumRequest.js'
 import { defineAuditorium } from './Auditorium.js'
 import { defineSeat } from './Seat.js'
+import { defineMovie } from './Movie.js'
 import { defineShow } from './Show.js'
 import { defineBooking } from './Booking.js'
+import { defineBookedSeat } from './BookedSeat.js'
+import { defineCoupon } from './Coupon.js'
 
 export function setupAssociations(sequelize) {
   // Define all models
@@ -21,8 +24,11 @@ export function setupAssociations(sequelize) {
   const AuditoriumRequest = defineAuditoriumRequest(sequelize)
   const Auditorium = defineAuditorium(sequelize)
   const Seat = defineSeat(sequelize)
+  const Movie = defineMovie(sequelize)
   const Show = defineShow(sequelize)
   const Booking = defineBooking(sequelize)
+  const BookedSeat = defineBookedSeat(sequelize)
+  const Coupon = defineCoupon(sequelize)
 
   // User & Tenant associations
   Tenant.hasMany(User, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
@@ -70,19 +76,49 @@ export function setupAssociations(sequelize) {
   User.hasMany(AuditoriumRequest, { foreignKey: 'approved_by', as: 'approvedRequests' })
   AuditoriumRequest.belongsTo(User, { foreignKey: 'approved_by', as: 'approvedBy' })
 
-  // Show associations (existing)
+  // Movie associations
+  Tenant.hasMany(Movie, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+  Movie.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+
+  // Show associations (updated)
+  Movie.hasMany(Show, { foreignKey: 'movie_id' })
+  Show.belongsTo(Movie, { foreignKey: 'movie_id' })
+
   Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
   Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
 
   Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
   Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
 
-  // Booking associations (existing)
+  User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
+  Show.belongsTo(User, { foreignKey: 'created_by', as: 'createdBy' })
+
+  // Booking associations (updated)
   User.hasMany(Booking, { foreignKey: 'customer_id', as: 'customerBookings' })
   Booking.belongsTo(User, { foreignKey: 'customer_id', as: 'customer' })
 
   Show.hasMany(Booking, { foreignKey: 'show_id' })
   Booking.belongsTo(Show, { foreignKey: 'show_id' })
+
+  Tenant.hasMany(Booking, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+  Booking.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+
+  // BookedSeat associations (many-to-many between Booking and Seat)
+  Booking.belongsToMany(Seat, { through: BookedSeat, foreignKey: 'booking_id' })
+  Seat.belongsToMany(Booking, { through: BookedSeat, foreignKey: 'seat_id' })
+
+  BookedSeat.belongsTo(Booking, { foreignKey: 'booking_id' })
+  BookedSeat.belongsTo(Seat, { foreignKey: 'seat_id' })
+
+  // Coupon associations
+  Tenant.hasMany(Coupon, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+  Coupon.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+
+  User.hasMany(Coupon, { foreignKey: 'created_by', as: 'createdCoupons' })
+  Coupon.belongsTo(User, { foreignKey: 'created_by', as: 'createdBy' })
+
+  Booking.belongsTo(Coupon, { foreignKey: 'coupon_id' })
+  Coupon.hasMany(Booking, { foreignKey: 'coupon_id' })
 
   return {
     User,
@@ -94,7 +130,10 @@ export function setupAssociations(sequelize) {
     AuditoriumRequest,
     Auditorium,
     Seat,
+    Movie,
     Show,
-    Booking
+    Booking,
+    BookedSeat,
+    Coupon
   }
 }

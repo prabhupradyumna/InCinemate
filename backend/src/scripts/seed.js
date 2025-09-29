@@ -16,27 +16,27 @@ async function seed() {
     // Create super admin
     const superAdminExists = await User.findOne({ where: { role: 'super_admin' } })
     if (!superAdminExists) {
-      const hashedPassword = await hashPassword('admin123')
+      const hashedPassword = await hashPassword('123')
       await User.create({
-        email: 'superadmin@inflow.com',
+        email: 'superadmin@gmail.com',
         password_hash: hashedPassword,
         role: 'super_admin',
         full_name: 'Super Administrator',
         phone: '+1234567890',
       })
-      console.log('✅ Super admin created: superadmin@inflow.com / admin123')
+      console.log('✅ Super admin created: superadmin@gmail.com / 123')
     } else {
       console.log('ℹ️  Super admin already exists')
     }
     
     // Create sample tenant
-    const tenantExists = await Tenant.findOne({ where: { tenant_id: 'acme' } })
+    const tenantExists = await Tenant.findOne({ where: { tenant_id: 'client1' } })
     if (!tenantExists) {
       await Tenant.create({
-        tenant_id: 'acme',
-        name: 'ACME Cinema Chain',
+        tenant_id: 'client1',
+        name: 'Sunmatrix',
         owner_name: 'John Doe',
-        email: 'admin@acme.com',
+        email: 'client1@gmail.com',
         phone: '+1234567891',
         address: '123 Main St',
         city: 'New York',
@@ -44,32 +44,32 @@ async function seed() {
         country: 'USA',
         postal_code: '10001',
       })
-      console.log('✅ Tenant created: acme')
+      console.log('✅ Tenant created: client1')
     } else {
-      console.log('ℹ️  Tenant acme already exists')
+      console.log('ℹ️  Tenant client1 already exists')
     }
     
     // Create sample admin for acme tenant (email can be anything)
-    const adminExists = await User.findOne({ where: { email: 'admin@acme.com' } })
+    const adminExists = await User.findOne({ where: { email: 'client1@gmail.com' } })
     if (!adminExists) {
-      const hashedPassword = await hashPassword('admin123')
+      const hashedPassword = await hashPassword('123')
       await User.create({
-        email: 'admin@acme.com',
+        email: 'client1@gmail.com',
         password_hash: hashedPassword,
         role: 'admin',
-        tenant_id: 'acme',
-        full_name: 'ACME Admin',
+        tenant_id: 'client1',
+        full_name: 'Client1',
         phone: '+1234567891',
       })
-      console.log('✅ Admin created: admin@acme.com / admin123 (tenant: acme)')
+      console.log('✅ Admin created: client1@gmail.com / 123 (tenant: acme)')
     } else {
       console.log('ℹ️  Admin for acme already exists')
     }
     
     console.log('🎉 Seed completed successfully!')
     console.log('\n📋 Login Credentials:')
-    console.log('Super Admin: superadmin@inflow.com / admin123')
-    console.log('ACME Admin: admin@acme.com / admin123 (tenant: acme)')
+    console.log('Super Admin: superadmin@gmail.com / 123')
+    console.log('ACME Admin: client1@gmail.com / 123 (tenant: acme)')
     
   } catch (error) {
     console.error('❌ Seed failed:', error)

@@ -59,10 +59,10 @@ export default class SuperadminController {
     try {
       const { email, full_name, phone, tenant_id, password } = req.body
 
-      if (!email || !full_name || !tenant_id) {
+      if (!email || !full_name || !tenant_id || !password) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          error: 'Email, full name, and tenant ID are required',
+          error: 'Email, full name, tenant ID and password are required',
           message: 'Admin creation failed'
         })
       }
@@ -92,8 +92,15 @@ export default class SuperadminController {
         })
       }
 
-      // Use provided password (dev convenience) or generate a temporary one
-      const plainPassword = password && String(password).trim().length >= 6 ? String(password).trim() : generateTemporaryPassword()
+      // Use provided password only (min length validation)
+      const plainPassword = String(password).trim()
+      if (plainPassword.length < 6) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'Password must be at least 6 characters',
+          message: 'Admin creation failed'
+        })
+      }
       const passwordHash = await hashPassword(plainPassword)
 
       // Create admin user
@@ -107,8 +114,7 @@ export default class SuperadminController {
         is_active: true
       })
 
-      // TODO: Send welcome email with credentials
-      console.log(`Admin created: ${email}. Temporary/dev password available in response (do not expose in prod).`)
+      // TODO: Send welcome email with credentials (handled separately)
 
       return res.status(HTTP_STATUS.CREATED).json({
         data: {
@@ -117,8 +123,7 @@ export default class SuperadminController {
           full_name: admin.full_name,
           phone: admin.phone,
           tenant_id: admin.tenant_id,
-          role: admin.role,
-          temporary_password: plainPassword // Dev-only; remove in production
+          role: admin.role
         },
         message: 'Admin created successfully'
       })
@@ -137,11 +142,19 @@ export default class SuperadminController {
     try {
       const sequelize = req.db
       const User = defineUser(sequelize)
-      await User.sync()
+      const Tenant = defineTenant(sequelize)
+      await Promise.all([User.sync(), Tenant.sync()])
+
+      // Ensure association on this sequelize instance
+      if (!('Tenant' in User.associations)) {
+        Tenant.hasMany(User, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+        User.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+      }
 
       const admins = await User.findAll({
         where: { role: ROLES.ADMIN },
-        attributes: ['id', 'email', 'full_name', 'phone', 'tenant_id', 'is_active', 'createdAt']
+        attributes: ['id', 'email', 'full_name', 'phone', 'tenant_id', 'is_active', 'createdAt'],
+        include: [{ model: Tenant, attributes: ['tenant_id', 'name'] }]
       })
 
       return res.json({
@@ -583,6 +596,161 @@ export default class SuperadminController {
         success: false,
         error: err.message,
         message: 'Request update failed'
+      })
+    }
+  }
+
+  // ==============================
+  // AUDITORIUM CONFIGURATION
+  // ==============================
+
+  static async createAuditoriumConfiguration(req, res) {
+    try {
+      const { request_id, theatre_id, name, seat_map, total_seats, configuration } = req.body
+
+      if (!theatre_id || !name || !seat_map || !Array.isArray(seat_map)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'Missing required fields: theatre_id, name, and seat_map array',
+          message: 'Auditorium configuration failed'
+        })
+      }
+
+      const sequelize = req.db
+      const AuditoriumRequest = defineAuditoriumRequest(sequelize)
+      const Auditorium = defineAuditorium(sequelize)
+      const Seat = defineSeat(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      
+      await Promise.all([
+        AuditoriumRequest.sync(),
+        Auditorium.sync(),
+        Seat.sync(),
+        Theatre.sync()
+      ])
+
+      // Verify the theatre exists
+      const theatre = await Theatre.findByPk(theatre_id)
+      if (!theatre) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Theatre not found',
+          message: 'Configuration failed'
+        })
+      }
+
+      // If request_id is provided, verify the request exists and is approved
+      let request = null
+      if (request_id && !request_id.startsWith('manual-')) {
+        request = await AuditoriumRequest.findByPk(request_id)
+        if (!request) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            error: 'Auditorium request not found',
+            message: 'Configuration failed'
+          })
+        }
+
+        if (request.status !== 'approved') {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            error: 'Auditorium request must be approved before configuration',
+            message: 'Configuration failed'
+          })
+        }
+      }
+
+      // Create the auditorium
+      const auditorium = await Auditorium.create({
+        theatre_id,
+        name,
+        total_seats: total_seats || seat_map.length,
+        configuration: configuration || {},
+        is_active: true
+      })
+
+      // Create all seats
+      const seatPromises = seat_map.map(seatData => 
+        Seat.create({
+          auditorium_id: auditorium.id,
+          row: seatData.row,
+          number: seatData.number,
+          category: seatData.category,
+          x_position: seatData.x_position,
+          y_position: seatData.y_position,
+          is_active: seatData.is_active !== false
+        })
+      )
+
+      await Promise.all(seatPromises)
+
+      // Update the request status to 'configured' if it exists
+      if (request) {
+        await request.update({
+          status: 'configured',
+          configured_at: new Date(),
+          configured_by: req.user.userId
+        })
+      }
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        data: {
+          auditorium,
+          seats_created: seat_map.length,
+          request_updated: true
+        },
+        message: 'Auditorium configuration created successfully'
+      })
+
+    } catch (err) {
+      console.error(`[SuperadminController]-[createAuditoriumConfiguration]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Auditorium configuration failed'
+      })
+    }
+  }
+
+  static async getAuditoriumRequest(req, res) {
+    try {
+      const { id } = req.params
+
+      const sequelize = req.db
+      const AuditoriumRequest = defineAuditoriumRequest(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      
+      await Promise.all([
+        AuditoriumRequest.sync(),
+        Theatre.sync()
+      ])
+
+      const request = await AuditoriumRequest.findByPk(id, {
+        include: [{
+          model: Theatre,
+          attributes: ['id', 'name', 'address', 'city', 'state', 'country']
+        }]
+      })
+
+      if (!request) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Auditorium request not found',
+          message: 'Request retrieval failed'
+        })
+      }
+
+      return res.json({
+        data: request,
+        message: 'Auditorium request retrieved successfully'
+      })
+
+    } catch (err) {
+      console.error(`[SuperadminController]-[getAuditoriumRequest]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Request retrieval failed'
       })
     }
   }

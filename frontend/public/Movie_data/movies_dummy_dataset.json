@@ -1,0 +1,853 @@
+[
+  {
+    "id": "movie_001",
+    "title": "The Dark Knight",
+    "languages": ["English"],
+    "duration": "2h 32m",
+    "genres": ["Action", "Crime", "Drama"],
+    "release_date": "2008-07-18",
+    "rating": 9.0,
+    "votes": "2.5M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/dqK9Hag1054tghRQSqLSfrkvQnA.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_002",
+    "title": "Interstellar",
+    "languages": ["English"],
+    "duration": "2h 49m",
+    "genres": ["Sci-Fi", "Adventure", "Drama"],
+    "release_date": "2014-11-07",
+    "rating": 8.6,
+    "votes": "1.7M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/xJHokMbljvjADYdit5fK5VQsXEG.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_003",
+    "title": "Avengers: Endgame",
+    "languages": ["English"],
+    "duration": "3h 1m",
+    "genres": ["Action", "Adventure", "Sci-Fi"],
+    "release_date": "2019-04-26",
+    "rating": 8.4,
+    "votes": "1M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_004",
+    "title": "Oppenheimer",
+    "languages": ["English"],
+    "duration": "3h 0m",
+    "genres": ["Biography", "Drama", "History"],
+    "release_date": "2023-07-21",
+    "rating": 8.6,
+    "votes": "400K",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_005",
+    "title": "The Shawshank Redemption",
+    "languages": ["English"],
+    "duration": "2h 22m",
+    "genres": ["Drama"],
+    "release_date": "1994-09-23",
+    "rating": 9.3,
+    "votes": "2.5M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/bsnmCmficd3AcZ3fG2bL3wZCIon.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_006",
+    "title": "The Godfather",
+    "languages": ["English"],
+    "duration": "2h 55m",
+    "genres": ["Crime", "Drama"],
+    "release_date": "1972-03-24",
+    "rating": 9.2,
+    "votes": "1.7M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/tmU7GeKVybMWFButWEGl2M4GeiP.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_007",
+    "title": "Pulp Fiction",
+    "languages": ["English"],
+    "duration": "2h 34m",
+    "genres": ["Crime", "Drama"],
+    "release_date": "1994-10-14",
+    "rating": 8.9,
+    "votes": "1.9M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/suaEOtk1N1sgg2MTM7oZd2cfVp3.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_008",
+    "title": "The Matrix",
+    "languages": ["English"],
+    "duration": "2h 16m",
+    "genres": ["Action", "Sci-Fi"],
+    "release_date": "1999-03-31",
+    "rating": 8.7,
+    "votes": "1.8M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/l4QHerTSbMI7qgvasqxP36pqjN6.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_009",
+    "title": "Parasite",
+    "languages": ["Korean"],
+    "duration": "2h 12m",
+    "genres": ["Comedy", "Drama", "Thriller"],
+    "release_date": "2019-05-30",
+    "rating": 8.6,
+    "votes": "700K",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/hiK536j6YI4fAaMH1wL8y9Zc4FC.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_010",
+    "title": "Fight Club",
+    "languages": ["English"],
+    "duration": "2h 19m",
+    "genres": ["Drama"],
+    "release_date": "1999-10-15",
+    "rating": 8.8,
+    "votes": "2M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/81d3r12t2p2zLw7d3QcFGobk9GJ.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_011",
+    "title": "The Lord of the Rings: The Fellowship of the Ring",
+    "languages": ["English"],
+    "duration": "2h 58m",
+    "genres": ["Adventure", "Fantasy", "Action"],
+    "release_date": "2001-12-19",
+    "rating": 8.8,
+    "votes": "1.8M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/tj6B9TaETMQtb6bF9hS3Cjl2N1a.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_012",
+    "title": "The Lord of the Rings: The Two Towers",
+    "languages": ["English"],
+    "duration": "2h 59m",
+    "genres": ["Adventure", "Fantasy", "Action"],
+    "release_date": "2002-12-18",
+    "rating": 8.7,
+    "votes": "1.6M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/5VTN0pR8gcqV3EPUHHfMGnJYN9L.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/tlcuhK8oM262CII5w445I6e4vj3.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_013",
+    "title": "The Lord of the Rings: The Return of the King",
+    "languages": ["English"],
+    "duration": "3h 21m",
+    "genres": ["Adventure", "Fantasy", "Action"],
+    "release_date": "2003-12-17",
+    "rating": 8.9,
+    "votes": "1.7M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/3hB2g6e8jhp1yS0o64y9lSroNtu.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_014",
+    "title": "Titanic",
+    "languages": ["English"],
+    "duration": "3h 14m",
+    "genres": ["Drama", "Romance"],
+    "release_date": "1997-12-19",
+    "rating": 7.8,
+    "votes": "1.1M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/eho1WCY1gblvW9v4T3K5aNl2IVM.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_015",
+    "title": "Gladiator",
+    "languages": ["English"],
+    "duration": "2h 35m",
+    "genres": ["Action", "Adventure", "Drama"],
+    "release_date": "2000-05-05",
+    "rating": 8.5,
+    "votes": "1.4M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/pB1chSp3AYBF1a5iIOFm2AAp5W3.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_016",
+    "title": "Joker",
+    "languages": ["English"],
+    "duration": "2h 2m",
+    "genres": ["Crime", "Drama", "Thriller"],
+    "release_date": "2019-10-04",
+    "rating": 8.4,
+    "votes": "1.2M",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/udDclJoHjfjb8Ekgsd4FDteOkCU.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/n6bUvigpRFqSwmPp1m2YADdbRBc.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_017",
+    "title": "The Avengers",
+    "languages": ["English"],
+    "duration": "2h 23m",
+    "genres": ["Action", "Adventure", "Sci-Fi"],
+    "release_date": "2012-05-04",
+    "rating": 8.0,
+    "votes": "1.3M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/kwKqcyTdeCgDsL3o6a2t9Lp8sc.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_018",
+    "title": "Forrest Gump",
+    "languages": ["English"],
+    "duration": "2h 22m",
+    "genres": ["Drama", "Romance"],
+    "release_date": "1994-07-06",
+    "rating": 8.8,
+    "votes": "1.9M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/2u7zbn8EudG6kLlLMAUo0Sha79e.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_019",
+    "title": "Whiplash",
+    "languages": ["English"],
+    "duration": "1h 47m",
+    "genres": ["Drama", "Music"],
+    "release_date": "2014-10-10",
+    "rating": 8.5,
+    "votes": "800K",
+    "certificate": "R",
+    "poster_url": "https://image.tmdb.org/t/p/w500/7fn624j5lj3xTme2SgiLCeuedmO.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/dCPN24iYTRs22H2454s0s2xI28.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_020",
+    "title": "La La Land",
+    "languages": ["English"],
+    "duration": "2h 8m",
+    "genres": ["Comedy", "Drama", "Music"],
+    "release_date": "2016-12-09",
+    "rating": 7.9,
+    "votes": "500K",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/aGsKsnk5PjVE2i7r5d3b6aADDcI.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_021",
+    "title": "Avengers: Infinity War",
+    "languages": ["English"],
+    "duration": "2h 29m",
+    "genres": ["Action", "Adventure", "Sci-Fi"],
+    "release_date": "2018-04-27",
+    "rating": 8.4,
+    "votes": "1M",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/bOGkgRGdhrBYJSLpXaxhXVstddV.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_022",
+    "title": "Doctor Strange",
+    "languages": ["English"],
+    "duration": "1h 55m",
+    "genres": ["Action", "Adventure", "Fantasy"],
+    "release_date": "2016-11-04",
+    "rating": 7.5,
+    "votes": "700K",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/uGBVj3bEbCoZbDjjl9wTxcygko1.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/aL5q4UXfLp3E6oM4w23dZga1n1E.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  },
+  {
+    "id": "movie_023",
+    "title": "Dune",
+    "languages": ["English"],
+    "duration": "2h 35m",
+    "genres": ["Sci-Fi", "Adventure"],
+    "release_date": "2021-10-22",
+    "rating": 7.9,
+    "votes": "600K",
+    "certificate": "PG-13",
+    "poster_url": "https://image.tmdb.org/t/p/w500/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
+    "banner_url": "https://image.tmdb.org/t/p/original/jYEW5xZkZk2WTrdbMGAPFuBqbDc.jpg",
+    "cast": [
+      {
+        "name": "Actor 1",
+        "role": "Role 1",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Actor 2",
+        "role": "Role 2",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ],
+    "crew": [
+      {
+        "name": "Director 1",
+        "role": "Director",
+        "image": "https://placehold.co/150x225?text=Person"
+      },
+      {
+        "name": "Writer 1",
+        "role": "Writer",
+        "image": "https://placehold.co/150x225?text=Person"
+      }
+    ]
+  }
+]

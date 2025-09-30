@@ -544,6 +544,68 @@ export default class SuperadminController {
     }
   }
 
+  static async getAuditoriumSeats(req, res) {
+    try {
+      const { id } = req.params
+      const sequelize = req.db
+      const Seat = defineSeat(sequelize)
+      await Seat.sync()
+
+      const seats = await Seat.findAll({ where: { auditorium_id: id }, order: [['row', 'ASC'], ['number', 'ASC']] })
+      return res.json({ data: seats, message: 'Seats retrieved successfully' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[getAuditoriumSeats]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Failed to retrieve seats' })
+    }
+  }
+
+  static async updateAuditoriumConfiguration(req, res) {
+    try {
+      const { id } = req.params
+      const { name, seat_map, configuration } = req.body
+      const sequelize = req.db
+      const Auditorium = defineAuditorium(sequelize)
+      const Seat = defineSeat(sequelize)
+      await Promise.all([Auditorium.sync(), Seat.sync()])
+
+      const auditorium = await Auditorium.findByPk(id)
+      if (!auditorium) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Auditorium not found' })
+      }
+
+      const transaction = await sequelize.transaction()
+      try {
+        if (name) await auditorium.update({ name }, { transaction })
+
+        // Replace seats with new seat_map if provided
+        if (Array.isArray(seat_map)) {
+          await Seat.destroy({ where: { auditorium_id: id }, transaction })
+          const records = seat_map.map((s) => ({
+            auditorium_id: id,
+            row: s.row,
+            number: s.number,
+            category: s.category,
+            x_position: s.x_position ?? 0,
+            y_position: s.y_position ?? 0,
+            is_active: s.is_active !== false
+          }))
+          if (records.length > 0) await Seat.bulkCreate(records, { transaction })
+          // Keep capacity in sync
+          await auditorium.update({ capacity: records.length }, { transaction })
+        }
+
+        await transaction.commit()
+        return res.json({ message: 'Auditorium configuration updated successfully' })
+      } catch (e) {
+        await transaction.rollback()
+        throw e
+      }
+    } catch (err) {
+      console.error(`[SuperadminController]-[updateAuditoriumConfiguration]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Failed to update auditorium' })
+    }
+  }
+
   // ==============================
   // AUDITORIUM REQUEST MANAGEMENT
   // ==============================
@@ -725,7 +787,7 @@ export default class SuperadminController {
       const auditorium = await Auditorium.create({
         theatre_id,
         name,
-        total_seats: total_seats || seat_map.length,
+        capacity: (total_seats || seat_map.length || 0),
         configuration: configuration || {},
         is_active: true
       })
@@ -744,6 +806,8 @@ export default class SuperadminController {
       )
 
       await Promise.all(seatPromises)
+      // Ensure capacity reflects actual seats created
+      await auditorium.update({ capacity: seat_map.length })
 
       // Update the request status to 'configured' if it exists
       if (request) {

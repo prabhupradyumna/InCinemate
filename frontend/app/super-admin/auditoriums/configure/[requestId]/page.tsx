@@ -13,6 +13,8 @@ import {
   getAuditoriumRequest,
   createAuditoriumConfiguration,
   getAuditorium,
+  getAuditoriumSeats,
+  updateAuditoriumConfiguration,
 } from "@/lib/superadmin";
 
 export default function AuditoriumConfigurationPage() {
@@ -24,6 +26,9 @@ export default function AuditoriumConfigurationPage() {
   const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [auditoriumId, setAuditoriumId] = useState<string | null>(null);
+  const [initialSeats, setInitialSeats] = useState<any[]>([]);
+  const [justSaved, setJustSaved] = useState(false);
 
   // If navigating from auditoriums list, requestId is actually auditorium id (not a request)
   const isAuditoriumId =
@@ -42,10 +47,21 @@ export default function AuditoriumConfigurationPage() {
   );
 
   useEffect(() => {
-    if (requestData) {
-      setRequest((requestData as any).data || requestData);
+    (async () => {
+      if (!requestData) return;
+      const data = (requestData as any).data || requestData;
+      setRequest(data);
+      // Derive auditorium id and fetch existing seats if editing an auditorium
+      const audId = isAuditoriumId ? data?.id || requestId : null;
+      if (audId) {
+        setAuditoriumId(audId);
+        try {
+          const seats = await getAuditoriumSeats(audId);
+          setInitialSeats(seats || []);
+        } catch {}
+      }
       setIsLoading(false);
-    }
+    })();
   }, [requestData]);
 
   // Trigger the API call on mount and when requestId changes
@@ -56,17 +72,35 @@ export default function AuditoriumConfigurationPage() {
   const handleSaveConfiguration = async (seatMapData: any) => {
     try {
       setIsSaving(true);
-
-      // Call the backend to create the auditorium and seats
-      await createAuditoriumConfiguration(seatMapData);
+      if (auditoriumId) {
+        await updateAuditoriumConfiguration(auditoriumId, {
+          name: seatMapData.name,
+          // Ensure seat_map is always an array; allow empty array to clear seats
+          seat_map: Array.isArray(seatMapData.seat_map)
+            ? seatMapData.seat_map
+            : [],
+          configuration: seatMapData.configuration,
+        });
+        // Live refresh: re-fetch seats and rehydrate editor
+        try {
+          const latest = await getAuditoriumSeats(auditoriumId);
+          setInitialSeats(latest || []);
+        } catch {}
+        setJustSaved(true);
+      } else {
+        // Creating from request
+        await createAuditoriumConfiguration(seatMapData);
+      }
 
       toast({
         title: "Success",
         description: "Auditorium configuration saved successfully",
       });
 
-      // Navigate back to auditorium requests
-      router.push("/super-admin/auditorium-requests");
+      // Stay on page for continuous editing when editing an existing auditorium
+      if (!auditoriumId) {
+        router.push("/super-admin?tab=auditoriums");
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -185,6 +219,9 @@ export default function AuditoriumConfigurationPage() {
         request={request}
         onSave={handleSaveConfiguration}
         isSaving={isSaving}
+        initialSeats={initialSeats}
+        justSaved={justSaved}
+        isEditing={Boolean(auditoriumId)}
       />
     </div>
   );

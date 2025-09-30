@@ -75,6 +75,30 @@ export async function getAuditorium(auditoriumId: string) {
   return res.data?.data;
 }
 
+export async function getAuditoriumSeats(auditoriumId: string) {
+  const res = await api.get(`/superadmin/auditoriums/${auditoriumId}/seats`);
+  return res.data?.data || [];
+}
+
+export async function updateAuditoriumConfiguration(
+  auditoriumId: string,
+  payload: {
+    name?: string;
+    seat_map: Array<{
+      row: string;
+      number: number;
+      category: string;
+      x_position?: number;
+      y_position?: number;
+      is_active?: boolean;
+    }>;
+    configuration?: any;
+  }
+) {
+  const res = await api.put(`/superadmin/auditoriums/${auditoriumId}`, payload);
+  return res.data;
+}
+
 export async function createTheatre(payload: {
   name: string;
   address: string;

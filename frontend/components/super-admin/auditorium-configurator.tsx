@@ -1,214 +1,333 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, Save, RotateCcw, Eye, ZoomIn, ZoomOut, Move } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Trash2,
+  Save,
+  RotateCcw,
+  Eye,
+  ZoomIn,
+  ZoomOut,
+  Move,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface SeatMapRow {
-  row: string
-  seats: number[]
-  type: "premium" | "regular" | "vip"
-  x_position?: number
-  y_position?: number
+  row: string;
+  seats: number[];
+  type: "premium" | "regular" | "vip";
+  x_position?: number;
+  y_position?: number;
 }
 
 interface AuditoriumConfiguratorProps {
-  request: any
-  onSave: (seatMapData: any) => void
-  isSaving: boolean
+  request: any;
+  onSave: (seatMapData: any) => void;
+  isSaving: boolean;
+  initialSeats?: Array<{
+    row: string;
+    number: number;
+    category: "vip" | "premium" | "regular";
+  }>;
+  justSaved?: boolean;
+  isEditing?: boolean;
 }
 
-export function AuditoriumConfigurator({ request, onSave, isSaving }: AuditoriumConfiguratorProps) {
-  const { toast } = useToast()
-  const [seatMap, setSeatMap] = useState<SeatMapRow[]>([])
-  const [newRowLetter, setNewRowLetter] = useState("")
-  const [newRowSeats, setNewRowSeats] = useState("")
-  const [newRowType, setNewRowType] = useState<"premium" | "regular" | "vip">("regular")
-  const [selectedSeatType, setSelectedSeatType] = useState<"premium" | "regular" | "vip">("regular")
-  const [isBlueprintVisible, setIsBlueprintVisible] = useState(true)
-  const [blueprintScale, setBlueprintScale] = useState(1)
-  const [blueprintPosition, setBlueprintPosition] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  
-  const blueprintRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLDivElement>(null)
+export function AuditoriumConfigurator({
+  request,
+  onSave,
+  isSaving,
+  initialSeats,
+  justSaved,
+  isEditing,
+}: AuditoriumConfiguratorProps) {
+  const { toast } = useToast();
+  const [seatMap, setSeatMap] = useState<SeatMapRow[]>([]);
+  const [newRowLetter, setNewRowLetter] = useState("");
+  const [newRowSeats, setNewRowSeats] = useState("");
+  const [newRowType, setNewRowType] = useState<"premium" | "regular" | "vip">(
+    "regular"
+  );
+  const [selectedSeatType, setSelectedSeatType] = useState<
+    "premium" | "regular" | "vip"
+  >("regular");
+  const [isBlueprintVisible, setIsBlueprintVisible] = useState(true);
+  const [blueprintScale, setBlueprintScale] = useState(1);
+  const [blueprintPosition, setBlueprintPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [saveCooldown, setSaveCooldown] = useState(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const [confirmEmptySaveOpen, setConfirmEmptySaveOpen] = useState(false);
+  const [auditoriumName, setAuditoriumName] = useState("");
 
-  // Initialize with a basic layout if no existing configuration
+  const blueprintRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Initialize with existing seats if provided; if none, keep empty when editing;
+  // only auto-seed a default when initialSeats is undefined (create-from-request flow).
   useEffect(() => {
-    if (seatMap.length === 0) {
-      setSeatMap([
-        { row: "A", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], type: "vip" },
-        { row: "B", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], type: "vip" },
-        { row: "C", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "premium" },
-        { row: "D", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "premium" },
-        { row: "E", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-        { row: "F", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-      ])
+    if (Array.isArray(initialSeats) && initialSeats.length > 0) {
+      const grouped: Record<
+        string,
+        { type: "vip" | "premium" | "regular"; seats: number[] }
+      > = {};
+      for (const s of initialSeats) {
+        const key = s.row;
+        if (!grouped[key]) grouped[key] = { type: s.category, seats: [] };
+        grouped[key].seats.push(s.number);
+      }
+      const rows: SeatMapRow[] = Object.keys(grouped)
+        .sort()
+        .map((row) => ({
+          row,
+          seats: grouped[row].seats.sort((a, b) => a - b),
+          type: grouped[row].type,
+        }));
+      setSeatMap(rows);
+      return;
     }
-  }, [])
+    if (initialSeats === undefined && seatMap.length === 0) {
+      setSeatMap([
+        { row: "A", seats: [1, 2, 3, 4, 5], type: "vip" },
+        { row: "B", seats: [1, 2, 3, 4, 5, 6], type: "premium" },
+        { row: "C", seats: [1, 2, 3, 4, 5, 6, 7], type: "regular" },
+      ]);
+    }
+  }, [initialSeats]);
+
+  // When parent signals a successful save, show a toast and briefly disable the button
+  useEffect(() => {
+    if (justSaved) {
+      try {
+        toast({ title: "Saved", description: "Configuration updated" });
+      } catch {}
+      setSaveCooldown(true);
+      const t = setTimeout(() => setSaveCooldown(false), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [justSaved, toast]);
+
+  // Initialize editable auditorium name
+  useEffect(() => {
+    const nameFromRequest =
+      (request && (request.name || request?.auditorium_name)) || "";
+    if (nameFromRequest) setAuditoriumName(nameFromRequest);
+    else if (!isEditing) {
+      setAuditoriumName(
+        `${request?.theatre?.name || "New"} - Auditorium ${new Date().getFullYear()}`
+      );
+    }
+  }, [request, isEditing]);
 
   const getSeatButtonClass = (type: "premium" | "regular" | "vip") => {
-    const baseClass = "w-6 h-6 text-xs font-medium rounded-sm border-2 transition-all cursor-pointer hover:scale-110"
+    const baseClass =
+      "w-6 h-6 text-xs font-medium rounded-sm border-2 transition-all cursor-pointer hover:scale-110";
     switch (type) {
       case "vip":
-        return `${baseClass} bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-yellow-900 shadow-lg`
+        return `${baseClass} bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-yellow-900 shadow-lg`;
       case "premium":
-        return `${baseClass} bg-gradient-to-br from-blue-400 to-blue-600 border-blue-500 text-white shadow-md`
+        return `${baseClass} bg-gradient-to-br from-blue-400 to-blue-600 border-blue-500 text-white shadow-md`;
       case "regular":
-        return `${baseClass} bg-gradient-to-br from-gray-400 to-gray-600 border-gray-500 text-white`
+        return `${baseClass} bg-gradient-to-br from-gray-400 to-gray-600 border-gray-500 text-white`;
       default:
-        return `${baseClass} bg-secondary border-border text-secondary-foreground`
+        return `${baseClass} bg-secondary border-border text-secondary-foreground`;
     }
-  }
+  };
 
   const addRow = () => {
     if (!newRowLetter || !newRowSeats) {
       toast({
         title: "Validation Error",
-        description: "Please provide both row letter and seat numbers"
-      })
-      return
+        description: "Please provide both row letter and seat numbers",
+      });
+      return;
     }
 
     const seats = newRowSeats
       .split(",")
       .map((s) => Number.parseInt(s.trim()))
-      .filter((n) => !isNaN(n))
-    
+      .filter((n) => !isNaN(n));
+
     if (seats.length === 0) {
       toast({
-        title: "Validation Error", 
-        description: "Please provide valid seat numbers"
-      })
-      return
+        title: "Validation Error",
+        description: "Please provide valid seat numbers",
+      });
+      return;
     }
 
     const newRow: SeatMapRow = {
       row: newRowLetter.toUpperCase(),
       seats: seats,
       type: newRowType,
-    }
+    };
 
-    setSeatMap((prev) => [...prev, newRow])
-    setNewRowLetter("")
-    setNewRowSeats("")
-    setNewRowType("regular")
-    
+    setSeatMap((prev) => [...prev, newRow]);
+    setNewRowLetter("");
+    setNewRowSeats("");
+    setNewRowType("regular");
+
     toast({
       title: "Success",
-      description: `Added row ${newRowLetter.toUpperCase()} with ${seats.length} seats`
-    })
-  }
+      description: `Added row ${newRowLetter.toUpperCase()} with ${seats.length} seats`,
+    });
+  };
 
   const removeRow = (rowIndex: number) => {
-    const rowToRemove = seatMap[rowIndex]
-    setSeatMap((prev) => prev.filter((_, index) => index !== rowIndex))
-    
+    const rowToRemove = seatMap[rowIndex];
+    setSeatMap((prev) => prev.filter((_, index) => index !== rowIndex));
+
     toast({
       title: "Row Removed",
-      description: `Removed row ${rowToRemove.row}`
-    })
-  }
+      description: `Removed row ${rowToRemove.row}`,
+    });
+  };
 
-  const updateRowType = (rowIndex: number, type: "premium" | "regular" | "vip") => {
-    setSeatMap((prev) => prev.map((row, index) => (index === rowIndex ? { ...row, type } : row)))
-  }
+  const updateRowType = (
+    rowIndex: number,
+    type: "premium" | "regular" | "vip"
+  ) => {
+    setSeatMap((prev) =>
+      prev.map((row, index) => (index === rowIndex ? { ...row, type } : row))
+    );
+  };
 
   const handleSeatClick = (rowIndex: number, seatIndex: number) => {
-    setSeatMap((prev) => prev.map((row, index) => {
-      if (index === rowIndex) {
-        return { ...row, type: selectedSeatType }
-      }
-      return row
-    }))
-  }
+    setSeatMap((prev) =>
+      prev.map((row, index) => {
+        if (index === rowIndex) {
+          return { ...row, type: selectedSeatType };
+        }
+        return row;
+      })
+    );
+  };
 
   const saveSeatMap = () => {
-    if (seatMap.length === 0) {
+    // Allow empty save when editing an existing auditorium (to clear seats)
+    if (seatMap.length === 0 && !isEditing) {
       toast({
         title: "Validation Error",
-        description: "Please add at least one row of seats"
-      })
-      return
+        description: "Please add at least one row of seats",
+      });
+      return;
+    }
+    // If editing and empty, confirm deletion of all seats
+    if (seatMap.length === 0 && isEditing) {
+      setConfirmEmptySaveOpen(true);
+      return;
     }
 
     // Transform seat map data for backend
-    const seatData = seatMap.flatMap((row, rowIndex) => 
+    const seatData = seatMap.flatMap((row, rowIndex) =>
       row.seats.map((seatNumber, seatIndex) => ({
         row: row.row,
         number: seatNumber,
         category: row.type,
         x_position: seatIndex * 30 + 50, // Basic positioning
         y_position: rowIndex * 40 + 100, // Basic positioning
-        is_active: true
+        is_active: true,
       }))
-    )
+    );
 
     const auditoriumData = {
       request_id: request.id,
       theatre_id: request.theatre_id,
-      name: `${request.theatre?.name} - Auditorium ${Date.now()}`, // Generate unique name
-      seat_map: seatData,
+      name:
+        auditoriumName || `${request.theatre?.name} - Auditorium ${Date.now()}`,
+      seat_map: seatData, // can be [] when clearing
       total_seats: seatData.length,
       configuration: {
         rows: seatMap.length,
         seat_categories: {
-          vip: seatMap.filter(row => row.type === 'vip').reduce((sum, row) => sum + row.seats.length, 0),
-          premium: seatMap.filter(row => row.type === 'premium').reduce((sum, row) => sum + row.seats.length, 0),
-          regular: seatMap.filter(row => row.type === 'regular').reduce((sum, row) => sum + row.seats.length, 0)
-        }
-      }
-    }
+          vip: seatMap
+            .filter((row) => row.type === "vip")
+            .reduce((sum, row) => sum + row.seats.length, 0),
+          premium: seatMap
+            .filter((row) => row.type === "premium")
+            .reduce((sum, row) => sum + row.seats.length, 0),
+          regular: seatMap
+            .filter((row) => row.type === "regular")
+            .reduce((sum, row) => sum + row.seats.length, 0),
+        },
+      },
+    };
 
-    onSave(auditoriumData)
-  }
+    onSave(auditoriumData);
+  };
 
   const resetSeatMap = () => {
-    setSeatMap([])
+    setSeatMap([]);
     toast({
       title: "Reset",
-      description: "Seat map has been reset"
-    })
-  }
+      description: "All seats cleared. Click Save to apply.",
+    });
+  };
 
   // Blueprint interaction handlers
   const handleBlueprintMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true)
-    setDragStart({ x: e.clientX - blueprintPosition.x, y: e.clientY - blueprintPosition.y })
-  }
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - blueprintPosition.x,
+      y: e.clientY - blueprintPosition.y,
+    });
+  };
 
   const handleBlueprintMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
       setBlueprintPosition({
         x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      })
+        y: e.clientY - dragStart.y,
+      });
     }
-  }
+  };
 
   const handleBlueprintMouseUp = () => {
-    setIsDragging(false)
-  }
+    setIsDragging(false);
+  };
 
   const handleZoomIn = () => {
-    setBlueprintScale(prev => Math.min(prev + 0.1, 3))
-  }
+    setBlueprintScale((prev) => Math.min(prev + 0.1, 3));
+  };
 
   const handleZoomOut = () => {
-    setBlueprintScale(prev => Math.max(prev - 0.1, 0.5))
-  }
+    setBlueprintScale((prev) => Math.max(prev - 0.1, 0.5));
+  };
 
-  const totalSeats = seatMap.reduce((total, row) => total + row.seats.length, 0)
-  const vipSeats = seatMap.filter((row) => row.type === "vip").reduce((total, row) => total + row.seats.length, 0)
-  const premiumSeats = seatMap.filter((row) => row.type === "premium").reduce((total, row) => total + row.seats.length, 0)
-  const regularSeats = seatMap.filter((row) => row.type === "regular").reduce((total, row) => total + row.seats.length, 0)
+  const totalSeats = seatMap.reduce(
+    (total, row) => total + row.seats.length,
+    0
+  );
+  const vipSeats = seatMap
+    .filter((row) => row.type === "vip")
+    .reduce((total, row) => total + row.seats.length, 0);
+  const premiumSeats = seatMap
+    .filter((row) => row.type === "premium")
+    .reduce((total, row) => total + row.seats.length, 0);
+  const regularSeats = seatMap
+    .filter((row) => row.type === "regular")
+    .reduce((total, row) => total + row.seats.length, 0);
 
   return (
     <div className="space-y-6">
@@ -228,13 +347,17 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
         </Card>
         <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{premiumSeats}</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {premiumSeats}
+            </div>
             <p className="text-sm text-muted-foreground">Premium Seats</p>
           </CardContent>
         </Card>
         <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-600">{regularSeats}</div>
+            <div className="text-2xl font-bold text-gray-600">
+              {regularSeats}
+            </div>
             <p className="text-sm text-muted-foreground">Regular Seats</p>
           </CardContent>
         </Card>
@@ -254,7 +377,7 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                   onClick={() => setIsBlueprintVisible(!isBlueprintVisible)}
                 >
                   <Eye className="h-4 w-4 mr-2" />
-                  {isBlueprintVisible ? 'Hide' : 'Show'}
+                  {isBlueprintVisible ? "Hide" : "Show"}
                 </Button>
                 <Button variant="outline" size="sm" onClick={handleZoomIn}>
                   <ZoomIn className="h-4 w-4" />
@@ -266,7 +389,7 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
             </div>
           </CardHeader>
           <CardContent>
-            <div 
+            <div
               ref={blueprintRef}
               className="relative w-full h-96 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
               onMouseDown={handleBlueprintMouseDown}
@@ -281,7 +404,7 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                   className="absolute inset-0 w-full h-full object-contain cursor-move"
                   style={{
                     transform: `translate(${blueprintPosition.x}px, ${blueprintPosition.y}px) scale(${blueprintScale})`,
-                    transformOrigin: 'top left'
+                    transformOrigin: "top left",
                   }}
                   draggable={false}
                 />
@@ -290,7 +413,9 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                   <div className="text-center">
                     <Move className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>No blueprint available</p>
-                    <p className="text-sm">Use the seat editor to create your layout</p>
+                    <p className="text-sm">
+                      Use the seat editor to create your layout
+                    </p>
                   </div>
                 </div>
               )}
@@ -304,19 +429,39 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
         {/* Seat Map Editor */}
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle>Seat Map Editor</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Seat Map Editor</CardTitle>
+              <div className="flex items-center gap-2 w-full max-w-md">
+                <Label htmlFor="audName" className="text-sm whitespace-nowrap">
+                  Auditorium Name
+                </Label>
+                <Input
+                  id="audName"
+                  value={auditoriumName}
+                  onChange={(e) => setAuditoriumName(e.target.value)}
+                  placeholder="Enter auditorium name"
+                />
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Screen Indicator */}
             <div className="flex justify-center">
               <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
             </div>
-            <div className="text-center text-sm text-muted-foreground mb-8">SCREEN</div>
+            <div className="text-center text-sm text-muted-foreground mb-8">
+              SCREEN
+            </div>
 
             {/* Seat Type Selector */}
             <div className="flex items-center gap-4 p-3 bg-secondary/30 rounded-lg">
               <Label>Paint Tool:</Label>
-              <Select value={selectedSeatType} onValueChange={(value: "premium" | "regular" | "vip") => setSelectedSeatType(value)}>
+              <Select
+                value={selectedSeatType}
+                onValueChange={(value: "premium" | "regular" | "vip") =>
+                  setSelectedSeatType(value)
+                }
+              >
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -327,9 +472,15 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                 </SelectContent>
               </Select>
               <div className="flex gap-2">
-                <div className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("regular").split(' ').slice(2, 4).join(' ')}`}></div>
-                <div className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("premium").split(' ').slice(2, 4).join(' ')}`}></div>
-                <div className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("vip").split(' ').slice(2, 4).join(' ')}`}></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("regular").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("premium").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("vip").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
               </div>
             </div>
 
@@ -339,15 +490,27 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                 <div key={rowIndex} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Badge variant={rowData.type === "vip" ? "default" : rowData.type === "premium" ? "secondary" : "outline"}>
+                      <Badge
+                        variant={
+                          rowData.type === "vip"
+                            ? "default"
+                            : rowData.type === "premium"
+                              ? "secondary"
+                              : "outline"
+                        }
+                      >
                         Row {rowData.row} - {rowData.type}
                       </Badge>
-                      <span className="text-sm text-muted-foreground">{rowData.seats.length} seats</span>
+                      <span className="text-sm text-muted-foreground">
+                        {rowData.seats.length} seats
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Select
                         value={rowData.type}
-                        onValueChange={(value: "premium" | "regular" | "vip") => updateRowType(rowIndex, value)}
+                        onValueChange={(value: "premium" | "regular" | "vip") =>
+                          updateRowType(rowIndex, value)
+                        }
                       >
                         <SelectTrigger className="w-32 h-8">
                           <SelectValue />
@@ -369,11 +532,13 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                     </div>
                   </div>
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-8 text-center font-medium text-muted-foreground">{rowData.row}</div>
+                    <div className="w-8 text-center font-medium text-muted-foreground">
+                      {rowData.row}
+                    </div>
                     <div className="flex gap-1">
                       {rowData.seats.map((seatNumber, seatIndex) => (
-                        <div 
-                          key={`${rowData.row}-${seatNumber}`} 
+                        <div
+                          key={`${rowData.row}-${seatNumber}`}
                           className={getSeatButtonClass(rowData.type)}
                           onClick={() => handleSeatClick(rowIndex, seatIndex)}
                           title={`Click to change to ${selectedSeatType}`}
@@ -382,7 +547,9 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                         </div>
                       ))}
                     </div>
-                    <div className="w-8 text-center font-medium text-muted-foreground">{rowData.row}</div>
+                    <div className="w-8 text-center font-medium text-muted-foreground">
+                      {rowData.row}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -413,7 +580,12 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="rowType">Seat Type</Label>
-                    <Select value={newRowType} onValueChange={(value: "premium" | "regular" | "vip") => setNewRowType(value)}>
+                    <Select
+                      value={newRowType}
+                      onValueChange={(value: "premium" | "regular" | "vip") =>
+                        setNewRowType(value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -436,11 +608,22 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
 
             {/* Actions */}
             <div className="flex gap-2">
-              <Button onClick={saveSeatMap} disabled={isSaving} className="cinema-glow">
+              <Button
+                onClick={saveSeatMap}
+                disabled={isSaving || saveCooldown}
+                className="cinema-glow"
+              >
                 <Save className="h-4 w-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Configuration'}
+                {isSaving
+                  ? "Saving..."
+                  : saveCooldown
+                    ? "Saved"
+                    : "Save Configuration"}
               </Button>
-              <Button variant="outline" onClick={resetSeatMap}>
+              <Button
+                variant="outline"
+                onClick={() => setConfirmResetOpen(true)}
+              >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset Layout
               </Button>
@@ -448,6 +631,79 @@ export function AuditoriumConfigurator({ request, onSave, isSaving }: Auditorium
           </CardContent>
         </Card>
       </div>
+      {/* Confirm Reset Dialog */}
+      <Dialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clear all seats?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will remove all rows from the editor. Click Save afterwards to
+            apply the change.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmResetOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmResetOpen(false);
+                resetSeatMap();
+              }}
+            >
+              Clear
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Confirm Empty Save Dialog */}
+      <Dialog
+        open={confirmEmptySaveOpen}
+        onOpenChange={setConfirmEmptySaveOpen}
+      >
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save empty layout?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Saving will delete all seats for this auditorium. You can rebuild
+            later.
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmEmptySaveOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmEmptySaveOpen(false);
+                onSave({
+                  request_id: request.id,
+                  theatre_id: request.theatre_id,
+                  name:
+                    auditoriumName ||
+                    `${request.theatre?.name} - Auditorium ${Date.now()}`,
+                  seat_map: [],
+                  total_seats: 0,
+                  configuration: {
+                    rows: 0,
+                    seat_categories: { vip: 0, premium: 0, regular: 0 },
+                  },
+                });
+              }}
+            >
+              Delete seats
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

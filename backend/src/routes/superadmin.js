@@ -47,6 +47,8 @@ router.get('/theatres', SuperadminController.listTheatres)
 // Auditoriums listing for superadmin (manage across theatres)
 router.get('/auditoriums', SuperadminController.listAuditoriums)
 router.get('/auditoriums/:id', SuperadminController.getAuditorium)
+router.get('/auditoriums/:id/seats', SuperadminController.getAuditoriumSeats)
+router.put('/auditoriums/:id', SuperadminController.updateAuditoriumConfiguration)
 
 // ==============================
 // TENANT MANAGEMENT ROUTES

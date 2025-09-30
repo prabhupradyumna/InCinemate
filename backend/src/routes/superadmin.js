@@ -1,6 +1,9 @@
 import { Router } from 'express'
 import SuperadminController from '../controller/superadmin.controller.js'
 import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
+import * as permissionMiddleware from '../middleware/permission.middleware.js'
+
+const { requirePermission } = permissionMiddleware
 
 const router = Router()
 
@@ -79,5 +82,33 @@ router.put('/auditorium-requests/:id/status', SuperadminController.updateAuditor
 
 // Create auditorium configuration from approved request
 router.post('/auditoriums/configure', SuperadminController.createAuditoriumConfiguration)
+
+// ==============================
+// MOVIE MANAGEMENT ROUTES (SUPERADMIN)
+// ==============================
+
+// Create a new movie
+router.post('/movies', 
+  requirePermission('Manage Movies'),
+  SuperadminController.createMovie
+)
+
+// List all movies
+router.get('/movies', 
+  requirePermission('Manage Movies'),
+  SuperadminController.listMovies
+)
+
+// Update movie details
+router.put('/movies/:id', 
+  requirePermission('Manage Movies'),
+  SuperadminController.updateMovie
+)
+
+// Delete movie
+router.delete('/movies/:id',
+  requirePermission('Manage Movies'),
+  SuperadminController.deleteMovie
+)
 
 export default router

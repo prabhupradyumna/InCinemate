@@ -6,6 +6,7 @@ import { defineTheatre } from '../models/Theatre.js'
 import { defineAuditoriumRequest } from '../models/AuditoriumRequest.js'
 import { defineAuditorium } from '../models/Auditorium.js'
 import { defineSeat } from '../models/Seat.js'
+import { defineMovie } from '../models/Movie.js'
 import { hashPassword, generateTemporaryPassword } from '../util/auth.util.js'
 import { ROLES, API_MESSAGES, HTTP_STATUS } from '../constants.js'
 
@@ -876,6 +877,185 @@ export default class SuperadminController {
         success: false,
         error: err.message,
         message: 'Request retrieval failed'
+      })
+    }
+  }
+
+  // ==============================
+  // MOVIE MANAGEMENT (SUPERADMIN)
+  // ==============================
+
+  static async createMovie(req, res) {
+    try {
+      const { title, poster_url, trailer_url, synopsis, cast, genre, duration_minutes, release_date, rating, language, tenant_id, is_active } = req.body
+
+      if (!title) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'title is required',
+          message: 'Movie creation failed'
+        })
+      }
+
+      if (!tenant_id) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'tenant_id is required',
+          message: 'Movie creation failed'
+        })
+      }
+
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      const Tenant = defineTenant(sequelize)
+      await Promise.all([Movie.sync(), Tenant.sync()])
+
+      // Verify tenant exists
+      const tenant = await Tenant.findOne({ where: { tenant_id } })
+      if (!tenant) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Tenant not found',
+          message: 'Movie creation failed'
+        })
+      }
+
+      const movie = await Movie.create({
+        title,
+        poster_url,
+        trailer_url,
+        synopsis,
+        cast: cast || [],
+        genre,
+        duration_minutes,
+        release_date,
+        rating,
+        language: language || 'English',
+        tenant_id,
+        is_active: is_active !== false
+      })
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        data: movie,
+        message: 'Movie created successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[createMovie]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Movie creation failed'
+      })
+    }
+  }
+
+  static async listMovies(req, res) {
+    try {
+      const { page = 1, limit = 10, status } = req.query
+      const offset = (page - 1) * limit
+
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      await Movie.sync()
+
+      const where = {}
+      if (status === 'active') {
+        where.is_active = true
+      } else if (status === 'inactive') {
+        where.is_active = false
+      }
+
+      const { count, rows: movies } = await Movie.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      })
+
+      return res.json({
+        data: movies,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / limit)
+        },
+        message: 'Movies retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[listMovies]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve movies'
+      })
+    }
+  }
+
+  static async updateMovie(req, res) {
+    try {
+      const { id } = req.params
+      const updateData = req.body
+
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      await Movie.sync()
+
+      const movie = await Movie.findByPk(id)
+
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Movie update failed'
+        })
+      }
+
+      await movie.update(updateData)
+
+      return res.json({
+        data: movie,
+        message: 'Movie updated successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[updateMovie]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Movie update failed'
+      })
+    }
+  }
+
+  static async deleteMovie(req, res) {
+    try {
+      const { id } = req.params
+
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      await Movie.sync()
+
+      const movie = await Movie.findByPk(id)
+
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Movie deletion failed'
+        })
+      }
+
+      await movie.destroy()
+
+      return res.json({
+        message: 'Movie deleted successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[deleteMovie]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Movie deletion failed'
       })
     }
   }

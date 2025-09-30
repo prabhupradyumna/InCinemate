@@ -179,3 +179,58 @@ export async function createTenant(payload: {
   const res = await api.post("/superadmin/tenants", payload);
   return res.data?.data;
 }
+
+// Movies
+export interface MovieDTO {
+  id: string;
+  title: string;
+  poster_url?: string;
+  trailer_url?: string;
+  synopsis?: string;
+  cast?: string[];
+  genre?: string;
+  duration_minutes?: number;
+  release_date?: string;
+  rating?: string;
+  language?: string;
+  tenant_id: string;
+  is_active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMoviePayload {
+  title: string;
+  poster_url?: string;
+  trailer_url?: string;
+  synopsis?: string;
+  cast?: string[];
+  genre?: string;
+  duration_minutes?: number;
+  release_date?: string;
+  rating?: string;
+  language?: string;
+  tenant_id: string;
+  is_active?: boolean;
+}
+
+export async function listMovies(params?: { page?: number; limit?: number; status?: 'active' | 'inactive' }): Promise<{ data: MovieDTO[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> {
+  const res = await api.get('/superadmin/movies', { params });
+  return res.data;
+}
+
+export async function createMovie(payload: CreateMoviePayload): Promise<MovieDTO> {
+  const res = await api.post('/superadmin/movies', payload);
+  return res.data?.data;
+}
+
+export async function updateMovie(id: string, payload: Partial<CreateMoviePayload>): Promise<MovieDTO> {
+  const res = await api.put(`/superadmin/movies/${id}`, payload);
+  return res.data?.data;
+}
+
+export async function deleteMovie(id: string): Promise<void> {
+  await api.delete(`/superadmin/movies/${id}`);
+}
+
+

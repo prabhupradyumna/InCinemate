@@ -5,6 +5,7 @@ import { comparePassword, generateAccessToken, generateRefreshToken, verifyRefre
 import TokenCacheService from '../services/tokenCache.js'
 import { getRefreshTokenExpiry, addDays, moment } from '../util/date.util.js'
 import { ROLES, TOKEN_CONFIG, API_MESSAGES, HTTP_STATUS } from '../constants.js'
+import { createOtpService } from '../services/otpService.js'
 
 export default class AuthController {
   static async superAdminLogin(req, res) {
@@ -353,6 +354,116 @@ export default class AuthController {
     } catch (err) {
       console.error(`[AuthController]-[getCurrentUser]: ${err.message}`)
       return res.status(500).json({ success: false, error: err.message, message: 'Failed to fetch current user' })
+    }
+  }
+
+  // ==============================
+  // CUSTOMER OTP AUTH
+  // ==============================
+
+  static async requestCustomerOtp(req, res) {
+    try {
+      const { email, phone, channel = email ? 'email' : 'sms', purpose = 'login' } = req.body
+      const recipient = channel === 'sms' ? phone : email
+      if (!recipient) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'recipient required', message: 'OTP request failed' })
+      }
+
+      const sequelize = req.db
+      const { requestOtp } = createOtpService(sequelize)
+      const tenantId = req.tenantId || null
+      const { code } = await requestOtp({ recipient, channel, purpose, tenantId })
+
+      // Send via provider: for now log in non-production
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`[otp] ${channel} OTP to ${recipient}: ${code}`)
+      }
+
+      return res.json({ message: 'OTP sent' })
+    } catch (err) {
+      console.error(`[AuthController]-[requestCustomerOtp]: ${err.message}`)
+      return res.status(500).json({ success: false, error: err.message, message: 'OTP request error' })
+    }
+  }
+
+  static async verifyCustomerOtp(req, res) {
+    try {
+      const { email, phone, code, channel = email ? 'email' : 'sms' } = req.body
+      const recipient = channel === 'sms' ? phone : email
+      if (!recipient || !code) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'recipient and code required', message: 'OTP verification failed' })
+      }
+
+      const sequelize = req.db
+      const User = defineUser(sequelize)
+      const RefreshToken = defineRefreshToken(sequelize)
+      await Promise.all([User.sync(), RefreshToken.sync()])
+
+      const { verifyOtp } = createOtpService(sequelize)
+      const result = await verifyOtp({ recipient, code, purpose: 'login' })
+      if (!result.ok) {
+        return res.status(HTTP_STATUS.UNAUTHORIZED).json({ success: false, error: result.reason, message: 'OTP verification failed' })
+      }
+
+      // Upsert user
+      let user = await User.findOne({ where: channel === 'sms' ? { phone: recipient } : { email: recipient } })
+      if (!user) {
+        const payload = {
+          email: channel === 'email' ? recipient : null,
+          phone: channel === 'sms' ? recipient : null,
+          role: ROLES.CUSTOMER,
+          password_hash: null,
+          tenant_id: null,
+          is_active: true,
+        }
+        user = await User.create(payload)
+      }
+
+      const accessToken = generateAccessToken({
+        userId: user.id,
+        email: user.email,
+        role: ROLES.CUSTOMER,
+        tenantId: user.tenant_id,
+      })
+
+      const refreshToken = generateRefreshToken({
+        userId: user.id,
+        email: user.email,
+        tenantId: user.tenant_id,
+      })
+
+      await TokenCacheService.storeAccessToken(accessToken, {
+        userId: user.id,
+        email: user.email,
+        role: ROLES.CUSTOMER,
+        tenantId: user.tenant_id,
+      })
+
+      await RefreshToken.create({
+        user_id: user.id,
+        token: refreshToken,
+        expires_at: getRefreshTokenExpiry(),
+        tenant_id: user.tenant_id,
+      })
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: TOKEN_CONFIG.COOKIE.HTTP_ONLY,
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: TOKEN_CONFIG.COOKIE.SAME_SITE,
+        secure: TOKEN_CONFIG.COOKIE.SECURE,
+        path: TOKEN_CONFIG.COOKIE.PATH
+      })
+
+      return res.json({
+        data: {
+          accessToken,
+          user: { userId: user.id, email: user.email, role: ROLES.CUSTOMER }
+        },
+        message: 'OTP verified successfully'
+      })
+    } catch (err) {
+      console.error(`[AuthController]-[verifyCustomerOtp]: ${err.message}`)
+      return res.status(500).json({ success: false, error: err.message, message: 'OTP verification error' })
     }
   }
 }

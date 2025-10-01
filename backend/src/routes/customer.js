@@ -8,6 +8,10 @@ const router = Router()
 router.use(authenticate)
 router.use(authorizeRoles('customer'))
 
+// Profile
+router.get('/profile', CustomerController.getProfile)
+router.put('/profile', CustomerController.updateProfile)
+
 // ==============================
 // BOOKING MANAGEMENT ROUTES
 // ==============================

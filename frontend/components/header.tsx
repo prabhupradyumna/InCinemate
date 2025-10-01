@@ -1,21 +1,27 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, Search, User, Menu, LogOut, Settings } from "lucide-react"
-import { useAuth } from "@/components/auth/auth-provider"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MapPin, Search, User, Menu, LogOut, Settings } from "lucide-react";
+import { useAuth } from "@/components/auth/auth-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import Link from "next/link"
+} from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 export function Header() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -24,9 +30,13 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 shrink-0">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">S</span>
+              <span className="text-primary-foreground font-bold text-lg">
+                S
+              </span>
             </div>
-            <span className="text-2xl font-bold text-foreground">ScreenLease</span>
+            <span className="text-2xl font-bold text-foreground">
+              ScreenLease
+            </span>
           </Link>
 
           {/* Location + Search */}
@@ -61,7 +71,10 @@ export function Header() {
 
             <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search for movies, theatres..." className="pl-9 w-full" />
+              <Input
+                placeholder="Search for movies, theatres..."
+                className="pl-9 w-full"
+              />
             </div>
           </div>
 
@@ -70,19 +83,33 @@ export function Header() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                  <Button
+                    variant="ghost"
+                    className="text-muted-foreground hover:text-foreground flex items-center gap-2"
+                  >
                     <User className="h-5 w-5" />
+                    <span className="hidden md:inline text-sm">
+                      Hi,{" "}
+                      {user.fullName || user.email || user.phone || "Customer"}
+                    </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="px-3 py-2">
                     <p className="text-sm font-medium text-foreground">
-                      {user.firstName} {user.lastName}
+                      {user.fullName || "Your account"}
                     </p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                    <p className="text-xs text-primary capitalize">{user.role}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user.email || user.phone}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/orders">My Orders</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
                   {user.role === "admin" && (
                     <DropdownMenuItem asChild>
                       <Link href="/admin">
@@ -108,7 +135,9 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <Link href="/login">
-                <Button className="hidden sm:flex bg-primary hover:bg-primary/90">Sign In</Button>
+                <Button className="hidden sm:flex bg-primary hover:bg-primary/90">
+                  Sign In
+                </Button>
               </Link>
             )}
 
@@ -119,5 +148,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

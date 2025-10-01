@@ -2,8 +2,20 @@
 
 import type React from "react";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { getMe, loginAdmin, loginSuperAdmin, logoutApi, refreshToken } from "@/lib/api";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
+import {
+  getMe,
+  loginAdmin,
+  loginSuperAdmin,
+  logoutApi,
+  refreshToken,
+} from "@/lib/api";
 
 type Role = "customer" | "admin" | "super-admin";
 
@@ -12,6 +24,8 @@ interface User {
   email: string;
   role: Role;
   tenantId?: string | number | null;
+  fullName?: string | null;
+  phone?: string | null;
 }
 
 interface AuthContextType {
@@ -24,12 +38,18 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapBackendUser(u: any): User {
-  const roleMap: Record<string, Role> = { super_admin: "super-admin", admin: "admin", customer: "customer" };
+  const roleMap: Record<string, Role> = {
+    super_admin: "super-admin",
+    admin: "admin",
+    customer: "customer",
+  };
   return {
     id: u.userId ?? u.id,
     email: u.email,
     role: roleMap[u.role] ?? (u.role as Role),
     tenantId: u.tenantId ?? null,
+    fullName: u.fullName ?? u.full_name ?? null,
+    phone: u.phone ?? null,
   };
 }
 
@@ -64,26 +84,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     bootstrap();
   }, [bootstrap]);
 
-  const login = useCallback(async (email: string, password: string, role: Role) => {
-    if (role === "super-admin") {
-      await loginSuperAdmin({ email, password });
-    } else if (role === "admin") {
-      await loginAdmin({ email, password });
-    } else {
-      await refreshToken();
-    }
-    const res: any = await getMe();
-    if (res?.data) {
-      const mapped = mapBackendUser(res.data);
-      setUser(mapped);
-      try { localStorage.setItem("screenlease_user", JSON.stringify(mapped)); } catch {}
-    }
-  }, []);
+  const login = useCallback(
+    async (email: string, password: string, role: Role) => {
+      if (role === "super-admin") {
+        await loginSuperAdmin({ email, password });
+      } else if (role === "admin") {
+        await loginAdmin({ email, password });
+      } else {
+        await refreshToken();
+      }
+      const res: any = await getMe();
+      if (res?.data) {
+        const mapped = mapBackendUser(res.data);
+        setUser(mapped);
+        try {
+          localStorage.setItem("screenlease_user", JSON.stringify(mapped));
+        } catch {}
+      }
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
     await logoutApi();
     setUser(null);
-    try { localStorage.removeItem("screenlease_user"); } catch {}
+    try {
+      localStorage.removeItem("screenlease_user");
+    } catch {}
     if (typeof window !== "undefined") window.location.href = "/login";
   }, []);
 

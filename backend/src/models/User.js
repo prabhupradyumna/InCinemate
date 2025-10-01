@@ -12,11 +12,11 @@ export function defineUser(sequelize) {
       email: {
         type: DataTypes.STRING,
         unique: true,
-        allowNull: false,
+        allowNull: true,
       },
       password_hash: {
         type: DataTypes.STRING(255),
-        allowNull: false,
+        allowNull: true,
       },
       role: {
         type: DataTypes.ENUM('super_admin', 'admin', 'customer', 'ticket_checker'),
@@ -35,6 +35,7 @@ export function defineUser(sequelize) {
       phone: {
         type: DataTypes.STRING,
         allowNull: true,
+        unique: true,
       },
       is_active: {
         type: DataTypes.BOOLEAN,

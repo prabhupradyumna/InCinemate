@@ -1,6 +1,6 @@
-import axios, { AxiosError, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosResponse } from "axios";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api";
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -12,19 +12,22 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Set default content type
-    if (!((config.headers as any)['Content-Type'])) {
-      (config.headers as any)['Content-Type'] = 'application/json';
+    if (!(config.headers as any)["Content-Type"]) {
+      (config.headers as any)["Content-Type"] = "application/json";
     }
-    
+
     // Add authorization token
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("accessToken")
+        : null;
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     }
-    
+
     // Add request timestamp for debugging
     (config as any).requestTimestamp = Date.now();
-    
+
     return config;
   },
   (error) => {
@@ -42,14 +45,16 @@ api.interceptors.response.use(
     const requestTimestamp = (response.config as any).requestTimestamp;
     if (requestTimestamp) {
       const responseTime = Date.now() - requestTimestamp;
-      console.log(`API Response time: ${responseTime}ms for ${response.config.method?.toUpperCase()} ${response.config.url}`);
+      console.log(
+        `API Response time: ${responseTime}ms for ${response.config.method?.toUpperCase()} ${response.config.url}`
+      );
     }
-    
+
     return response;
   },
   async (error: AxiosError) => {
     const original = error.config as any;
-    
+
     // Handle 401 errors with token refresh
     if (error?.response?.status === 401 && !original._retry) {
       if (isRefreshing) {
@@ -57,10 +62,10 @@ api.interceptors.response.use(
         original._retry = true;
         return api(original);
       }
-      
+
       isRefreshing = true;
       original._retry = true;
-      
+
       try {
         const ok = await refreshToken();
         pendingResolvers.forEach((r) => r());
@@ -68,74 +73,113 @@ api.interceptors.response.use(
         return ok ? api(original) : Promise.reject(error);
       } catch (refreshError) {
         // If refresh fails, clear token and redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('screenlease_user');
-          window.location.href = '/login';
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("screenlease_user");
+          window.location.href = "/login";
         }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
-    
+
     // Handle other errors
     if (error.response) {
       // Server responded with error status
-      const errorMessage = (error.response.data as any)?.message || (error.response.data as any)?.error || 'An error occurred';
+      const errorMessage =
+        (error.response.data as any)?.message ||
+        (error.response.data as any)?.error ||
+        "An error occurred";
       console.error(`API Error ${error.response.status}:`, errorMessage);
     } else if (error.request) {
       // Request was made but no response received
-      console.error('Network Error:', error.message);
+      console.error("Network Error:", error.message);
     } else {
       // Something else happened
-      console.error('Request Error:', error.message);
+      console.error("Request Error:", error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );
 
-export async function http(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, body?: any) {
+export async function http(
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+  path: string,
+  body?: any
+) {
   const resp = await api.request({ method, url: path, data: body });
   return resp.data;
 }
 
 export async function loginAdmin(payload: { email: string; password: string }) {
-  const res = await http('POST', '/auth/admin/login', payload);
+  const res = await http("POST", "/auth/admin/login", payload);
   const token = (res as any)?.data?.accessToken;
-  if (token && typeof window !== 'undefined') localStorage.setItem('accessToken', token);
+  if (token && typeof window !== "undefined")
+    localStorage.setItem("accessToken", token);
   return res as any;
 }
 
-export async function loginSuperAdmin(payload: { email: string; password: string }) {
-  const res = await http('POST', '/auth/super-admin/login', payload);
+export async function loginSuperAdmin(payload: {
+  email: string;
+  password: string;
+}) {
+  const res = await http("POST", "/auth/super-admin/login", payload);
   const token = (res as any)?.data?.accessToken;
-  if (token && typeof window !== 'undefined') localStorage.setItem('accessToken', token);
+  if (token && typeof window !== "undefined")
+    localStorage.setItem("accessToken", token);
   return res as any;
 }
 
 export async function getMe() {
-  return http('GET', '/auth/me');
+  return http("GET", "/auth/me");
 }
 
 export async function logoutApi() {
-  await http('POST', '/auth/logout');
-  if (typeof window !== 'undefined') localStorage.removeItem('accessToken');
+  await http("POST", "/auth/logout");
+  if (typeof window !== "undefined") localStorage.removeItem("accessToken");
 }
 
 export async function refreshToken(): Promise<boolean> {
   try {
-    const res = await http('POST', '/auth/refresh');
+    const res = await http("POST", "/auth/refresh");
     const token = (res as any)?.data?.accessToken;
-    if (token && typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', token);
-      (api.defaults.headers as any).common = (api.defaults.headers as any).common || {};
-      (api.defaults.headers as any).common['Authorization'] = `Bearer ${token}`;
+    if (token && typeof window !== "undefined") {
+      localStorage.setItem("accessToken", token);
+      (api.defaults.headers as any).common =
+        (api.defaults.headers as any).common || {};
+      (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
       return true;
     }
   } catch {}
   return false;
+}
+
+export async function requestCustomerOtp(payload: {
+  email?: string;
+  phone?: string;
+  channel?: "email" | "sms";
+  purpose?: "login" | "register" | "reset";
+}) {
+  return http("POST", "/auth/customer/request-otp", payload);
+}
+
+export async function verifyCustomerOtp(payload: {
+  email?: string;
+  phone?: string;
+  code: string;
+  channel?: "email" | "sms";
+}) {
+  const res = await http("POST", "/auth/customer/verify-otp", payload);
+  const token = (res as any)?.data?.accessToken;
+  if (token && typeof window !== "undefined") {
+    localStorage.setItem("accessToken", token);
+    (api.defaults.headers as any).common =
+      (api.defaults.headers as any).common || {};
+    (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
+  }
+  return res as any;
 }
 
 export default api;

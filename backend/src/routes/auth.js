@@ -8,6 +8,8 @@ const router = Router()
 // Public routes
 router.post('/super-admin/login', AuthController.superAdminLogin)
 router.post('/admin/login', AuthController.adminLogin)
+router.post('/customer/request-otp', AuthController.requestCustomerOtp)
+router.post('/customer/verify-otp', AuthController.verifyCustomerOtp)
 router.post('/refresh', AuthController.refresh)
 router.post('/logout', AuthController.logout)
 

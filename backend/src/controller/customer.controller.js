@@ -15,6 +15,68 @@ import PaymentService from '../services/paymentService.js'
 
 export default class CustomerController {
   // ==============================
+  // PROFILE
+  // ==============================
+
+  static async getProfile(req, res) {
+    try {
+      const sequelize = req.db
+      const User = defineUser(sequelize)
+      await User.sync()
+      const user = await User.findByPk(req.user.userId)
+      if (!user) return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'User not found' })
+      return res.json({
+        data: {
+          userId: user.id,
+          email: user.email,
+          phone: user.phone,
+          full_name: user.full_name,
+          is_active: user.is_active,
+        }
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[getProfile]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message })
+    }
+  }
+
+  static async updateProfile(req, res) {
+    try {
+      const { email, phone, full_name } = req.body
+      const sequelize = req.db
+      const User = defineUser(sequelize)
+      await User.sync()
+
+      const user = await User.findByPk(req.user.userId)
+      if (!user) return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'User not found' })
+
+      // ensure uniqueness constraints are respected
+      if (email && email !== user.email) {
+        const exists = await User.findOne({ where: { email } })
+        if (exists) return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Email already in use' })
+      }
+      if (phone && phone !== user.phone) {
+        const exists = await User.findOne({ where: { phone } })
+        if (exists) return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Phone already in use' })
+      }
+
+      await user.update({ email: email ?? user.email, phone: phone ?? user.phone, full_name: full_name ?? user.full_name })
+
+      return res.json({
+        data: {
+          userId: user.id,
+          email: user.email,
+          phone: user.phone,
+          full_name: user.full_name,
+        },
+        message: 'Profile updated successfully'
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[updateProfile]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message })
+    }
+  }
+  // ==============================
   // BOOKING MANAGEMENT
   // ==============================
 

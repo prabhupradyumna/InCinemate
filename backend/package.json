@@ -25,6 +25,8 @@
     "pg-hstore": "^2.3.4",
     "redis": "^4.6.12",
     "sequelize": "^6.37.3",
+    "twilio": "^4.23.0",
+    "@sendgrid/mail": "^8.1.0",
     "uuid": "^9.0.1"
   }
 }

@@ -27,7 +27,9 @@ interface HeroCarouselProps {
 }
 
 export function HeroCarousel({ movies }: HeroCarouselProps) {
-  const slides = (movies || []).slice(0, 5);
+  const slides = (movies || [])
+    .filter((m) => Boolean(m?.banner_url || m?.poster_url))
+    .slice(0, 5);
 
   if (slides.length === 0) return null;
 

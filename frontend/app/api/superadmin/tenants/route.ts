@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const queryString = searchParams.toString();
-    const url = `${API_BASE_URL}/superadmin/movies${queryString ? `?${queryString}` : ''}`;
+    const url = `${API_BASE_URL}/superadmin/tenants${queryString ? `?${queryString}` : ''}`;
 
     // Forward authorization header and cookies
     const authHeader = request.headers.get('authorization');
@@ -32,14 +32,15 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('Tenants API error:', { status: response.status, data });
       return NextResponse.json(data, { status: response.status });
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching movies:', error);
+    console.error('Error fetching tenants:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch movies' },
+      { success: false, error: 'Failed to fetch tenants' },
       { status: 500 }
     );
   }
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const url = `${API_BASE_URL}/superadmin/movies`;
+    const url = `${API_BASE_URL}/superadmin/tenants`;
 
     // Forward authorization header and cookies
     const authHeader = request.headers.get('authorization');
@@ -75,46 +76,15 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Movie creation API error:', { status: response.status, data });
+      console.error('Tenant creation API error:', { status: response.status, data });
       return NextResponse.json(data, { status: response.status });
     }
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error creating movie:', error);
+    console.error('Error creating tenant:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to create movie' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const url = `${API_BASE_URL}/superadmin/movies/bulk-update`;
-
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return NextResponse.json(data, { status: response.status });
-    }
-
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error bulk updating movies:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to bulk update movies' },
+      { success: false, error: 'Failed to create tenant' },
       { status: 500 }
     );
   }

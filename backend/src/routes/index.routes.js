@@ -4,6 +4,7 @@ import superadminRoutes from './superadmin.js'
 import adminRoutes from './admin.js'
 import customerRoutes from './customer.js'
 import publicRoutes from './public.js'
+import uploadRoutes from './upload.js'
 import { createShowsRouter } from './shows.js'
 import { createBookingsRouter } from './bookings.js'
 
@@ -30,6 +31,7 @@ router.use('/superadmin', superadminRoutes)
 router.use('/admin', adminRoutes)
 router.use('/customer', customerRoutes)
 router.use('/public', publicRoutes)
+router.use('/upload', uploadRoutes)
 
 // Legacy routes (for backward compatibility)
 router.use('/shows', createShowsRouter())

@@ -77,7 +77,7 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium text-foreground">
-                      {user.firstName} {user.lastName}
+                      {user.full_name}
                     </p>
                     <p className="text-xs text-muted-foreground">{user.email}</p>
                     <p className="text-xs text-primary capitalize">{user.role}</p>

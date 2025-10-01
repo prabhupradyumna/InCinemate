@@ -7,6 +7,7 @@ import { defineAuditoriumRequest } from '../models/AuditoriumRequest.js'
 import { defineAuditorium } from '../models/Auditorium.js'
 import { defineSeat } from '../models/Seat.js'
 import { defineMovie } from '../models/Movie.js'
+import { setupMovieRelationships, syncAllMovieTables, getMovieWithAllRelations, searchMoviesWithCastCrew } from '../models/MovieRelationships.js'
 import { hashPassword, generateTemporaryPassword } from '../util/auth.util.js'
 import { ROLES, API_MESSAGES, HTTP_STATUS } from '../constants.js'
 
@@ -882,33 +883,36 @@ export default class SuperadminController {
   }
 
   // ==============================
-  // MOVIE MANAGEMENT (SUPERADMIN)
+  // ==============================
+  // ENHANCED MOVIE MANAGEMENT (SUPERADMIN)
   // ==============================
 
   static async createMovie(req, res) {
     try {
-      const { title, poster_url, trailer_url, synopsis, cast, genre, duration_minutes, release_date, rating, language, tenant_id, is_active } = req.body
+      const movieData = req.body
+      const { title, tenant_id } = movieData
 
-      if (!title) {
+      // Validation
+      if (!title?.trim()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          error: 'title is required',
+          error: 'Title is required',
           message: 'Movie creation failed'
         })
       }
 
-      if (!tenant_id) {
+      if (!tenant_id?.trim()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          error: 'tenant_id is required',
+          error: 'Tenant ID is required',
           message: 'Movie creation failed'
         })
       }
 
       const sequelize = req.db
-      const Movie = defineMovie(sequelize)
+      const models = await syncAllMovieTables(sequelize)
       const Tenant = defineTenant(sequelize)
-      await Promise.all([Movie.sync(), Tenant.sync()])
+      await Tenant.sync()
 
       // Verify tenant exists
       const tenant = await Tenant.findOne({ where: { tenant_id } })
@@ -920,22 +924,97 @@ export default class SuperadminController {
         })
       }
 
-      const movie = await Movie.create({
-        title,
-        poster_url,
-        trailer_url,
-        synopsis,
-        cast: cast || [],
-        genre,
-        duration_minutes,
-        release_date,
-        rating,
-        language: language || 'English',
+      // Prepare movie data with defaults
+      const moviePayload = {
+        title: title.trim(),
         tenant_id,
-        is_active: is_active !== false
-      })
+        
+        // Media Assets
+        poster_url: movieData.poster_url || null,
+        backdrop_url: movieData.backdrop_url || null,
+        trailer_url: movieData.trailer_url || null,
+        additional_trailers: movieData.additional_trailers || [],
+        photo_gallery: movieData.photo_gallery || [],
+        
+        // Content Details
+        synopsis: movieData.synopsis || null,
+        short_description: movieData.short_description || null,
+        tagline: movieData.tagline || null,
+        genres: movieData.genres || [],
+        sub_genres: movieData.sub_genres || [],
+        
+        // Basic Info
+        duration_minutes: movieData.duration_minutes || null,
+        release_date: movieData.release_date || null,
+        rating: movieData.rating || null,
+        cbfc_certificate: movieData.cbfc_certificate || null,
+        content_advisories: movieData.content_advisories || [],
+        
+        // Languages & Formats
+        languages: movieData.languages || ['English'],
+        subtitle_languages: movieData.subtitle_languages || [],
+        formats: movieData.formats || ['2D'],
+        
+        // External Ratings
+        imdb_rating: movieData.imdb_rating || null,
+        rotten_tomatoes: movieData.rotten_tomatoes || null,
+        metacritic_score: movieData.metacritic_score || null,
+        
+        // Production
+        production_houses: movieData.production_houses || [],
+        distributors: movieData.distributors || [],
+        budget: movieData.budget || null,
+        
+        // Technical
+        aspect_ratio: movieData.aspect_ratio || '2.39:1',
+        sound_mix: movieData.sound_mix || [],
+        camera_used: movieData.camera_used || null,
+        
+        // Music
+        has_songs: movieData.has_songs || false,
+        song_count: movieData.song_count || null,
+        
+        // Booking & Status
+        platform_status: movieData.platform_status || 'coming_soon',
+        booking_opens_at: movieData.booking_opens_at || null,
+        booking_closes_at: movieData.booking_closes_at || null,
+        is_re_release: movieData.is_re_release || false,
+        
+        // Pricing
+        suggested_base_price_min: movieData.suggested_base_price_min || null,
+        suggested_base_price_max: movieData.suggested_base_price_max || null,
+        premium_multiplier: movieData.premium_multiplier || 1.5,
+        
+        // SEO & Marketing
+        meta_title: movieData.meta_title || null,
+        meta_description: movieData.meta_description || null,
+        keywords: movieData.keywords || [],
+        social_hashtags: movieData.social_hashtags || [],
+        
+        // Features
+        is_featured: movieData.is_featured || false,
+        is_trending: movieData.is_trending || false,
+        banner_campaign_active: movieData.banner_campaign_active || false,
+        banner_position: movieData.banner_position || null,
+        campaign_start_date: movieData.campaign_start_date || null,
+        campaign_end_date: movieData.campaign_end_date || null,
+        
+        // Additional Info
+        things_to_know: movieData.things_to_know || [],
+        is_part_of_series: movieData.is_part_of_series || false,
+        series_name: movieData.series_name || null,
+        series_order: movieData.series_order || null,
+        
+        // Admin
+        approval_status: movieData.approval_status || 'draft',
+        internal_notes: movieData.internal_notes || null,
+        is_active: movieData.is_active !== false
+      }
+
+      const movie = await models.Movie.create(moviePayload)
 
       return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
         data: movie,
         message: 'Movie created successfully'
       })
@@ -951,34 +1030,165 @@ export default class SuperadminController {
 
   static async listMovies(req, res) {
     try {
-      const { page = 1, limit = 10, status } = req.query
+      const { 
+        page = 1, 
+        limit = 10, 
+        status, 
+        search, 
+        genre, 
+        language, 
+        platform_status,
+        tenant_id,
+        sort_by = 'created_at',
+        sort_order = 'DESC',
+        include_relations = 'false'
+      } = req.query
+      
       const offset = (page - 1) * limit
-
       const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      await Movie.sync()
 
+      // Use search function if search parameters provided
+      if (search) {
+        const searchResults = await searchMoviesWithCastCrew(sequelize, {
+          title: search,
+          actor: search,
+          director: search,
+          genre: search,
+          limit: parseInt(limit),
+          offset: parseInt(offset)
+        })
+
+        return res.json({
+          success: true,
+          data: searchResults.rows,
+          pagination: {
+            total: searchResults.count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(searchResults.count / limit)
+          },
+          message: 'Movies search results retrieved successfully'
+        })
+      }
+
+      const models = await syncAllMovieTables(sequelize)
+      
+      // Build where clause
       const where = {}
       if (status === 'active') {
         where.is_active = true
       } else if (status === 'inactive') {
         where.is_active = false
       }
+      
+      if (genre) {
+        where.genres = {
+          [sequelize.Sequelize.Op.contains]: [genre]
+        }
+      }
+      
+      if (language) {
+        where.languages = {
+          [sequelize.Sequelize.Op.contains]: [language]
+        }
+      }
+      
+      if (platform_status) {
+        where.platform_status = platform_status
+      }
+      
+      if (tenant_id) {
+        where.tenant_id = tenant_id
+      }
 
-      const { count, rows: movies } = await Movie.findAndCountAll({
-        where,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        order: [['createdAt', 'DESC']]
-      })
+      // Build include array
+      const include = []
+      if (include_relations === 'true') {
+        try {
+          include.push(
+            {
+              model: models.MovieCast,
+              as: 'castMembers',
+              include: [{
+                model: models.Actor,
+                as: 'actor'
+              }],
+              required: false,
+              separate: true, // Use separate query to avoid SQL issues
+              limit: 5,
+              order: [['display_order', 'ASC']]
+            },
+            {
+              model: models.MovieCrew,
+              as: 'crewMembers',
+              include: [{
+                model: models.CrewPerson,
+                as: 'person'
+              }],
+              where: {
+                role_category: ['direction', 'production'],
+                is_primary: true
+              },
+              required: false,
+              separate: true, // Use separate query to avoid SQL issues
+              order: [['display_order', 'ASC']]
+            }
+          )
+        } catch (relationError) {
+          console.warn('[SuperadminController]-[listMovies]: Relation setup error, proceeding without relations:', relationError.message)
+          // Continue without relations if there's an issue
+        }
+      }
+
+      // Build order clause
+      const orderField = sort_by === 'title' ? 'title' :
+                        sort_by === 'release_date' ? 'release_date' :
+                        sort_by === 'total_bookings' ? 'total_bookings' :
+                        sort_by === 'average_user_rating' ? 'average_user_rating' :
+                        'created_at'
+      
+      // Try query with relations first, fallback to basic query if it fails
+      let count, movies
+      try {
+        const result = await models.Movie.findAndCountAll({
+          where,
+          include,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          order: [[orderField, sort_order.toUpperCase()]],
+          distinct: true
+        })
+        count = result.count
+        movies = result.rows
+      } catch (queryError) {
+        console.warn('[SuperadminController]-[listMovies]: Complex query failed, using simple query:', queryError.message)
+        // Fallback to basic query without relations
+        const result = await models.Movie.findAndCountAll({
+          where,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          order: [[orderField, sort_order.toUpperCase()]],
+          distinct: true
+        })
+        count = result.count
+        movies = result.rows
+      }
 
       return res.json({
+        success: true,
         data: movies,
         pagination: {
           total: count,
           page: parseInt(page),
           limit: parseInt(limit),
           totalPages: Math.ceil(count / limit)
+        },
+        filters: {
+          status,
+          genre,
+          language,
+          platform_status,
+          tenant_id
         },
         message: 'Movies retrieved successfully'
       })
@@ -992,16 +1202,53 @@ export default class SuperadminController {
     }
   }
 
+  static async getMovie(req, res) {
+    try {
+      const { id } = req.params
+      const { include_relations = 'true' } = req.query
+
+      const sequelize = req.db
+
+      let movie
+      if (include_relations === 'true') {
+        movie = await getMovieWithAllRelations(sequelize, id)
+      } else {
+        const models = await syncAllMovieTables(sequelize)
+        movie = await models.Movie.findByPk(id)
+      }
+
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Movie retrieval failed'
+        })
+      }
+
+      return res.json({
+        success: true,
+        data: movie,
+        message: 'Movie retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[getMovie]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Movie retrieval failed'
+      })
+    }
+  }
+
   static async updateMovie(req, res) {
     try {
       const { id } = req.params
       const updateData = req.body
 
       const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      await Movie.sync()
+      const models = await syncAllMovieTables(sequelize)
 
-      const movie = await Movie.findByPk(id)
+      const movie = await models.Movie.findByPk(id)
 
       if (!movie) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -1011,10 +1258,15 @@ export default class SuperadminController {
         })
       }
 
+      // Update the movie with provided data
       await movie.update(updateData)
 
+      // Return updated movie with relations if requested
+      const updatedMovie = await getMovieWithAllRelations(sequelize, id)
+
       return res.json({
-        data: movie,
+        success: true,
+        data: updatedMovie,
         message: 'Movie updated successfully'
       })
     } catch (err) {
@@ -1032,10 +1284,9 @@ export default class SuperadminController {
       const { id } = req.params
 
       const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      await Movie.sync()
+      const models = await syncAllMovieTables(sequelize)
 
-      const movie = await Movie.findByPk(id)
+      const movie = await models.Movie.findByPk(id)
 
       if (!movie) {
         return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -1045,9 +1296,11 @@ export default class SuperadminController {
         })
       }
 
+      // Cascade delete will handle related records automatically
       await movie.destroy()
 
       return res.json({
+        success: true,
         message: 'Movie deleted successfully'
       })
     } catch (err) {
@@ -1056,6 +1309,282 @@ export default class SuperadminController {
         success: false,
         error: err.message,
         message: 'Movie deletion failed'
+      })
+    }
+  }
+
+  // ==============================
+  // MOVIE CAST MANAGEMENT
+  // ==============================
+
+  static async addMovieCast(req, res) {
+    try {
+      const { movieId } = req.params
+      const { actor_id, character_name, character_description, role_type, display_order, is_featured, screen_time_minutes, character_image_url, character_type } = req.body
+
+      if (!actor_id || !character_name || !role_type) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'actor_id, character_name, and role_type are required',
+          message: 'Cast addition failed'
+        })
+      }
+
+      const sequelize = req.db
+      const models = await syncAllMovieTables(sequelize)
+
+      // Verify movie exists
+      const movie = await models.Movie.findByPk(movieId)
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Cast addition failed'
+        })
+      }
+
+      // Verify actor exists
+      const actor = await models.Actor.findByPk(actor_id)
+      if (!actor) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Actor not found',
+          message: 'Cast addition failed'
+        })
+      }
+
+      const castMember = await models.MovieCast.create({
+        movie_id: movieId,
+        actor_id,
+        character_name,
+        character_description,
+        role_type,
+        display_order: display_order || 0,
+        is_featured: is_featured || false,
+        screen_time_minutes,
+        character_image_url,
+        character_type,
+        created_by: req.user?.id || 'system'
+      })
+
+      // Update actor's total movie count
+      await actor.increment('total_movies')
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: castMember,
+        message: 'Cast member added successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[addMovieCast]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Cast addition failed'
+      })
+    }
+  }
+
+  static async removeMovieCast(req, res) {
+    try {
+      const { movieId, castId } = req.params
+
+      const sequelize = req.db
+      const models = await syncAllMovieTables(sequelize)
+
+      const castMember = await models.MovieCast.findOne({
+        where: { id: castId, movie_id: movieId }
+      })
+
+      if (!castMember) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Cast member not found',
+          message: 'Cast removal failed'
+        })
+      }
+
+      await castMember.destroy()
+
+      return res.json({
+        success: true,
+        message: 'Cast member removed successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[removeMovieCast]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Cast removal failed'
+      })
+    }
+  }
+
+  // ==============================
+  // MOVIE CREW MANAGEMENT
+  // ==============================
+
+  static async addMovieCrew(req, res) {
+    try {
+      const { movieId } = req.params
+      const { person_id, role_category, role_title, custom_credit_text, is_primary, display_order, contribution_description, department } = req.body
+
+      if (!person_id || !role_category || !role_title) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'person_id, role_category, and role_title are required',
+          message: 'Crew addition failed'
+        })
+      }
+
+      const sequelize = req.db
+      const models = await syncAllMovieTables(sequelize)
+
+      // Verify movie exists
+      const movie = await models.Movie.findByPk(movieId)
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Crew addition failed'
+        })
+      }
+
+      // Verify crew person exists
+      const person = await models.CrewPerson.findByPk(person_id)
+      if (!person) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Crew person not found',
+          message: 'Crew addition failed'
+        })
+      }
+
+      const crewMember = await models.MovieCrew.create({
+        movie_id: movieId,
+        person_id,
+        role_category,
+        role_title,
+        custom_credit_text,
+        is_primary: is_primary || false,
+        display_order: display_order || 0,
+        contribution_description,
+        department,
+        created_by: req.user?.id || 'system'
+      })
+
+      // Update person's total credits count
+      await person.increment('total_credits')
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: crewMember,
+        message: 'Crew member added successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[addMovieCrew]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Crew addition failed'
+      })
+    }
+  }
+
+  // ==============================
+  // MOVIE REVIEWS MANAGEMENT
+  // ==============================
+
+  static async addMovieReview(req, res) {
+    try {
+      const { movieId } = req.params
+      const reviewData = req.body
+
+      if (!reviewData.reviewer_name || !reviewData.review_quote || !reviewData.review_type) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'reviewer_name, review_quote, and review_type are required',
+          message: 'Review addition failed'
+        })
+      }
+
+      const sequelize = req.db
+      const models = await syncAllMovieTables(sequelize)
+
+      // Verify movie exists
+      const movie = await models.Movie.findByPk(movieId)
+      if (!movie) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Movie not found',
+          message: 'Review addition failed'
+        })
+      }
+
+      const review = await models.MovieReview.create({
+        movie_id: movieId,
+        ...reviewData,
+        review_date: reviewData.review_date || new Date(),
+        created_by: req.user?.id || 'system'
+      })
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: review,
+        message: 'Review added successfully'
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[addMovieReview]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Review addition failed'
+      })
+    }
+  }
+
+  // ==============================
+  // BULK OPERATIONS
+  // ==============================
+
+  static async bulkUpdateMovieStatus(req, res) {
+    try {
+      const { movieIds, status, platform_status } = req.body
+
+      if (!movieIds?.length) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'movieIds array is required',
+          message: 'Bulk update failed'
+        })
+      }
+
+      const sequelize = req.db
+      const models = await syncAllMovieTables(sequelize)
+
+      const updateData = {}
+      if (status !== undefined) updateData.is_active = status
+      if (platform_status) updateData.platform_status = platform_status
+
+      const [updatedCount] = await models.Movie.update(updateData, {
+        where: {
+          id: {
+            [sequelize.Sequelize.Op.in]: movieIds
+          }
+        }
+      })
+
+      return res.json({
+        success: true,
+        data: { updatedCount },
+        message: `${updatedCount} movies updated successfully`
+      })
+    } catch (err) {
+      console.error(`[SuperadminController]-[bulkUpdateMovieStatus]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Bulk update failed'
       })
     }
   }

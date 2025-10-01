@@ -65,8 +65,7 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
   const router = useRouter()
 
   const [customerDetails, setCustomerDetails] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
+    fullName: user?.full_name || "",
     email: user?.email || "",
     phone: "",
   })
@@ -121,7 +120,7 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
   }
 
   const isDetailsValid =
-    customerDetails.firstName && customerDetails.lastName && customerDetails.email && customerDetails.phone
+    customerDetails.fullName && customerDetails.email && customerDetails.phone
 
   const isPaymentValid =
     paymentDetails.cardNumber && paymentDetails.expiry && paymentDetails.cvv && paymentDetails.nameOnCard
@@ -204,25 +203,14 @@ export function BookingSummary({ showData, selectedSeats = [] }: BookingSummaryP
                   <User className="h-4 w-4" />
                   Customer Details
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input
-                      id="firstName"
-                      value={customerDetails.firstName}
-                      onChange={(e) => setCustomerDetails((prev) => ({ ...prev, firstName: e.target.value }))}
-                      className="bg-input border-border"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input
-                      id="lastName"
-                      value={customerDetails.lastName}
-                      onChange={(e) => setCustomerDetails((prev) => ({ ...prev, lastName: e.target.value }))}
-                      className="bg-input border-border"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={customerDetails.fullName}
+                    onChange={(e) => setCustomerDetails((prev) => ({ ...prev, fullName: e.target.value }))}
+                    className="bg-input border-border"
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>

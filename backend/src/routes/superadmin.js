@@ -84,7 +84,7 @@ router.put('/auditorium-requests/:id/status', SuperadminController.updateAuditor
 router.post('/auditoriums/configure', SuperadminController.createAuditoriumConfiguration)
 
 // ==============================
-// MOVIE MANAGEMENT ROUTES (SUPERADMIN)
+// ENHANCED MOVIE MANAGEMENT ROUTES (SUPERADMIN)
 // ==============================
 
 // Create a new movie
@@ -93,10 +93,16 @@ router.post('/movies',
   SuperadminController.createMovie
 )
 
-// List all movies
+// List all movies (with advanced filtering and search)
 router.get('/movies', 
   requirePermission('Manage Movies'),
   SuperadminController.listMovies
+)
+
+// Get single movie with all relations
+router.get('/movies/:id', 
+  requirePermission('Manage Movies'),
+  SuperadminController.getMovie
 )
 
 // Update movie details
@@ -109,6 +115,48 @@ router.put('/movies/:id',
 router.delete('/movies/:id',
   requirePermission('Manage Movies'),
   SuperadminController.deleteMovie
+)
+
+// Bulk update movie status
+router.patch('/movies/bulk-update',
+  requirePermission('Manage Movies'),
+  SuperadminController.bulkUpdateMovieStatus
+)
+
+// ==============================
+// MOVIE CAST MANAGEMENT ROUTES
+// ==============================
+
+// Add cast member to movie
+router.post('/movies/:movieId/cast',
+  requirePermission('Manage Movies'),
+  SuperadminController.addMovieCast
+)
+
+// Remove cast member from movie
+router.delete('/movies/:movieId/cast/:castId',
+  requirePermission('Manage Movies'),
+  SuperadminController.removeMovieCast
+)
+
+// ==============================
+// MOVIE CREW MANAGEMENT ROUTES
+// ==============================
+
+// Add crew member to movie
+router.post('/movies/:movieId/crew',
+  requirePermission('Manage Movies'),
+  SuperadminController.addMovieCrew
+)
+
+// ==============================
+// MOVIE REVIEWS MANAGEMENT ROUTES
+// ==============================
+
+// Add review to movie
+router.post('/movies/:movieId/reviews',
+  requirePermission('Manage Movies'),
+  SuperadminController.addMovieReview
 )
 
 export default router

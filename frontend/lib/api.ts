@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api';
+// Use env as-is if provided (it should include the API path). Fallback to local dev default.
+const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000/api').trim();
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -18,8 +19,24 @@ api.interceptors.request.use(
     
     // Add authorization token
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    console.log('🔑 API Interceptor - URL:', config.url);
+    console.log('🔑 API Interceptor - Method:', config.method);
+    console.log('🔑 API Interceptor - Token found:', token ? 'YES' : 'NO');
+    console.log('🔑 API Interceptor - Token (first 20 chars):', token ? token.substring(0, 20) + '...' : 'NONE');
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
+      console.log('✅ API Interceptor - Authorization header set:', (config.headers as any).Authorization?.substring(0, 30) + '...');
+    } else {
+      console.warn('❌ API Interceptor - No token found in localStorage');
+      if (typeof window !== 'undefined') {
+        try {
+          console.log('🔍 API Interceptor - All localStorage keys:', Object.keys(localStorage || {}));
+        } catch {
+          console.log('🔍 API Interceptor - Unable to read localStorage keys');
+        }
+      } else {
+        console.log('🔍 API Interceptor - Running on server (no localStorage)');
+      }
     }
     
     // Add request timestamp for debugging
@@ -109,9 +126,16 @@ export async function loginAdmin(payload: { email: string; password: string }) {
 }
 
 export async function loginSuperAdmin(payload: { email: string; password: string }) {
+  console.log('🔐 LOGIN: Attempting super admin login...');
   const res = await http('POST', '/auth/super-admin/login', payload);
+  console.log('🔐 LOGIN: Full response:', res);
   const token = (res as any)?.data?.accessToken;
-  if (token && typeof window !== 'undefined') localStorage.setItem('accessToken', token);
+  console.log('🔐 LOGIN: Extracted token:', token ? 'FOUND' : 'NOT FOUND');
+  if (token && typeof window !== 'undefined') {
+    localStorage.setItem('accessToken', token);
+    console.log('🔐 LOGIN: Token stored in localStorage as accessToken');
+    console.log('🔐 LOGIN: Verification - token in localStorage:', localStorage.getItem('accessToken') ? 'YES' : 'NO');
+  }
   return res as any;
 }
 

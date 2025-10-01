@@ -2,16 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Switch } from "@/components/ui/switch"
 import { VenueManagement } from "@/components/super-admin/venue-management"
 import { PlatformAnalytics } from "@/components/super-admin/platform-analytics"
 import { UserManagement } from "@/components/super-admin/user-management"
 import { PlatformSettings } from "@/components/super-admin/platform-settings"
 import { AuditoriumRequests } from "@/components/super-admin/auditorium-requests"
 import { AuditoriumBuilder } from "@/components/super-admin/auditorium-builder"
-import { MovieTable } from "@/components/super-admin/movie-table"
 import { Building2, DollarSign, Users, TrendingUp, Activity, Globe } from "lucide-react"
 import { listTenants, listAdmins, listAuditoriumRequests } from "@/lib/superadmin"
 import { useApiCall } from "@/lib/hooks"
@@ -39,7 +38,6 @@ const platformStats = {
 export function SuperAdminDashboard() {
   const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview")
-  const [showActiveMovies, setShowActiveMovies] = useState(true)
 
   // Fetch real platform data
   const { data: tenants, loading: tenantsLoading } = useApiCall(listTenants, [])
@@ -100,12 +98,11 @@ export function SuperAdminDashboard() {
           >
             Venues
           </TabsTrigger>
-          <TabsTrigger
-            value="movies"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Movies
-          </TabsTrigger>
+          <Link href="/super-admin/movies">
+            <div className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground bg-secondary text-secondary-foreground hover:bg-secondary/80">
+              Movies
+            </div>
+          </Link>
           <TabsTrigger
             value="auditorium-requests"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -251,41 +248,6 @@ export function SuperAdminDashboard() {
 
         <TabsContent value="venues">
           <VenueManagement />
-        </TabsContent>
-
-        <TabsContent value="movies">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold tracking-tight">Movie Management</h2>
-                <p className="text-muted-foreground">
-                  Manage movies across all venues in the platform
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {showActiveMovies ? 'Active Movies' : 'Inactive Movies'}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    {showActiveMovies ? 'Active' : 'Inactive'}
-                  </span>
-                  <Switch
-                    checked={showActiveMovies}
-                    onCheckedChange={setShowActiveMovies}
-                  />
-                </div>
-              </div>
-            </div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Movies</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MovieTable statusFilter={showActiveMovies ? 'active' : 'inactive'} />
-              </CardContent>
-            </Card>
-          </div>
         </TabsContent>
 
         <TabsContent value="auditorium-requests">

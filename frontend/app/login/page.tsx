@@ -87,7 +87,7 @@ export default function LoginPage() {
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p><strong>Customer:</strong> customer@demo.com / password</p>
                   <p><strong>Admin:</strong> admin@demo.com / password</p>
-                  <p><strong>Super Admin:</strong> superadmin@demo.com / password</p>
+                  <p><strong>Super Admin:</strong> superadmin@gmail.com / 123</p>
                 </div>
               </div>
             </Tabs>

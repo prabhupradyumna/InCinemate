@@ -33,6 +33,7 @@ interface AuthContextType {
   login: (email: string, password: string, role: Role) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,8 +115,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") window.location.href = "/login";
   }, []);
 
+  const refresh = useCallback(async () => {
+    try {
+      const res: any = await getMe();
+      if (res?.data) {
+        const mapped = mapBackendUser(res.data);
+        setUser(mapped);
+        try {
+          localStorage.setItem("screenlease_user", JSON.stringify(mapped));
+        } catch {}
+      }
+    } catch {}
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, refresh }}>
       {children}
     </AuthContext.Provider>
   );

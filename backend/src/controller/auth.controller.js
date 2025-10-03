@@ -388,7 +388,7 @@ export default class AuthController {
 
   static async verifyCustomerOtp(req, res) {
     try {
-      const { email, phone, code, channel = email ? 'email' : 'sms' } = req.body
+      const { email, phone, code, channel = email ? 'email' : 'sms', full_name } = req.body
       const recipient = channel === 'sms' ? phone : email
       if (!recipient || !code) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'recipient and code required', message: 'OTP verification failed' })
@@ -409,14 +409,28 @@ export default class AuthController {
       let user = await User.findOne({ where: channel === 'sms' ? { phone: recipient } : { email: recipient } })
       if (!user) {
         const payload = {
-          email: channel === 'email' ? recipient : null,
-          phone: channel === 'sms' ? recipient : null,
+          email: channel === 'email' ? recipient : (email || null),
+          phone: channel === 'sms' ? recipient : (phone || null),
           role: ROLES.CUSTOMER,
           password_hash: null,
           tenant_id: null,
           is_active: true,
         }
+        if (full_name) payload.full_name = full_name
         user = await User.create(payload)
+      } else {
+        // If user exists (matched by phone or email), update missing fields when provided
+        const updates = {}
+        if (full_name && !user.full_name) updates.full_name = full_name
+        if (email && !user.email) {
+          // Ensure email uniqueness
+          const exists = await User.findOne({ where: { email } })
+          if (!exists) updates.email = email
+        }
+        if (phone && !user.phone) updates.phone = phone
+        if (Object.keys(updates).length > 0) {
+          await user.update(updates)
+        }
       }
 
       const accessToken = generateAccessToken({

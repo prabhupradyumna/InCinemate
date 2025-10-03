@@ -9,7 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MapPin, Search, User, Menu, LogOut, Settings } from "lucide-react";
+import {
+  MapPin,
+  Search,
+  User,
+  Menu,
+  LogOut,
+  Settings,
+  Home,
+} from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import {
   DropdownMenu,
@@ -19,12 +27,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 export function Header() {
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-[2000]">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center gap-3 md:gap-6">
           {/* Logo */}
@@ -94,7 +111,7 @@ export function Header() {
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuContent align="end" className="w-64 z-[2100]">
                   <div className="px-3 py-2">
                     <p className="text-sm font-medium text-foreground">
                       {user.fullName || "Your account"}
@@ -104,11 +121,11 @@ export function Header() {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders">My Orders</Link>
+                  <DropdownMenuItem onSelect={() => router.push("/orders")}>
+                    My Orders
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
+                  <DropdownMenuItem onSelect={() => router.push("/profile")}>
+                    Profile
                   </DropdownMenuItem>
                   {user.role === "admin" && (
                     <DropdownMenuItem asChild>
@@ -141,9 +158,77 @@ export function Header() {
               </Link>
             )}
 
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80 z-[2200]">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="mt-4 space-y-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => router.push("/")}
+                  >
+                    <Home className="mr-2 h-4 w-4" /> Home
+                  </Button>
+                  {user ? (
+                    <>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => router.push("/orders")}
+                      >
+                        My Orders
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => router.push("/profile")}
+                      >
+                        Profile
+                      </Button>
+                      {user.role === "admin" && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => router.push("/admin")}
+                        >
+                          <Settings className="mr-2 h-4 w-4" /> Admin Dashboard
+                        </Button>
+                      )}
+                      {user.role === "super-admin" && (
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start"
+                          onClick={() => router.push("/super-admin")}
+                        >
+                          <Settings className="mr-2 h-4 w-4" /> Super Admin
+                        </Button>
+                      )}
+                      <Button
+                        variant="destructive"
+                        className="w-full justify-start"
+                        onClick={logout}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" /> Sign Out
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      className="w-full"
+                      onClick={() => router.push("/login")}
+                    >
+                      Sign In
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>

@@ -54,9 +54,14 @@ interface ShowData {
 interface SeatSelectionProps {
   showData: ShowData;
   onSelectionChange?: (seats: SeatData[]) => void;
+  maxSeats?: number;
 }
 
-export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProps) {
+export function SeatSelection({
+  showData,
+  onSelectionChange,
+  maxSeats,
+}: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
 
   // Create seat data with status
@@ -102,8 +107,8 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
         )
       );
     } else {
-      if (selectedSeats.length < 8) {
-        // Max 8 seats per booking
+      const maxAllowed = maxSeats || 8;
+      if (selectedSeats.length < maxAllowed) {
         setSelectedSeats((prev) => [...prev, clickedSeat]);
       }
     }
@@ -143,13 +148,15 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
       {/* Movie Info */}
       <Card className="bg-card border-border">
         <CardHeader>
-          <CardTitle className="flex items-center gap-4">
-            <div className="w-16 h-24 bg-muted rounded-lg flex items-center justify-center">
-              <Monitor className="h-8 w-8 text-muted-foreground" />
+          <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-12 h-16 sm:w-16 sm:h-24 bg-muted rounded-lg flex items-center justify-center">
+              <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">{showData.movie.title}</h2>
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <h2 className="text-xl sm:text-2xl font-bold">
+                {showData.movie.title}
+              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
                   <span>{showData.venue.name}</span>
@@ -176,26 +183,26 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
             <Badge variant="outline">{showData.screen.name}</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           {/* Screen */}
           <div className="flex justify-center">
-            <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
+            <div className="w-2/3 sm:w-3/4 h-1 sm:h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
           </div>
-          <div className="text-center text-sm text-muted-foreground mb-8">
+          <div className="text-center text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
             SCREEN
           </div>
 
           {/* Seat Grid */}
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3 overflow-x-auto">
             {showData.screen.seatMap.rows.map((rowData) => (
               <div
                 key={rowData.row}
-                className="flex items-center justify-center gap-2"
+                className="flex items-center justify-center gap-1 sm:gap-2 min-w-max"
               >
-                <div className="w-8 text-center font-medium text-muted-foreground">
+                <div className="w-6 sm:w-8 text-center font-medium text-muted-foreground text-xs sm:text-sm">
                   {rowData.row}
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-0.5 sm:gap-1">
                   {rowData.seats.map((seatNumber) => {
                     const seat = seatData.find(
                       (s) => s.row === rowData.row && s.seat === seatNumber
@@ -205,7 +212,7 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
                         key={`${rowData.row}-${seatNumber}`}
                         variant="ghost"
                         size="sm"
-                        className={getSeatButtonClass(seat)}
+                        className={`${getSeatButtonClass(seat)} w-6 h-6 sm:w-8 sm:h-8 p-0 text-xs sm:text-sm touch-manipulation`}
                         onClick={() => handleSeatClick(seat)}
                         disabled={seat.status === "booked"}
                       >
@@ -214,7 +221,7 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
                     );
                   })}
                 </div>
-                <div className="w-8 text-center font-medium text-muted-foreground">
+                <div className="w-6 sm:w-8 text-center font-medium text-muted-foreground text-xs sm:text-sm">
                   {rowData.row}
                 </div>
               </div>
@@ -222,22 +229,30 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
           </div>
 
           {/* Legend */}
-          <div className="flex justify-center gap-6 pt-6 border-t border-border">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-secondary border-2 border-border rounded-md"></div>
-              <span className="text-sm text-muted-foreground">Available</span>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 pt-4 sm:pt-6 border-t border-border">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-secondary border-2 border-border rounded-md"></div>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Available
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-accent/20 border-2 border-accent/40 rounded-md"></div>
-              <span className="text-sm text-muted-foreground">Premium</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-accent/20 border-2 border-accent/40 rounded-md"></div>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Premium
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-primary border-2 border-primary rounded-md"></div>
-              <span className="text-sm text-muted-foreground">Selected</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-primary border-2 border-primary rounded-md"></div>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Selected
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 bg-destructive/20 border-2 border-destructive/40 rounded-md"></div>
-              <span className="text-sm text-muted-foreground">Booked</span>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-destructive/20 border-2 border-destructive/40 rounded-md"></div>
+              <span className="text-xs sm:text-sm text-muted-foreground">
+                Booked
+              </span>
             </div>
           </div>
         </CardContent>
@@ -246,21 +261,23 @@ export function SeatSelection({ showData, onSelectionChange }: SeatSelectionProp
       {/* Selected Seats Summary */}
       {selectedSeats.length > 0 && (
         <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
-                <p className="font-medium">Selected Seats:</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="font-medium text-sm sm:text-base">
+                  Selected Seats:
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {selectedSeats
                     .map((seat) => `${seat.row}${seat.seat}`)
                     .join(", ")}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-primary">
+              <div className="text-left sm:text-right">
+                <p className="text-xl sm:text-2xl font-bold text-primary">
                   ${totalPrice.toFixed(2)}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {selectedSeats.length} seat(s)
                 </p>
               </div>

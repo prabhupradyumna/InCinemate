@@ -5,6 +5,8 @@ import { SeatSelection } from "@/components/seat-selection";
 import { Header } from "@/components/header";
 import { BookingSummary } from "@/components/booking-summary";
 import { Separator } from "@/components/ui/separator";
+import { SeatQuantitySelector } from "@/components/seat-quantity-selector";
+import { SeatSelectionSummary } from "@/components/seat-selection-summary";
 
 type PublicMovie = {
   id: string;
@@ -25,18 +27,30 @@ export default function BookingPage({
   const [movie, setMovie] = useState<PublicMovie | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSeats, setSelectedSeats] = useState<Array<{ row: string; seat: number; type: "premium" | "regular" }>>([]);
+  const [selectedSeats, setSelectedSeats] = useState<
+    Array<{ row: string; seat: number; type: "premium" | "regular" }>
+  >([]);
+  const [showQuantitySelector, setShowQuantitySelector] = useState(true);
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [showBookingFlow, setShowBookingFlow] = useState(false);
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback(
-    (seats: Array<{ row: string; seat: number; type: "premium" | "regular" }>) => {
+    (
+      seats: Array<{ row: string; seat: number; type: "premium" | "regular" }>
+    ) => {
       setSelectedSeats((prev) => {
         if (prev.length === seats.length) {
           let same = true;
           for (let i = 0; i < prev.length; i++) {
             const a = prev[i];
             const b = seats[i];
-            if (!b || a.row !== b.row || a.seat !== b.seat || a.type !== b.type) {
+            if (
+              !b ||
+              a.row !== b.row ||
+              a.seat !== b.seat ||
+              a.type !== b.type
+            ) {
               same = false;
               break;
             }
@@ -71,7 +85,9 @@ export default function BookingPage({
   // Build a mock show object around the selected movie
   const showData = useMemo(() => {
     const title = movie?.title || "Loading";
-    const durationNumber = movie?.duration ? parseInt(movie.duration, 10) || 120 : 120;
+    const durationNumber = movie?.duration
+      ? parseInt(movie.duration, 10) || 120
+      : 120;
     const ratingStr = movie ? String(movie.rating) : "PG-13";
 
     return {
@@ -91,14 +107,46 @@ export default function BookingPage({
         name: "Screen 1",
         seatMap: {
           rows: [
-            { row: "A", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], type: "premium" },
-            { row: "B", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], type: "premium" },
-            { row: "C", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-            { row: "D", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-            { row: "E", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-            { row: "F", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-            { row: "G", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
-            { row: "H", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], type: "regular" },
+            {
+              row: "A",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+              type: "premium",
+            },
+            {
+              row: "B",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+              type: "premium",
+            },
+            {
+              row: "C",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
+            {
+              row: "D",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
+            {
+              row: "E",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
+            {
+              row: "F",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
+            {
+              row: "G",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
+            {
+              row: "H",
+              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+              type: "regular",
+            },
           ],
         },
       },
@@ -121,30 +169,91 @@ export default function BookingPage({
     };
   }, [movie, params.movieId]);
 
+  // Seat categories with pricing and availability
+  const seatCategories = useMemo(
+    () => [
+      { name: "RECLINER", price: 500, status: "sold_out" as const },
+      { name: "GOLD", price: 330, status: "sold_out" as const },
+      { name: "SILVER", price: 330, status: "almost_full" as const },
+      { name: "SPECIAL", price: 330, status: "available" as const },
+    ],
+    []
+  );
+
+  const handleQuantityConfirm = (quantity: number) => {
+    setSelectedQuantity(quantity);
+    setShowQuantitySelector(false);
+  };
+
+  const handlePayNow = () => {
+    if (selectedSeats.length === 0) return;
+    setShowBookingFlow(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {loading ? (
-          <div className="min-h-[300px] flex items-center justify-center text-muted-foreground">Loading movie...</div>
+          <div className="min-h-[300px] flex items-center justify-center text-muted-foreground">
+            Loading movie...
+          </div>
         ) : error ? (
           <div className="max-w-xl mx-auto text-center space-y-2">
             <h2 className="text-xl font-semibold">{error}</h2>
-            <p className="text-sm text-muted-foreground">Please go back and choose a different movie.</p>
+            <p className="text-sm text-muted-foreground">
+              Please go back and choose a different movie.
+            </p>
           </div>
+        ) : showBookingFlow ? (
+          <BookingSummary
+            showData={showData as any}
+            selectedSeats={selectedSeats}
+            selectedQuantity={selectedQuantity}
+            onBack={() => setShowBookingFlow(false)}
+          />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <SeatSelection
-                showData={showData as any}
-                onSelectionChange={(seats) =>
-                  handleSelectionChange(seats.map((s) => ({ row: s.row, seat: s.seat, type: s.type })))}
-              />
+          <>
+            <div className="space-y-6 sm:space-y-8">
+              {/* Seat Selection - Full Width */}
+              <div className="w-full">
+                <SeatSelection
+                  showData={showData as any}
+                  onSelectionChange={(seats) =>
+                    handleSelectionChange(
+                      seats.map((s) => ({
+                        row: s.row,
+                        seat: s.seat,
+                        type: s.type,
+                      }))
+                    )
+                  }
+                  maxSeats={selectedQuantity}
+                />
+              </div>
+
+              {/* Pay Now Section - Below Seat Selection */}
+              <div className="flex justify-center px-2 sm:px-0">
+                <div className="w-full max-w-md">
+                  <SeatSelectionSummary
+                    showData={showData as any}
+                    selectedSeats={selectedSeats}
+                    selectedQuantity={selectedQuantity}
+                    onPayNow={handlePayNow}
+                  />
+                </div>
+              </div>
             </div>
-            <div className="lg:col-span-1">
-              <BookingSummary showData={showData as any} selectedSeats={selectedSeats} />
-            </div>
-          </div>
+
+            {/* Seat Quantity Selector Modal */}
+            <SeatQuantitySelector
+              isOpen={showQuantitySelector}
+              onClose={() => setShowQuantitySelector(false)}
+              onConfirm={handleQuantityConfirm}
+              categories={seatCategories}
+              selectedQuantity={selectedQuantity}
+            />
+          </>
         )}
       </main>
     </div>

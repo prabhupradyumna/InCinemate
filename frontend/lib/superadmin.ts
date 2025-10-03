@@ -706,7 +706,12 @@ export async function listCrewPersons(params?: {
 }
 
 export async function createCrewPerson(payload: CreateCrewPersonPayload): Promise<CrewPersonDTO> {
-  const res = await api.post('/superadmin/crew', payload);
+  const res = await api.post('/superadmin/crew-persons', payload);
+  return res.data?.data;
+}
+
+export async function updateCrewPerson(id: string, payload: Partial<CreateCrewPersonPayload>): Promise<CrewPersonDTO> {
+  const res = await api.put(`/superadmin/crew-persons/${id}`, payload);
   return res.data?.data;
 }
 

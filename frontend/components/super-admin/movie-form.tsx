@@ -48,7 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { MovieDTO, CreateMoviePayload, listTenants, createMovie, updateMovie, getMovie, addMovieCast, addMovieCrew, updateMovieCast, updateMovieCrew, createActor, createCrewPerson, AddMovieCastPayload, AddMovieCrewPayload, removeMovieCast, removeMovieCrew, listActors, listCrewPersons } from "@/lib/superadmin";
+import { MovieDTO, CreateMoviePayload, listTenants, createMovie, updateMovie, getMovie, addMovieCast, addMovieCrew, updateMovieCast, updateMovieCrew, createActor, createCrewPerson, updateCrewPerson, AddMovieCastPayload, AddMovieCrewPayload, removeMovieCast, removeMovieCrew, listActors, listCrewPersons } from "@/lib/superadmin";
 import { useAuth } from "@/components/auth/auth-provider";
 
 // Helper to allow empty strings for numeric inputs (treated as undefined)
@@ -562,7 +562,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
   // Sync cast and crew relations after creating/updating a movie
   const syncCastAndCrew = async (movieId: string) => {
     const allowedCastRoles = ['lead', 'supporting', 'special_appearance', 'cameo', 'voice', 'narrator'] as const;
-    const allowedCrewCats = ['direction', 'writing', 'production', 'music', 'technical', 'art', 'other'] as const;
+    const allowedCrewCats = ['direction', 'writing', 'production', 'music', 'technical', 'art', 'cinematography', 'editing', 'sound', 'costume', 'vfx', 'stunts', 'other'] as const;
 
     // Decide which cast entries need creation vs update
     const castPrepared = castMembers.map((c, idx) => ({ ...c, display_order: c.display_order || idx + 1 }));
@@ -644,6 +644,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
           role_type,
           display_order: c.display_order,
         };
+        console.log('Updating cast member', c.id, payload);
         await updateMovieCast(movieId, c.id, payload as any);
       } catch (err) {
         console.warn('Failed to update cast member', c, err);
@@ -705,13 +706,27 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
             profile_image_url: m.profile_image_url
           });
           personId = person?.id;
+        } else {
+          // Update existing person with current details
+          await updateCrewPerson(personId, {
+            name: m.person_name || '',
+            bio: m.bio,
+            specialty: m.specialty,
+            profile_image_url: m.profile_image_url
+          });
         }
+        const role_category = allowedCrewCats.includes(m.role_category as any) ? (m.role_category as any) : 'other';
+        const role_title = (m.role_title && m.role_title.trim()) ? m.role_title : 'Contributor';
+        const department = allowedCrewCats.includes(m.role_category as any) ? undefined : (m.role_category as any);
+        
         const payload: Partial<AddMovieCrewPayload> = {
           ...(personId ? { person_id: personId } : {}),
-          role_category: allowedCrewCats.includes(m.role_category as any) ? (m.role_category as any) : 'other',
-          role_title: (m.role_title && m.role_title.trim()) ? m.role_title : 'Contributor',
+          role_category,
+          role_title,
           display_order: m.display_order,
+          ...(department ? { department } : {}),
         };
+        console.log('Updating crew member', m.id, payload);
         await updateMovieCrew(movieId, m.id, payload as any);
       } catch (err) {
         console.warn('Failed to update crew member', m, err);
@@ -1922,6 +1937,7 @@ function CastCrewForm({ type, initialData, onSave, onCancel }: CastCrewFormProps
   const [formData, setFormData] = useState(
     type === 'cast' 
       ? {
+          actor_id: initialData?.actor_id || '',
           actor_name: initialData?.actor_name || '',
           character_name: initialData?.character_name || '',
           role_type: initialData?.role_type || 'lead',
@@ -1930,6 +1946,7 @@ function CastCrewForm({ type, initialData, onSave, onCancel }: CastCrewFormProps
           profile_image_url: initialData?.profile_image_url || ''
         }
       : {
+          person_id: initialData?.person_id || '',
           person_name: initialData?.person_name || '',
           role_title: initialData?.role_title || '',
           role_category: initialData?.role_category || 'direction',

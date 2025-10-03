@@ -48,7 +48,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { MovieDTO, CreateMoviePayload, listTenants, createMovie, updateMovie, getMovie, addMovieCast, addMovieCrew, createActor, createCrewPerson, AddMovieCastPayload, AddMovieCrewPayload, removeMovieCast, removeMovieCrew, listActors, listCrewPersons } from "@/lib/superadmin";
+import { MovieDTO, CreateMoviePayload, listTenants, createMovie, updateMovie, getMovie, addMovieCast, addMovieCrew, updateMovieCast, updateMovieCrew, createActor, createCrewPerson, AddMovieCastPayload, AddMovieCrewPayload, removeMovieCast, removeMovieCrew, listActors, listCrewPersons } from "@/lib/superadmin";
 import { useAuth } from "@/components/auth/auth-provider";
 
 // Helper to allow empty strings for numeric inputs (treated as undefined)
@@ -564,13 +564,14 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     const allowedCastRoles = ['lead', 'supporting', 'special_appearance', 'cameo', 'voice', 'narrator'] as const;
     const allowedCrewCats = ['direction', 'writing', 'production', 'music', 'technical', 'art', 'other'] as const;
 
-    const castToCreate = castMembers
-      .map((c, idx) => ({ ...c, display_order: c.display_order || idx + 1 }))
-      .filter(c => !c.id && (c.actor_name || '').trim() && (c.character_name || '').trim());
+    // Decide which cast entries need creation vs update
+    const castPrepared = castMembers.map((c, idx) => ({ ...c, display_order: c.display_order || idx + 1 }));
+    const castToCreate = castPrepared.filter(c => !c.id && (c.actor_name || '').trim());
+    const castToUpdate = castPrepared.filter(c => c.id);
 
-    const crewToCreate = crewMembers
-      .map((c, idx) => ({ ...c, display_order: c.display_order || idx + 1 }))
-      .filter(c => !c.id && (c.person_name || '').trim() && (c.role_title || '').trim());
+    const crewPrepared = crewMembers.map((c, idx) => ({ ...c, display_order: c.display_order || idx + 1 }));
+    const crewToCreate = crewPrepared.filter(c => !c.id && (c.person_name || '').trim());
+    const crewToUpdate = crewPrepared.filter(c => c.id);
 
     // Handle removals first
     for (const id of removedCastIds) {
@@ -580,7 +581,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       try { await removeMovieCrew(movieId, id); } catch (e) { console.warn('Remove crew failed', id, e); }
     }
 
-    // Handle cast creation
+    // Handle cast creation and updates
     for (const c of castToCreate) {
       try {
         // Upload profile image if provided
@@ -602,16 +603,17 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         }
         if (!actorId) continue;
 
-        // Map role type; if custom, fallback to supporting and set character_type if meaningful
+        // Map role type; default to 'supporting' if missing
         const role_type = allowedCastRoles.includes(c.role_type as any) ? (c.role_type as any) : 'supporting';
-        const extraAsCharacterType = !allowedCastRoles.includes(c.role_type as any) ? (c.role_type as any) : undefined;
+
+        // If character_name missing, use actor_name as fallback
+        const character_name = (c.character_name && c.character_name.trim()) ? c.character_name : (c.actor_name || '');
 
         const payload: AddMovieCastPayload = {
           actor_id: actorId,
-          character_name: c.character_name,
+          character_name,
           role_type,
           display_order: c.display_order,
-          ...(extraAsCharacterType ? { character_type: extraAsCharacterType } : {}),
         };
 
         await addMovieCast(movieId, payload);
@@ -621,7 +623,35 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       }
     }
 
-    // Handle crew creation
+    // Handle cast updates (if any)
+    for (const c of castToUpdate) {
+      try {
+        if (!c.id) continue;
+        let actorId = c.actor_id;
+        if (!actorId) {
+          // Create new actor if not linked
+          const actor = await createActor({
+            name: c.actor_name || '',
+            bio: c.bio,
+            profile_image_url: c.profile_image_url
+          });
+          actorId = actor?.id;
+        }
+        const role_type = allowedCastRoles.includes(c.role_type as any) ? (c.role_type as any) : 'supporting';
+        const payload = {
+          ...(actorId ? { actor_id: actorId } : {}),
+          character_name: (c.character_name && c.character_name.trim()) ? c.character_name : (c.actor_name || ''),
+          role_type,
+          display_order: c.display_order,
+        };
+        await updateMovieCast(movieId, c.id, payload as any);
+      } catch (err) {
+        console.warn('Failed to update cast member', c, err);
+        toast({ title: 'Cast update failed', description: `${c.actor_name} as ${c.character_name}`, variant: 'destructive' });
+      }
+    }
+
+    // Handle crew creation and updates
     for (const m of crewToCreate) {
       try {
         let profile_image_url = m.profile_image_url;
@@ -643,12 +673,13 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         if (!personId) continue;
 
         const role_category = allowedCrewCats.includes(m.role_category as any) ? (m.role_category as any) : 'other';
+        const role_title = (m.role_title && m.role_title.trim()) ? m.role_title : 'Contributor';
         const department = allowedCrewCats.includes(m.role_category as any) ? undefined : (m.role_category as any);
 
         const payload: AddMovieCrewPayload = {
           person_id: personId,
           role_category,
-          role_title: m.role_title,
+          role_title,
           display_order: m.display_order,
           ...(department ? { department } : {}),
         };
@@ -657,6 +688,34 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       } catch (err) {
         console.error('Failed to create crew member:', m, err);
         toast({ title: 'Crew add failed', description: `${m.person_name} • ${m.role_title}`, variant: 'destructive' });
+      }
+    }
+
+    // Handle crew updates
+    for (const m of crewToUpdate) {
+      try {
+        if (!m.id) continue;
+        let personId = m.person_id;
+        if (!personId) {
+          // Create new crew person if not linked
+          const person = await createCrewPerson({
+            name: m.person_name || '',
+            bio: m.bio,
+            specialty: m.specialty,
+            profile_image_url: m.profile_image_url
+          });
+          personId = person?.id;
+        }
+        const payload: Partial<AddMovieCrewPayload> = {
+          ...(personId ? { person_id: personId } : {}),
+          role_category: allowedCrewCats.includes(m.role_category as any) ? (m.role_category as any) : 'other',
+          role_title: (m.role_title && m.role_title.trim()) ? m.role_title : 'Contributor',
+          display_order: m.display_order,
+        };
+        await updateMovieCrew(movieId, m.id, payload as any);
+      } catch (err) {
+        console.warn('Failed to update crew member', m, err);
+        toast({ title: 'Crew update failed', description: `${m.person_name} • ${m.role_title}`, variant: 'destructive' });
       }
     }
   };
@@ -1430,8 +1489,22 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction onClick={() => {
-                                    setCastMembers(castMembers.filter((_, i) => i !== index));
-                                    if (cast.id) setRemovedCastIds((prev) => [...prev, cast.id!]);
+                                    const removed = castMembers.filter((_, i) => i !== index);
+                                    setCastMembers(removed);
+                                    // If this cast member was already persisted, remove on server immediately
+                                    if (cast.id && movie?.id) {
+                                      (async () => {
+                                        try {
+                                          await removeMovieCast(movie.id, cast.id!);
+                                        } catch (err) {
+                                          console.warn('Failed to remove cast on server', cast.id, err);
+                                          // fallback: queue removal for syncCastAndCrew
+                                          setRemovedCastIds((prev) => [...prev, cast.id!]);
+                                        }
+                                      })();
+                                    } else if (cast.id) {
+                                      setRemovedCastIds((prev) => [...prev, cast.id!]);
+                                    }
                                   }}>Remove</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -1458,9 +1531,8 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                             if (editingCast && editingCast.index !== undefined) {
                               const existing = castMembers[editingCast.index];
                               const next = [...castMembers];
-                              // If existing was persisted, queue removal and add as new
-                              if (existing?.id) setRemovedCastIds((prev) => [...prev, existing.id!]);
-                              next.splice(editingCast.index, 1, { ...existing, ...data, id: undefined });
+                              // Preserve id when editing so the entry remains linked to persisted record
+                              next.splice(editingCast.index, 1, { ...existing, ...data, id: existing?.id });
                               setCastMembers(next);
                             } else {
                               setCastMembers([...castMembers, { ...data, display_order: castMembers.length + 1 }]);
@@ -1561,8 +1633,20 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                                   <AlertDialogAction onClick={() => {
-                                    setCrewMembers(crewMembers.filter((_, i) => i !== index));
-                                    if (crew.id) setRemovedCrewIds((prev) => [...prev, crew.id!]);
+                                        const remaining = crewMembers.filter((_, i) => i !== index);
+                                        setCrewMembers(remaining);
+                                        if (crew.id && movie?.id) {
+                                          (async () => {
+                                            try {
+                                              await removeMovieCrew(movie.id, crew.id!);
+                                            } catch (err) {
+                                              console.warn('Failed to remove crew on server', crew.id, err);
+                                              setRemovedCrewIds((prev) => [...prev, crew.id!]);
+                                            }
+                                          })();
+                                        } else if (crew.id) {
+                                          setRemovedCrewIds((prev) => [...prev, crew.id!]);
+                                        }
                                   }}>Remove</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -1589,8 +1673,8 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                             if (editingCrew && editingCrew.index !== undefined) {
                               const existing = crewMembers[editingCrew.index];
                               const next = [...crewMembers];
-                              if (existing?.id) setRemovedCrewIds((prev) => [...prev, existing.id!]);
-                              next.splice(editingCrew.index, 1, { ...existing, ...data, id: undefined });
+                              // Preserve id when editing so the entry remains linked to persisted record
+                              next.splice(editingCrew.index, 1, { ...existing, ...data, id: existing?.id });
                               setCrewMembers(next);
                             } else {
                               setCrewMembers([...crewMembers, { ...data, display_order: crewMembers.length + 1 }]);
@@ -1903,16 +1987,19 @@ function CastCrewForm({ type, initialData, onSave, onCancel }: CastCrewFormProps
   };
 
   const handleSave = () => {
+    // Only require the name for cast/crew entries. Other fields are optional.
     if (type === 'cast') {
-      if (!formData.actor_name || !formData.character_name) {
+      if (!formData.actor_name || !formData.actor_name.trim()) {
         return;
       }
     } else {
-      if (!formData.person_name || !formData.role_title) {
+      if (!formData.person_name || !formData.person_name.trim()) {
         return;
       }
     }
-    onSave(formData);
+
+    // Pass back the id if present so parent can decide update vs create
+    onSave({ ...formData });
   };
 
   return (
@@ -1993,7 +2080,10 @@ function CastCrewForm({ type, initialData, onSave, onCancel }: CastCrewFormProps
               <Label>Actor Name</Label>
               <Input
                 value={formData.actor_name}
-                onChange={(e) => setFormData({ ...formData, actor_name: e.target.value })}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setFormData({ ...formData, actor_name: newName, actor_id: newName !== initialData?.actor_name ? undefined : formData.actor_id });
+                }}
                 placeholder="Enter actor's name"
               />
             </div>
@@ -2135,7 +2225,10 @@ function CastCrewForm({ type, initialData, onSave, onCancel }: CastCrewFormProps
               <Label>Person Name</Label>
               <Input
                 value={formData.person_name}
-                onChange={(e) => setFormData({ ...formData, person_name: e.target.value })}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setFormData({ ...formData, person_name: newName, person_id: newName !== initialData?.person_name ? undefined : formData.person_id });
+                }}
                 placeholder="Enter crew member's name"
               />
             </div>

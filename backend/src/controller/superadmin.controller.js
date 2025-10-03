@@ -10,6 +10,7 @@ import { defineMovie } from '../models/Movie.js'
 import { setupMovieRelationships, syncAllMovieTables, getMovieWithAllRelations, searchMoviesWithCastCrew } from '../models/MovieRelationships.js'
 import { hashPassword, generateTemporaryPassword } from '../util/auth.util.js'
 import { ROLES, API_MESSAGES, HTTP_STATUS } from '../constants.js'
+import { Op } from 'sequelize'
 
 export default class SuperadminController {
   // ==============================
@@ -1420,6 +1421,49 @@ export default class SuperadminController {
     }
   }
 
+  static async updateMovieCast(req, res) {
+    try {
+      const { movieId, castId } = req.params;
+      const { actor_id, character_name, character_description, role_type, display_order, is_featured, screen_time_minutes, character_image_url, character_type } = req.body;
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const castMember = await models.MovieCast.findOne({ where: { id: castId, movie_id: movieId } });
+      if (!castMember) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Cast member not found', message: 'Cast update failed' });
+      }
+
+      // If actor_id provided, ensure actor exists
+      if (actor_id) {
+        const actor = await models.Actor.findByPk(actor_id);
+        if (!actor) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Actor not found', message: 'Cast update failed' });
+        }
+      }
+
+      // Provide sensible defaults if missing
+      const updates = {
+        ...(actor_id ? { actor_id } : {}),
+        character_name: character_name ?? castMember.character_name,
+        character_description: character_description ?? castMember.character_description,
+        role_type: role_type ?? castMember.role_type,
+        display_order: display_order ?? castMember.display_order,
+        is_featured: is_featured ?? castMember.is_featured,
+        screen_time_minutes: screen_time_minutes ?? castMember.screen_time_minutes,
+        character_image_url: character_image_url ?? castMember.character_image_url,
+        character_type: character_type ?? castMember.character_type,
+      };
+
+      await castMember.update(updates);
+
+      return res.json({ success: true, data: castMember, message: 'Cast member updated successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[updateMovieCast]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Cast update failed' });
+    }
+  }
+
   // ==============================
   // MOVIE CREW MANAGEMENT
   // ==============================
@@ -1488,6 +1532,67 @@ export default class SuperadminController {
         error: err.message,
         message: 'Crew addition failed'
       })
+    }
+  }
+
+  static async removeMovieCrew(req, res) {
+    try {
+      const { movieId, crewId } = req.params;
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const crewMember = await models.MovieCrew.findOne({ where: { id: crewId, movie_id: movieId } });
+      if (!crewMember) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Crew member not found', message: 'Crew removal failed' });
+      }
+
+      await crewMember.destroy();
+
+      return res.json({ success: true, message: 'Crew member removed successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[removeMovieCrew]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Crew removal failed' });
+    }
+  }
+
+  static async updateMovieCrew(req, res) {
+    try {
+      const { movieId, crewId } = req.params;
+      const { person_id, role_category, role_title, custom_credit_text, is_primary, display_order, contribution_description, department } = req.body;
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const crewMember = await models.MovieCrew.findOne({ where: { id: crewId, movie_id: movieId } });
+      if (!crewMember) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Crew member not found', message: 'Crew update failed' });
+      }
+
+      if (person_id) {
+        const person = await models.CrewPerson.findByPk(person_id);
+        if (!person) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Crew person not found', message: 'Crew update failed' });
+        }
+      }
+
+      const updates = {
+        ...(person_id ? { person_id } : {}),
+        role_category: role_category ?? crewMember.role_category,
+        role_title: role_title ?? crewMember.role_title,
+        custom_credit_text: custom_credit_text ?? crewMember.custom_credit_text,
+        is_primary: is_primary ?? crewMember.is_primary,
+        display_order: display_order ?? crewMember.display_order,
+        contribution_description: contribution_description ?? crewMember.contribution_description,
+        department: department ?? crewMember.department,
+      };
+
+      await crewMember.update(updates);
+
+      return res.json({ success: true, data: crewMember, message: 'Crew member updated successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[updateMovieCrew]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Crew update failed' });
     }
   }
 
@@ -1586,6 +1691,146 @@ export default class SuperadminController {
         error: err.message,
         message: 'Bulk update failed'
       })
+    }
+  }
+
+  // ==============================
+  // ACTOR MANAGEMENT
+  // ==============================
+
+  static async createActor(req, res) {
+    try {
+      const { name, bio, profile_image_url } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Name is required', message: 'Actor creation failed' });
+      }
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const actor = await models.Actor.create({
+        name: name.trim(),
+        bio,
+        profile_image_url
+      });
+
+      return res.json({ success: true, data: actor, message: 'Actor created successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[createActor]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Actor creation failed' });
+    }
+  }
+
+  static async listActors(req, res) {
+    try {
+      const { page = 1, limit = 10, search, nationality, verified } = req.query;
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const where = {};
+      if (search) where.name = { [Op.iLike]: `%${search}%` };
+      if (nationality) where.nationality = nationality;
+      if (verified !== undefined) where.verified = verified === 'true';
+
+      const { rows: data, count: total } = await models.Actor.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: (page - 1) * limit,
+        order: [['name', 'ASC']]
+      });
+
+      return res.json({ success: true, data: { data, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / limit) } }, message: 'Actors retrieved successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[listActors]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Actors retrieval failed' });
+    }
+  }
+
+  // ==============================
+  // CREW PERSON MANAGEMENT
+  // ==============================
+
+  static async createCrewPerson(req, res) {
+    try {
+      const { name, bio, specialty, profile_image_url } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Name is required', message: 'Crew person creation failed' });
+      }
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const crewPerson = await models.CrewPerson.create({
+        name: name.trim(),
+        bio,
+        specialty,
+        profile_image_url
+      });
+
+      return res.json({ success: true, data: crewPerson, message: 'Crew person created successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[createCrewPerson]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Crew person creation failed' });
+    }
+  }
+
+  static async updateCrewPerson(req, res) {
+    try {
+      const { id } = req.params;
+      const { name, bio, specialty, profile_image_url } = req.body;
+
+      if (!name || !name.trim()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Name is required', message: 'Crew person update failed' });
+      }
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const crewPerson = await models.CrewPerson.findByPk(id);
+      if (!crewPerson) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'Crew person not found', message: 'Crew person update failed' });
+      }
+
+      await crewPerson.update({
+        name: name.trim(),
+        bio,
+        specialty,
+        profile_image_url
+      });
+
+      return res.json({ success: true, data: crewPerson, message: 'Crew person updated successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[updateCrewPerson]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Crew person update failed' });
+    }
+  }
+
+  static async listCrewPersons(req, res) {
+    try {
+      const { page = 1, limit = 10, search, specialty, verified } = req.query;
+
+      const sequelize = req.db;
+      const models = await syncAllMovieTables(sequelize);
+
+      const where = {};
+      if (search) where.name = { [Op.iLike]: `%${search}%` };
+      if (specialty) where.specialty = specialty;
+      if (verified !== undefined) where.verified = verified === 'true';
+
+      const { rows: data, count: total } = await models.CrewPerson.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: (page - 1) * limit,
+        order: [['name', 'ASC']]
+      });
+
+      return res.json({ success: true, data: { data, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / limit) } }, message: 'Crew persons retrieved successfully' });
+    } catch (err) {
+      console.error(`[SuperadminController]-[listCrewPersons]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Crew persons retrieval failed' });
     }
   }
 }

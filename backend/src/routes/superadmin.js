@@ -139,6 +139,12 @@ router.delete('/movies/:movieId/cast/:castId',
   SuperadminController.removeMovieCast
 )
 
+// Update cast member
+router.put('/movies/:movieId/cast/:castId',
+  requirePermission('Manage Movies'),
+  SuperadminController.updateMovieCast
+)
+
 // ==============================
 // MOVIE CREW MANAGEMENT ROUTES
 // ==============================
@@ -149,6 +155,18 @@ router.post('/movies/:movieId/crew',
   SuperadminController.addMovieCrew
 )
 
+// Remove crew member from movie
+router.delete('/movies/:movieId/crew/:crewId',
+  requirePermission('Manage Movies'),
+  SuperadminController.removeMovieCrew
+)
+
+// Update crew member
+router.put('/movies/:movieId/crew/:crewId',
+  requirePermission('Manage Movies'),
+  SuperadminController.updateMovieCrew
+)
+
 // ==============================
 // MOVIE REVIEWS MANAGEMENT ROUTES
 // ==============================
@@ -157,6 +175,44 @@ router.post('/movies/:movieId/crew',
 router.post('/movies/:movieId/reviews',
   requirePermission('Manage Movies'),
   SuperadminController.addMovieReview
+)
+
+// ==============================
+// ACTOR MANAGEMENT ROUTES
+// ==============================
+
+// Create a new actor
+router.post('/actors',
+  requirePermission('Manage Movies'),
+  SuperadminController.createActor
+)
+
+// List all actors
+router.get('/actors',
+  requirePermission('Manage Movies'),
+  SuperadminController.listActors
+)
+
+// ==============================
+// CREW PERSON MANAGEMENT ROUTES
+// ==============================
+
+// Create a new crew person
+router.post('/crew-persons',
+  requirePermission('Manage Movies'),
+  SuperadminController.createCrewPerson
+)
+
+// List all crew persons
+router.get('/crew-persons',
+  requirePermission('Manage Movies'),
+  SuperadminController.listCrewPersons
+)
+
+// Update crew person
+router.put('/crew-persons/:id',
+  requirePermission('Manage Movies'),
+  SuperadminController.updateCrewPerson
 )
 
 export default router

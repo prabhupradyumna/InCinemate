@@ -598,7 +598,17 @@ export async function getMovie(id: string, include_relations = true): Promise<Mo
   const res = await api.get(`/superadmin/movies/${id}`, { 
     params: { include_relations } 
   });
-  return res.data?.data;
+  const movie: MovieDTO = res.data?.data;
+  // Normalize backend relation keys to legacy keys used throughout the frontend
+  if (movie) {
+    if ((movie as any).castMembers && !(movie as any).cast) {
+      (movie as any).cast = (movie as any).castMembers;
+    }
+    if ((movie as any).crewMembers && !(movie as any).crew) {
+      (movie as any).crew = (movie as any).crewMembers;
+    }
+  }
+  return movie;
 }
 
 export async function createMovie(payload: CreateMoviePayload): Promise<MovieDTO> {
@@ -634,6 +644,11 @@ export async function removeMovieCast(movieId: string, castId: string): Promise<
   await api.delete(`/superadmin/movies/${movieId}/cast/${castId}`);
 }
 
+export async function updateMovieCast(movieId: string, castId: string, payload: Partial<AddMovieCastPayload>): Promise<MovieCastDTO> {
+  const res = await api.put(`/superadmin/movies/${movieId}/cast/${castId}`, payload);
+  return res.data?.data;
+}
+
 // Movie Crew API Functions
 export async function addMovieCrew(movieId: string, payload: AddMovieCrewPayload): Promise<MovieCrewDTO> {
   const res = await api.post(`/superadmin/movies/${movieId}/crew`, payload);
@@ -642,6 +657,11 @@ export async function addMovieCrew(movieId: string, payload: AddMovieCrewPayload
 
 export async function removeMovieCrew(movieId: string, crewId: string): Promise<void> {
   await api.delete(`/superadmin/movies/${movieId}/crew/${crewId}`);
+}
+
+export async function updateMovieCrew(movieId: string, crewId: string, payload: Partial<AddMovieCrewPayload>): Promise<MovieCrewDTO> {
+  const res = await api.put(`/superadmin/movies/${movieId}/crew/${crewId}`, payload);
+  return res.data?.data;
 }
 
 // Movie Reviews API Functions

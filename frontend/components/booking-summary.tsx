@@ -284,7 +284,6 @@ export function BookingSummary({
               <span className="text-primary">${total.toFixed(2)}</span>
             </div>
           </div>
-
           {/* Payment Form */}
           {step === "payment" && (
             <>

@@ -23,6 +23,17 @@ api.interceptors.request.use(
         : null;
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('❌ API Interceptor - No token found in localStorage');
+      if (typeof window !== 'undefined') {
+        try {
+          console.log('🔍 API Interceptor - All localStorage keys:', Object.keys(localStorage || {}));
+        } catch {
+          console.log('🔍 API Interceptor - Unable to read localStorage keys');
+        }
+      } else {
+        console.log('🔍 API Interceptor - Running on server (no localStorage)');
+      }
     }
 
     // Add request timestamp for debugging

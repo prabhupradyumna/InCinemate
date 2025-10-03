@@ -26,28 +26,6 @@ router.get('/auditorium-requests',
 )
 
 // ==============================
-// MOVIE MANAGEMENT ROUTES
-// ==============================
-
-// Create a new movie
-router.post('/movies', 
-  requirePermission('Manage Movies'),
-  AdminController.createMovie
-)
-
-// List all movies
-router.get('/movies', 
-  requirePermission('Manage Movies'),
-  AdminController.listMovies
-)
-
-// Update movie details
-router.put('/movies/:id', 
-  requirePermission('Manage Movies'),
-  AdminController.updateMovie
-)
-
-// ==============================
 // SHOW MANAGEMENT ROUTES
 // ==============================
 

@@ -1,8 +1,5 @@
 import { api } from './api';
 import type {
-  Movie,
-  CreateMoviePayload,
-  UpdateMoviePayload,
   Show,
   CreateShowPayload,
   ShowWithDetails,
@@ -31,33 +28,6 @@ export async function submitAuditoriumRequest(payload: {
 export async function getMyAuditoriumRequests(): Promise<AuditoriumRequest[]> {
   const res = await api.get('/admin/auditorium-requests');
   return res.data?.data || [];
-}
-
-// ==============================
-// MOVIE MANAGEMENT SERVICES
-// ==============================
-
-export async function createMovie(payload: CreateMoviePayload): Promise<Movie> {
-  const res = await api.post('/admin/movies', payload);
-  return res.data?.data;
-}
-
-export async function listMovies(params?: {
-  page?: number;
-  limit?: number;
-  status?: 'active' | 'all';
-}): Promise<PaginatedResponse<Movie>> {
-  const res = await api.get('/admin/movies', { params });
-  return res.data;
-}
-
-export async function updateMovie(id: string, payload: UpdateMoviePayload): Promise<Movie> {
-  const res = await api.put(`/admin/movies/${id}`, payload);
-  return res.data?.data;
-}
-
-export async function deleteMovie(id: string): Promise<void> {
-  await api.delete(`/admin/movies/${id}`);
 }
 
 // ==============================

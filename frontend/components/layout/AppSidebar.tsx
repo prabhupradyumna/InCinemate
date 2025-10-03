@@ -18,6 +18,8 @@ import {
   FileText,
   Shield,
   Wrench,
+  Film,
+  Plus,
 } from "lucide-react";
 
 type NavItem = {
@@ -61,9 +63,12 @@ export default function AppSidebar() {
           ],
         },
         {
-          icon: <BarChart3 className="h-4 w-4" />,
-          name: "Analytics",
-          path: "/super-admin?tab=analytics",
+          icon: <Film className="h-4 w-4" />,
+          name: "Movie Management",
+          subItems: [
+            { name: "All Movies", path: "/super-admin/movies", icon: <Film className="h-3 w-3" /> },
+            { name: "Create Movie", path: "/super-admin/movies/add", icon: <Plus className="h-3 w-3" /> },
+          ],
         },
         {
           icon: <Settings className="h-4 w-4" />,

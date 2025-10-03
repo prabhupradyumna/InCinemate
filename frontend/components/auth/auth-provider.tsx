@@ -22,6 +22,7 @@ type Role = "customer" | "admin" | "super-admin";
 interface User {
   id: string | number;
   email: string;
+  full_name?: string;
   role: Role;
   tenantId?: string | number | null;
   fullName?: string | null;
@@ -47,6 +48,7 @@ function mapBackendUser(u: any): User {
   return {
     id: u.userId ?? u.id,
     email: u.email,
+    full_name: u.full_name,
     role: roleMap[u.role] ?? (u.role as Role),
     tenantId: u.tenantId ?? null,
     fullName: u.fullName ?? u.full_name ?? null,

@@ -37,23 +37,6 @@ export interface Movie {
   updated_at?: string;
 }
 
-export interface CreateMoviePayload {
-  title: string;
-  poster_url?: string;
-  trailer_url?: string;
-  synopsis?: string;
-  cast?: Array<{ name: string; role?: string }>;
-  genre?: string;
-  duration_minutes?: number;
-  release_date?: string;
-  rating?: string;
-  language?: string;
-}
-
-export interface UpdateMoviePayload extends Partial<CreateMoviePayload> {
-  is_active?: boolean;
-}
-
 // ==============================
 // THEATRE & AUDITORIUM TYPES
 // ==============================

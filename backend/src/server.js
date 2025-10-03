@@ -4,13 +4,13 @@ import { sequelize } from './db.js'
 import { connectRedis, disconnectRedis } from './redis.js'
 import { SERVER_CONFIG, DATABASE_CONFIG } from './constants.js'
 
-// Optionally auto-sync schema in controlled environments
-if (DATABASE_CONFIG.SYNC.ALTER) {
-  sequelize
-    .sync({ alter: true })
-    .then(() => console.log('[db] sync alter completed'))
-    .catch((e) => console.error('[db] sync alter failed', e))
-}
+// Optionally auto-sync schema in controlled environments (DISABLED for now)
+// if (DATABASE_CONFIG.SYNC.ALTER) {
+//   sequelize
+//     .sync({ alter: true })
+//     .then(() => console.log('[db] sync alter completed'))
+//     .catch((e) => console.error('[db] sync alter failed', e))
+// }
 
 // Initialize Redis connection
 const initializeServer = async () => {

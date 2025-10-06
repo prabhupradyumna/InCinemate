@@ -2,19 +2,19 @@ import 'dotenv/config'
 import app from './app.js'
 import { sequelize } from './db.js'
 import { connectRedis, disconnectRedis } from './redis.js'
-import { SERVER_CONFIG, DATABASE_CONFIG } from './constants.js'
+import { SERVER_CONFIG } from './constants.js'
+import { getModelManager } from './models/index.js'
 
-// Auto-sync schema (controlled via env: DB_SYNC_ALTER=true)
-if (DATABASE_CONFIG.SYNC.ALTER) {
-  sequelize
-    .sync({ alter: true })
-    .then(() => console.log('[db] sync alter completed'))
-    .catch((e) => console.error('[db] sync alter failed', e))
-}
+// Initialize model manager (handles all sync operations)
+const modelManager = getModelManager(sequelize)
 
 // Initialize Redis connection
 const initializeServer = async () => {
   try {
+    // Initialize models first
+    await modelManager.initialize()
+    console.log('[server] Models initialized successfully')
+    
     // Try to connect to Redis (optional)
     try {
       await connectRedis()

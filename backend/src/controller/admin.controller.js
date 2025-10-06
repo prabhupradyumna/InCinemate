@@ -113,12 +113,7 @@ export default class AdminController {
         })
       }
 
-      const sequelize = req.db
-      const Show = defineShow(sequelize)
-      const Movie = defineMovie(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      
-      await Promise.all([Show.sync(), Movie.sync(), Auditorium.sync()])
+      const { Show, Movie, Auditorium } = req.models
 
       // Verify movie and auditorium exist and belong to tenant
       const [movie, auditorium] = await Promise.all([
@@ -192,13 +187,7 @@ export default class AdminController {
       const { page = 1, limit = 10, status, movie_id } = req.query
       const offset = (page - 1) * limit
 
-      const sequelize = req.db
-      const Show = defineShow(sequelize)
-      const Movie = defineMovie(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
-      
-      await Promise.all([Show.sync(), Movie.sync(), Auditorium.sync(), Theatre.sync()])
+      const { Show, Movie, Auditorium, Theatre } = req.models
 
       const where = { tenant_id: req.tenantId }
       if (status) where.status = status
@@ -209,13 +198,16 @@ export default class AdminController {
         include: [
           {
             model: Movie,
+            as: 'Movie',
             attributes: ['id', 'title', 'poster_url', 'duration_minutes']
           },
           {
             model: Auditorium,
+            as: 'Auditorium',
             attributes: ['id', 'name'],
             include: [{
               model: Theatre,
+              as: 'Theatre',
               attributes: ['id', 'name', 'address', 'city']
             }]
           }
@@ -450,9 +442,9 @@ export default class AdminController {
           show,
           seats: seatsWithStatus,
           statistics: {
-            total_seats: allSeats.length,
+            total_seats: show.Auditorium.total_seats || allSeats.length,
             booked_seats: bookedSeats.length,
-            available_seats: allSeats.length - bookedSeats.length,
+            available_seats: (show.Auditorium.total_seats || allSeats.length) - bookedSeats.length,
             total_bookings: totalBookings,
             total_revenue: totalRevenue
           }

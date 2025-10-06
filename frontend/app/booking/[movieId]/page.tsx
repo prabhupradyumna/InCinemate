@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getSeatMap } from "@/lib/api";
 import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
 import { BookingSummary } from "@/components/customer/booking-summary";
@@ -24,150 +25,39 @@ export default function BookingPage({
 }: {
   params: { movieId: string };
 }) {
-  const [movie, setMovie] = useState<PublicMovie | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showData, setShowData] = useState<any>(null);
   const [selectedSeats, setSelectedSeats] = useState<
-    Array<{ row: string; seat: number; type: "premium" | "regular" }>
+    Array<{ id: string; row: string; seat: number; type: "premium" | "regular" }>
   >([]);
   const [showQuantitySelector, setShowQuantitySelector] = useState(true);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
 
   // Stable updater that only sets state when selection truly changes
-  const handleSelectionChange = useCallback(
-    (
-      seats: Array<{ row: string; seat: number; type: "premium" | "regular" }>
-    ) => {
-      setSelectedSeats((prev) => {
-        if (prev.length === seats.length) {
-          let same = true;
-          for (let i = 0; i < prev.length; i++) {
-            const a = prev[i];
-            const b = seats[i];
-            if (
-              !b ||
-              a.row !== b.row ||
-              a.seat !== b.seat ||
-              a.type !== b.type
-            ) {
-              same = false;
-              break;
-            }
-          }
-          if (same) return prev; // do not trigger re-render
-        }
-        return seats;
-      });
-    },
-    []
-  );
+  const handleSelectionChange = useCallback((seats: any[]) => {
+    setSelectedSeats(seats);
+  }, []);
 
   useEffect(() => {
-    const loadMovie = async () => {
+    const loadSeatMap = async () => {
       try {
-        const res = await fetch("/Movie_data/movies_dummy_dataset.json");
-        const data: PublicMovie[] = await res.json();
-        const found = data.find((m) => String(m.id) === String(params.movieId));
-        if (!found) {
-          setError("Movie not found");
-        }
-        setMovie(found || null);
-      } catch (e) {
-        setError("Failed to load movie data");
+        // FIXME: This needs a real showId from the previous page
+        const showId = params.movieId; // Assuming movieId is the showId for now
+        const res = await getSeatMap(showId);
+        setShowData(res.data);
+      } catch (e: any) {
+        setError(
+          e?.response?.data?.error || e.message || "Failed to load seat map"
+        );
       } finally {
         setLoading(false);
       }
     };
-    loadMovie();
+    loadSeatMap();
   }, [params.movieId]);
 
-  // Build a mock show object around the selected movie
-  const showData = useMemo(() => {
-    const title = movie?.title || "Loading";
-    const durationNumber = movie?.duration
-      ? parseInt(movie.duration, 10) || 120
-      : 120;
-    const ratingStr = movie ? String(movie.rating) : "PG-13";
-
-    return {
-      movie: {
-        id: String(params.movieId),
-        title,
-        genre: movie?.genres?.join("/") || "",
-        duration: durationNumber,
-        rating: ratingStr,
-        posterUrl: movie?.banner_url || movie?.poster_url || "/placeholder.svg",
-      },
-      venue: {
-        name: "Downtown Cinema",
-        address: "123 Main Street, New York, NY",
-      },
-      screen: {
-        name: "Screen 1",
-        seatMap: {
-          rows: [
-            {
-              row: "A",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-              type: "premium",
-            },
-            {
-              row: "B",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-              type: "premium",
-            },
-            {
-              row: "C",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-            {
-              row: "D",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-            {
-              row: "E",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-            {
-              row: "F",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-            {
-              row: "G",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-            {
-              row: "H",
-              seats: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-              type: "regular",
-            },
-          ],
-        },
-      },
-      showtime: {
-        date: movie?.release_date || "2024-12-15", // placeholder
-        time: "7:00 PM",
-        pricing: {
-          premium: 18.0,
-          regular: 12.0,
-        },
-      },
-      bookedSeats: [
-        { row: "A", seat: 5 },
-        { row: "A", seat: 6 },
-        { row: "C", seat: 8 },
-        { row: "D", seat: 3 },
-        { row: "D", seat: 4 },
-        { row: "F", seat: 7 },
-      ],
-    };
-  }, [movie, params.movieId]);
 
   // Seat categories with pricing and availability
   const seatCategories = useMemo(
@@ -205,9 +95,14 @@ export default function BookingPage({
               Please go back and choose a different movie.
             </p>
           </div>
+        ) : !showData ? (
+          <div className="min-h-[300px] flex items-center justify-center text-muted-foreground">
+            Show details not available.
+          </div>
         ) : showBookingFlow ? (
           <BookingSummary
-            showData={showData as any}
+            showId={showData.show.id}
+            showData={showData}
             selectedSeats={selectedSeats}
             selectedQuantity={selectedQuantity}
             onBack={() => setShowBookingFlow(false)}
@@ -215,28 +110,17 @@ export default function BookingPage({
         ) : (
           <>
             <div className="space-y-6 sm:space-y-8">
-              {/* Seat Selection - Full Width */}
               <div className="w-full">
                 <SeatSelection
-                  showData={showData as any}
-                  onSelectionChange={(seats) =>
-                    handleSelectionChange(
-                      seats.map((s) => ({
-                        row: s.row,
-                        seat: s.seat,
-                        type: s.type,
-                      }))
-                    )
-                  }
+                  showData={showData}
+                  onSelectionChange={handleSelectionChange}
                   maxSeats={selectedQuantity}
                 />
               </div>
-
-              {/* Pay Now Section - Below Seat Selection */}
               <div className="flex justify-center px-2 sm:px-0">
                 <div className="w-full max-w-md">
                   <SeatSelectionSummary
-                    showData={showData as any}
+                    showData={showData}
                     selectedSeats={selectedSeats}
                     selectedQuantity={selectedQuantity}
                     onPayNow={handlePayNow}
@@ -244,8 +128,6 @@ export default function BookingPage({
                 </div>
               </div>
             </div>
-
-            {/* Seat Quantity Selector Modal */}
             <SeatQuantitySelector
               isOpen={showQuantitySelector}
               onClose={() => setShowQuantitySelector(false)}

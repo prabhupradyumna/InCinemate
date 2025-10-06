@@ -21,8 +21,7 @@ export function defineMovieReview(sequelize) {
       },
       review_type: {
         type: DataTypes.ENUM('critic', 'editorial', 'user_featured'),
-        allowNull: false,
-        comment: 'Type of review'
+        allowNull: false
       },
       
       // Reviewer Information
@@ -114,8 +113,7 @@ export function defineMovieReview(sequelize) {
       // Sentiment & Analytics
       sentiment: {
         type: DataTypes.ENUM('positive', 'mixed', 'negative'),
-        allowNull: true,
-        comment: 'Overall sentiment of the review'
+        allowNull: true
       },
       likes_count: {
         type: DataTypes.INTEGER,
@@ -131,8 +129,7 @@ export function defineMovieReview(sequelize) {
       // Administrative
       status: {
         type: DataTypes.ENUM('pending', 'approved', 'rejected', 'archived'),
-        defaultValue: 'pending',
-        comment: 'Review moderation status'
+        defaultValue: 'pending'
       },
       created_by: {
         type: DataTypes.STRING,

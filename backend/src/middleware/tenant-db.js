@@ -10,11 +10,16 @@ const tenantResolver = createTenantResolver({
 const modelManager = getModelManager(sequelize)
 
 export function attachTenantDb() {
-  return function tenantDbMiddleware(req, _res, next) {
-    const tenantId = tenantResolver(req)
-    req.tenantId = tenantId || null
-    req.db = sequelize
-    req.models = modelManager.getModels()
-    next()
+  return async function tenantDbMiddleware(req, _res, next) {
+    try {
+      const tenantId = await tenantResolver(req)
+      req.tenantId = tenantId || null
+      req.db = sequelize
+      req.models = modelManager.getModels()
+      next()
+    } catch (error) {
+      console.error('Tenant DB middleware error:', error)
+      next(error)
+    }
   }
 }

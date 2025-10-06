@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize'
 
 export function defineAuditorium(sequelize) {
-  return sequelize.define(
+  const Auditorium = sequelize.define(
     'Auditorium',
     {
       id: {
@@ -23,8 +23,14 @@ export function defineAuditorium(sequelize) {
       },
       capacity: {
         type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
+      total_seats: {
+        type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
+        comment: 'Total number of seats in the auditorium',
       },
       screen_type: {
         type: DataTypes.STRING,
@@ -36,9 +42,13 @@ export function defineAuditorium(sequelize) {
         defaultValue: true,
       },
     },
-    { 
+    {
       tableName: 'auditoriums',
       timestamps: true,
     },
   )
+
+  // Associations are defined in models/index.js
+
+  return Auditorium
 }

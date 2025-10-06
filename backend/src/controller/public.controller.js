@@ -150,9 +150,93 @@ export default class PublicController {
   static async getMovieDetails(req, res) {
     try {
       const { id } = req.params
-      const { city } = req.query
+      const { city, include_relations = 'true' } = req.query
 
-      // Use centralized models with pre-configured associations
+      const sequelize = req.db
+
+      // If relations are requested, use the helper function
+      if (include_relations === 'true') {
+        const { getMovieWithAllRelations } = await import('../models/MovieRelationships.js')
+        const movieWithRelations = await getMovieWithAllRelations(sequelize, id)
+
+        if (!movieWithRelations || !movieWithRelations.is_active) {
+          return res.status(HTTP_STATUS.NOT_FOUND).json({
+            success: false,
+            error: 'Movie not found',
+            message: 'Failed to retrieve movie details'
+          })
+        }
+
+        // Get upcoming shows for this movie
+        const { Movie, Show, Auditorium, Theatre } = req.models
+        const showFilters = {
+          movie_id: id,
+          show_datetime: { [Op.gte]: new Date() },
+          status: { [Op.in]: ['scheduled', 'live'] }
+        }
+
+        const shows = await Show.findAll({
+          where: showFilters,
+          include: [
+            {
+              model: Auditorium,
+              attributes: ['id', 'name'],
+              include: [{
+                model: Theatre,
+                where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
+                attributes: ['id', 'name', 'address', 'city']
+              }]
+            }
+          ],
+          order: [['show_datetime', 'ASC']]
+        })
+
+        // Group shows by theatre and auditorium
+        const theatresMap = new Map()
+        
+        shows.forEach(show => {
+          const theatreId = show.Auditorium.Theatre.id
+          if (!theatresMap.has(theatreId)) {
+            theatresMap.set(theatreId, {
+              theatre: show.Auditorium.Theatre,
+              auditoriums: new Map()
+            })
+          }
+
+          const auditoriumId = show.Auditorium.id
+          if (!theatresMap.get(theatreId).auditoriums.has(auditoriumId)) {
+            theatresMap.get(theatreId).auditoriums.set(auditoriumId, {
+              auditorium: show.Auditorium,
+              shows: []
+            })
+          }
+
+          theatresMap.get(theatreId).auditoriums.get(auditoriumId).shows.push({
+            id: show.id,
+            show_datetime: show.show_datetime,
+            pricing: show.pricing
+          })
+        })
+
+        const theatres = Array.from(theatresMap.values()).map(({ theatre, auditoriums }) => ({
+          ...theatre.toJSON(),
+          auditoriums: Array.from(auditoriums.values()).map(({ auditorium, shows }) => ({
+            ...auditorium.toJSON(),
+            shows
+          }))
+        }))
+
+        return res.json({
+          data: {
+            movie: movieWithRelations.toJSON(),
+            theatres,
+            total_shows: shows.length
+          },
+          message: 'Movie details retrieved successfully'
+        })
+      }
+
+      // Fallback: without relations
       const { Movie, Show, Auditorium, Theatre } = req.models
 
       const movie = await Movie.findOne({
@@ -348,7 +432,7 @@ export default class PublicController {
           },
           seat_map: seatsByRow,
           statistics: {
-            total_seats: allSeats.length,
+            total_seats: show.Auditorium.total_seats || allSeats.length,
             available_seats: allSeats.length - bookedSeatIds.size,
             booked_seats: bookedSeatIds.size
           }

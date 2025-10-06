@@ -494,9 +494,9 @@ export function MovieDetailsDialog({ movie, open, onOpenChange }: MovieDetailsDi
                       <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-purple-500" />
                         <div>
-                          <p className="text-2xl font-bold">
+                          {/* <p className="text-2xl font-bold">
                             {movie.approval_status === 'published' ? '✓' : '•'}
-                          </p>
+                          </p> */}
                           <p className="text-xs text-muted-foreground">
                             Status
                           </p>

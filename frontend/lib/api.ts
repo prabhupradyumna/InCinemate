@@ -1,3 +1,4 @@
+// Trigger hot-reload
 import axios, { AxiosError, AxiosResponse } from "axios";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:9000/api";
@@ -191,6 +192,29 @@ export async function verifyCustomerOtp(payload: {
     (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
   }
   return res as any;
+}
+
+// ==============================
+// BOOKING APIS
+// ==============================
+
+export async function getSeatMap(showId: string) {
+  return http("GET", `/public/shows/${showId}/seats`);
+}
+
+export async function holdSeats(payload: {
+  show_id: string;
+  seat_ids: string[];
+}) {
+  return http("POST", "/customer/bookings/hold-seats", payload);
+}
+
+export async function confirmBooking(payload: {
+  booking_id: string;
+  payment_method: string;
+  payment_details: any;
+}) {
+  return http("POST", "/customer/bookings/confirm", payload);
 }
 
 export default api;

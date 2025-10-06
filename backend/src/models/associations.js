@@ -60,7 +60,7 @@ export function setupAssociations(sequelize) {
 
   // Theatre & Auditorium associations
   Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
-  Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
+  // Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id', as: 'Theatre' }) // ❌ Removed - already defined in Auditorium model
 
   // Auditorium & Seat associations
   Auditorium.hasMany(Seat, { foreignKey: 'auditorium_id' })
@@ -71,33 +71,29 @@ export function setupAssociations(sequelize) {
   AuditoriumRequest.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
   
   Theatre.hasMany(AuditoriumRequest, { foreignKey: 'theatre_id' })
-  AuditoriumRequest.belongsTo(Theatre, { foreignKey: 'theatre_id' })
+  // AuditoriumRequest.belongsTo(Theatre, { foreignKey: 'theatre_id' }) // ❌ Removed - not needed for current functionality
 
   User.hasMany(AuditoriumRequest, { foreignKey: 'approved_by', as: 'approvedRequests' })
-  AuditoriumRequest.belongsTo(User, { foreignKey: 'approved_by', as: 'approvedBy' })
-
   // Movie associations
   Tenant.hasMany(Movie, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
   Movie.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
 
-  // Show associations (updated)
-  Movie.hasMany(Show, { foreignKey: 'movie_id' })
-  Show.belongsTo(Movie, { foreignKey: 'movie_id' })
+  // Show associations (defined in Show model)
+  // Movie.hasMany(Show, { foreignKey: 'movie_id' })
+  // Show.belongsTo(Movie, { foreignKey: 'movie_id', as: 'Movie' })
 
-  Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
-  Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+  // Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+  // Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
 
-  Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
-  Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+  // Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
+  // Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id', as: 'Auditorium' })
 
-  User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
-  Show.belongsTo(User, { foreignKey: 'created_by', as: 'createdBy' })
+  // User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
+  // Show.belongsTo(User, { foreignKey: 'created_by', as: 'CreatedBy' })
 
   // Booking associations (updated)
   User.hasMany(Booking, { foreignKey: 'customer_id', as: 'customerBookings' })
   Booking.belongsTo(User, { foreignKey: 'customer_id', as: 'customer' })
-
-  Show.hasMany(Booking, { foreignKey: 'show_id' })
   Booking.belongsTo(Show, { foreignKey: 'show_id' })
 
   Tenant.hasMany(Booking, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })

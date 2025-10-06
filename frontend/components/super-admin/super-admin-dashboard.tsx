@@ -11,6 +11,7 @@ import { UserManagement } from "@/components/super-admin/user-management"
 import { PlatformSettings } from "@/components/super-admin/platform-settings"
 import { AuditoriumRequests } from "@/components/super-admin/auditorium-requests"
 import { AuditoriumBuilder } from "@/components/super-admin/auditorium-builder"
+import { ShowsManagement } from "@/components/super-admin/shows-management"
 import { Building2, DollarSign, Users, TrendingUp, Activity, Globe } from "lucide-react"
 import { listTenants, listAdmins, listAuditoriumRequests } from "@/lib/superadmin"
 import { useApiCall } from "@/lib/hooks"
@@ -79,7 +80,7 @@ export function SuperAdminDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-8 bg-secondary">
+        <TabsList className="grid w-full grid-cols-9 bg-secondary">
           <TabsTrigger
             value="overview"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -97,6 +98,12 @@ export function SuperAdminDashboard() {
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             Venues
+          </TabsTrigger>
+          <TabsTrigger
+            value="shows"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Shows
           </TabsTrigger>
           <TabsTrigger
             value="auditorium-requests"
@@ -243,6 +250,10 @@ export function SuperAdminDashboard() {
 
         <TabsContent value="venues">
           <VenueManagement />
+        </TabsContent>
+
+        <TabsContent value="shows">
+          <ShowsManagement />
         </TabsContent>
 
         <TabsContent value="auditorium-requests">

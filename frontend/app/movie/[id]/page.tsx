@@ -1,50 +1,70 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Star, Clock, Calendar, Film, Languages, Loader2, Play } from "lucide-react"
-import { getMovieDetails } from "@/lib/public"
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ShowtimeSelector } from "@/components/customer/showtime-selector";
+import { Button } from "@/components/ui/button";
+import {
+  Star,
+  Clock,
+  Calendar,
+  Film,
+  Languages,
+  Loader2,
+  Play,
+} from "lucide-react";
+import { getMovieDetails } from "@/lib/public";
 
-export default function MovieDetailPage({ params }: { params: { id: string } }) {
-  const [movieData, setMovieData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export default function MovieDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const [movieData, setMovieData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const router = useRouter();
 
   // Fetch movie details on mount
   useEffect(() => {
     const fetchMovieDetails = async () => {
       try {
-        setLoading(true)
-        const data = await getMovieDetails(params.id)
-        setMovieData(data)
+        setLoading(true);
+        const data = await getMovieDetails(params.id);
+        setMovieData(data);
       } catch (err: any) {
-        console.error('Error fetching movie details:', err)
-        setError(err.message || 'Failed to load movie details')
+        console.error("Error fetching movie details:", err);
+        setError(err.message || "Failed to load movie details");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
     if (params.id) {
-      fetchMovieDetails()
+      fetchMovieDetails();
     }
-  }, [params.id])
+  }, [params.id]);
 
   // Helper functions
   const formatDuration = (minutes?: number) => {
-    if (!minutes) return 'N/A'
-    const hours = Math.floor(minutes / 60)
-    const mins = minutes % 60
-    return `${hours}h ${mins}m`
-  }
+    if (!minutes) return "N/A";
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  }
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
 
   // Loading state
   if (loading) {
@@ -55,7 +75,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
           <p className="text-gray-300 text-lg">Loading movie details...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Error state
@@ -65,16 +85,20 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         <div className="text-center space-y-4 max-w-md">
           <div className="text-red-500 text-6xl">⚠️</div>
           <h2 className="text-2xl font-bold text-white">Movie Not Found</h2>
-          <p className="text-gray-400">{error || 'Unable to load movie details'}</p>
+          <p className="text-gray-400">
+            {error || "Unable to load movie details"}
+          </p>
           <Link href="/">
-            <Button className="bg-red-600 hover:bg-red-700">Back to Home</Button>
+            <Button className="bg-red-600 hover:bg-red-700">
+              Back to Home
+            </Button>
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
-  const { movie, theatres, total_shows } = movieData
+  const { movie, theatres, total_shows } = movieData;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
@@ -123,14 +147,22 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                 {movie.average_user_rating && (
                   <div className="flex items-center gap-2">
                     <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-                    <span className="font-semibold">{movie.average_user_rating}/5</span>
-                    <span className="text-xs">({movie.total_ratings} ratings)</span>
+                    <span className="font-semibold">
+                      {movie.average_user_rating}/5
+                    </span>
+                    <span className="text-xs">
+                      ({movie.total_ratings} ratings)
+                    </span>
                   </div>
                 )}
                 {movie.imdb_rating && (
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center rounded bg-[#F5C518] text-black px-1.5 py-0.5 text-xs font-bold">IMDb</span>
-                    <span className="font-semibold">{movie.imdb_rating}/10</span>
+                    <span className="inline-flex items-center justify-center rounded bg-[#F5C518] text-black px-1.5 py-0.5 text-xs font-bold">
+                      IMDb
+                    </span>
+                    <span className="font-semibold">
+                      {movie.imdb_rating}/10
+                    </span>
                   </div>
                 )}
                 {movie.rotten_tomatoes && (
@@ -143,13 +175,15 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
               <div className="text-sm text-gray-300 flex flex-wrap gap-2">
                 {movie.formats && movie.formats.length > 0 && (
                   <>
-                    <span className="font-medium text-white">{movie.formats.join(', ')}</span>
+                    <span className="font-medium text-white">
+                      {movie.formats.join(", ")}
+                    </span>
                     <span>•</span>
                   </>
                 )}
                 {movie.languages && movie.languages.length > 0 && (
                   <>
-                    <span>{movie.languages.join(', ')}</span>
+                    <span>{movie.languages.join(", ")}</span>
                     <span>•</span>
                   </>
                 )}
@@ -164,13 +198,15 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                 )}
                 {movie.genres && movie.genres.length > 0 && (
                   <>
-                    <span>{movie.genres.join(', ')}</span>
+                    <span>{movie.genres.join(", ")}</span>
                     <span>•</span>
                   </>
                 )}
                 {movie.rating && (
                   <>
-                    <span className="px-2 py-0.5 border border-gray-500 rounded text-xs">{movie.rating}</span>
+                    <span className="px-2 py-0.5 border border-gray-500 rounded text-xs">
+                      {movie.rating}
+                    </span>
                     <span>•</span>
                   </>
                 )}
@@ -183,11 +219,12 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
               </div>
 
               <div className="flex items-center gap-4">
-                <Link href={`/booking/${params.id}`}>
-                  <button className="w-40 h-12 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-300 hover:scale-105">
-                    Book Tickets
-                  </button>
-                </Link>
+                <button
+                  onClick={() => setSelectorOpen(true)}
+                  className="w-40 h-12 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-300 hover:scale-105"
+                >
+                  Book Tickets
+                </button>
                 {movie.trailer_url && (
                   <a
                     href={movie.trailer_url}
@@ -207,7 +244,9 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* About the Movie Section */}
         {movie.synopsis && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">About the movie</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              About the movie
+            </h3>
             <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
               {movie.synopsis}
             </p>
@@ -215,20 +254,25 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         )}
 
         {/* Production Details */}
-        {(movie.production_houses?.length > 0 || movie.distributors?.length > 0) && (
+        {(movie.production_houses?.length > 0 ||
+          movie.distributors?.length > 0) && (
           <section className="space-y-4">
-            <h3 className="text-2xl font-semibold text-white">Production Details</h3>
+            <h3 className="text-2xl font-semibold text-white">
+              Production Details
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
               {movie.production_houses?.length > 0 && (
                 <div>
                   <span className="font-semibold text-white">Production: </span>
-                  <span>{movie.production_houses.join(', ')}</span>
+                  <span>{movie.production_houses.join(", ")}</span>
                 </div>
               )}
               {movie.distributors?.length > 0 && (
                 <div>
-                  <span className="font-semibold text-white">Distribution: </span>
-                  <span>{movie.distributors.join(', ')}</span>
+                  <span className="font-semibold text-white">
+                    Distribution:{" "}
+                  </span>
+                  <span>{movie.distributors.join(", ")}</span>
                 </div>
               )}
             </div>
@@ -238,7 +282,9 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Important Information */}
         {movie.things_to_know?.length > 0 && (
           <section className="space-y-4">
-            <h3 className="text-2xl font-semibold text-white">Important Information</h3>
+            <h3 className="text-2xl font-semibold text-white">
+              Important Information
+            </h3>
             <ul className="list-disc list-inside space-y-2 text-gray-300">
               {movie.things_to_know.map((info: string, idx: number) => (
                 <li key={idx}>{info}</li>
@@ -250,7 +296,9 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Cast Section */}
         {movie.castMembers && movie.castMembers.length > 0 && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">Cast</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              Cast
+            </h3>
             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pb-2">
                 {movie.castMembers.map((cast: any) => (
@@ -258,16 +306,28 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors">
                       <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
                         {cast.actor?.profile_image_url ? (
-                          <Image src={cast.actor.profile_image_url} alt={cast.actor.name} width={96} height={96} className="object-cover w-full h-full" />
+                          <Image
+                            src={cast.actor.profile_image_url}
+                            alt={cast.actor.name}
+                            width={96}
+                            height={96}
+                            className="object-cover w-full h-full"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
-                            {cast.actor?.name?.charAt(0) || '?'}
+                            {cast.actor?.name?.charAt(0) || "?"}
                           </div>
                         )}
                       </div>
                       <div className="text-center space-y-1">
-                        <div className="text-xs sm:text-sm font-medium text-white truncate">{cast.actor?.name || 'Unknown'}</div>
-                        {cast.character_name && <div className="text-xs text-gray-400 truncate">as {cast.character_name}</div>}
+                        <div className="text-xs sm:text-sm font-medium text-white truncate">
+                          {cast.actor?.name || "Unknown"}
+                        </div>
+                        {cast.character_name && (
+                          <div className="text-xs text-gray-400 truncate">
+                            as {cast.character_name}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -280,7 +340,9 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Crew Section */}
         {movie.crewMembers && movie.crewMembers.length > 0 && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">Crew</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              Crew
+            </h3>
             <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
               <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pb-2">
                 {movie.crewMembers.map((crew: any) => (
@@ -288,16 +350,28 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
                     <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors">
                       <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
                         {crew.person?.profile_image_url ? (
-                          <Image src={crew.person.profile_image_url} alt={crew.person.name} width={96} height={96} className="object-cover w-full h-full" />
+                          <Image
+                            src={crew.person.profile_image_url}
+                            alt={crew.person.name}
+                            width={96}
+                            height={96}
+                            className="object-cover w-full h-full"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
-                            {crew.person?.name?.charAt(0) || '?'}
+                            {crew.person?.name?.charAt(0) || "?"}
                           </div>
                         )}
                       </div>
                       <div className="text-center space-y-1">
-                        <div className="text-xs sm:text-sm font-medium text-white truncate">{crew.person?.name || 'Unknown'}</div>
-                        {crew.role_title && <div className="text-xs text-gray-400 truncate">{crew.role_title}</div>}
+                        <div className="text-xs sm:text-sm font-medium text-white truncate">
+                          {crew.person?.name || "Unknown"}
+                        </div>
+                        {crew.role_title && (
+                          <div className="text-xs text-gray-400 truncate">
+                            {crew.role_title}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -310,19 +384,30 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Songs Section */}
         {movie.songs && movie.songs.length > 0 && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">Songs</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              Songs
+            </h3>
             <div className="space-y-3">
               {movie.songs.map((song: any, idx: number) => (
-                <div key={song.id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
+                <div
+                  key={song.id}
+                  className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4"
+                >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold text-sm">
                       {idx + 1}
                     </div>
                     <div className="flex-grow space-y-2">
-                      <h4 className="text-sm sm:text-base font-semibold text-white">{song.title}</h4>
+                      <h4 className="text-sm sm:text-base font-semibold text-white">
+                        {song.title}
+                      </h4>
                       <div className="flex flex-wrap gap-2 text-xs text-gray-400">
-                        {song.singers && <span>Singers: {song.singers.join(', ')}</span>}
-                        {song.music_director && <span>• Music: {song.music_director}</span>}
+                        {song.singers && (
+                          <span>Singers: {song.singers.join(", ")}</span>
+                        )}
+                        {song.music_director && (
+                          <span>• Music: {song.music_director}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -335,18 +420,24 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Technical Specifications */}
         {(movie.aspect_ratio || movie.sound_mix?.length > 0) && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">Technical Specifications</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              Technical Specifications
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
               {movie.aspect_ratio && (
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
                   <span className="text-gray-400 block mb-1">Aspect Ratio</span>
-                  <span className="text-white font-medium">{movie.aspect_ratio}</span>
+                  <span className="text-white font-medium">
+                    {movie.aspect_ratio}
+                  </span>
                 </div>
               )}
               {movie.sound_mix && movie.sound_mix.length > 0 && (
                 <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
                   <span className="text-gray-400 block mb-1">Sound Mix</span>
-                  <span className="text-white font-medium">{movie.sound_mix.join(', ')}</span>
+                  <span className="text-white font-medium">
+                    {movie.sound_mix.join(", ")}
+                  </span>
                 </div>
               )}
             </div>
@@ -356,17 +447,26 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Reviews */}
         {movie.reviews && movie.reviews.length > 0 && (
           <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-white">Critic Reviews</h3>
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">
+              Critic Reviews
+            </h3>
             <div className="space-y-3 sm:space-y-4">
               {movie.reviews.map((review: any) => (
-                <div key={review.id} className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4">
+                <div
+                  key={review.id}
+                  className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4"
+                >
                   <div className="flex gap-3 sm:gap-4">
                     <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
-                      {review.reviewer_name?.charAt(0) || 'R'}
+                      {review.reviewer_name?.charAt(0) || "R"}
                     </div>
                     <div className="flex-grow space-y-2">
-                      <h4 className="font-semibold text-white text-sm sm:text-base">{review.reviewer_name}</h4>
-                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">{review.review_text}</p>
+                      <h4 className="font-semibold text-white text-sm sm:text-base">
+                        {review.reviewer_name}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                        {review.review_text}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -378,12 +478,25 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
         {/* Sticky CTA for mobile */}
         <div className="fixed bottom-0 inset-x-0 p-3 md:hidden bg-gray-900/90 backdrop-blur border-t border-gray-700 z-50">
           <div className="container mx-auto px-0">
-            <Link href={`/booking/${params.id}`}>
-              <Button className="w-full bg-red-600 hover:bg-red-700 text-white">Book Tickets</Button>
-            </Link>
+            <Button
+              onClick={() => setSelectorOpen(true)}
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
+            >
+              Book Tickets
+            </Button>
           </div>
         </div>
+
+        <ShowtimeSelector
+          open={selectorOpen}
+          onOpenChange={setSelectorOpen}
+          theatres={theatres || []}
+          onSelect={(showId) => {
+            setSelectorOpen(false);
+            router.push(`/booking/${showId}`);
+          }}
+        />
       </main>
     </div>
-  )
+  );
 }

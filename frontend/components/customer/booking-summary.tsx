@@ -63,7 +63,6 @@ interface BookingSummaryProps {
   onBack?: () => void;
 }
 
-
 interface BookingDetails {
   booking_id: string;
   booking_reference: string;
@@ -84,7 +83,9 @@ export function BookingSummary({
   const initialStep: "summary" | "payment" = "summary";
   const [step, setStep] = useState<"summary" | "payment">(initialStep);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
+    null
+  );
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
@@ -121,33 +122,40 @@ export function BookingSummary({
   const total = subtotal + convenienceFee;
 
   useEffect(() => {
-    const holdSeats = async () => {
-      if (selectedSeats.length > 0) {
-        setIsHoldingSeats(true);
-        setBookingError(null);
-        try {
-          const { holdSeats } = await import("@/lib/api");
-          const res = await holdSeats({
-            show_id: showId,
-            seat_ids: selectedSeats.map((s) => s.id),
-          });
-          setBookingDetails(res.data);
-        } catch (e: any) {
-          setBookingError(
-            e?.response?.data?.error || e?.message || "Failed to hold seats"
-          );
-        } finally {
-          setIsHoldingSeats(false);
-        }
+    const attemptHoldSeats = async () => {
+      // Only hold seats when user is authenticated AND we are on the payment step
+      if (step !== "payment" || !user) return;
+      if (selectedSeats.length === 0) return;
+      setIsHoldingSeats(true);
+      setBookingError(null);
+      try {
+        const { holdSeats } = await import("@/lib/api");
+        // Map to backend seat ids, falling back to row-seat mapping from showData
+        const seatIdMap: Record<string, string> =
+          (showData as any).seatIdMap || {};
+        const seatIds = selectedSeats
+          .map((s) => s.id || seatIdMap[`${s.row}-${s.seat}`])
+          .filter(Boolean);
+        const res = await holdSeats({
+          show_id: showId,
+          seat_ids: seatIds as string[],
+        });
+        setBookingDetails(res.data);
+      } catch (e: any) {
+        setBookingError(
+          e?.response?.data?.error || e?.message || "Failed to hold seats"
+        );
+      } finally {
+        setIsHoldingSeats(false);
       }
     };
-    holdSeats();
-  }, [selectedSeats, showId]);
+    attemptHoldSeats();
+  }, [step, user, selectedSeats, showId, showData]);
 
   const handleContinue = async () => {
     if (step === "summary") {
       if (user) {
-        // Logged in users go directly to payment
+        // Logged in users go to payment; hold will trigger via effect
         setStep("payment");
       } else {
         // Show customer details modal for guest users
@@ -167,6 +175,7 @@ export function BookingSummary({
     try {
       await refresh();
     } catch {}
+    // After successful OTP/login we consider the user authenticated, then move to payment.
     setStep("payment");
   };
 
@@ -188,7 +197,9 @@ export function BookingSummary({
         payment_method: "card", // Mock
         payment_details: paymentDetails, // Mock
       });
-      router.push(`/booking/confirmation?booking_id=${bookingDetails.booking_id}`);
+      router.push(
+        `/booking/confirmation?booking_id=${bookingDetails.booking_id}`
+      );
     } catch (e: any) {
       setBookingError(
         e?.response?.data?.error || e?.message || "Failed to confirm booking"

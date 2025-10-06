@@ -29,7 +29,12 @@ export default function BookingPage({
   const [error, setError] = useState<string | null>(null);
   const [showData, setShowData] = useState<any>(null);
   const [selectedSeats, setSelectedSeats] = useState<
-    Array<{ id: string; row: string; seat: number; type: "premium" | "regular" }>
+    Array<{
+      id: string;
+      row: string;
+      seat: number;
+      type: "premium" | "regular";
+    }>
   >([]);
   const [showQuantitySelector, setShowQuantitySelector] = useState(true);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
@@ -43,10 +48,96 @@ export default function BookingPage({
   useEffect(() => {
     const loadSeatMap = async () => {
       try {
-        // FIXME: This needs a real showId from the previous page
-        const showId = params.movieId; // Assuming movieId is the showId for now
-        const res = await getSeatMap(showId);
-        setShowData(res.data);
+        // Here movieId param carries selected showId
+        const showId = params.movieId;
+        const apiResp = await getSeatMap(showId);
+        // API returns { data: { show, seat_map, seats_flat, statistics }, message }
+        const apiData = (apiResp as any)?.data ?? apiResp ?? {};
+
+        // Transform API shape to SeatSelection expected shape
+        // Prefer seat_map; if empty, attempt to build from seats_flat
+        const mapType = (cat: any): "premium" | "regular" => {
+          const c = String(cat || "").toLowerCase();
+          return c === "regular" ? "regular" : "premium";
+        };
+
+        const seatIdMap: Record<string, string> = {};
+        let rows = Object.entries(apiData.seat_map || {}).map(
+          ([row, seats]: any) => {
+            (seats || []).forEach((s: any) => {
+              seatIdMap[`${s.row}-${s.number}`] = s.id;
+            });
+            return {
+              row,
+              seats: (seats || []).map((s: any) => s.number),
+              type: mapType(seats && seats[0]?.category),
+            };
+          }
+        );
+        if ((!rows || rows.length === 0) && Array.isArray(apiData.seats_flat)) {
+          const grouped: Record<string, any[]> = {} as any;
+          apiData.seats_flat.forEach((s: any) => {
+            if (!grouped[s.row]) grouped[s.row] = [];
+            grouped[s.row].push(s);
+          });
+          rows = Object.entries(grouped).map(([row, seats]: any) => {
+            (seats || []).forEach((s: any) => {
+              seatIdMap[`${s.row}-${s.number}`] = s.id;
+            });
+            return {
+              row,
+              seats: (seats || []).map((s: any) => s.number),
+              type: mapType(seats && seats[0]?.category),
+            };
+          });
+        }
+        const bookedSeats = Object.values(apiData.seat_map || {})
+          .flat()
+          .filter((s: any) => s.is_available === false)
+          .map((s: any) => ({ row: s.row, seat: s.number }));
+
+        const show = apiData.show || {};
+        const movie = show.movie || {};
+        const auditorium = show.auditorium || {};
+        const theatre = show.theatre || {};
+        const dt = show.show_datetime ? new Date(show.show_datetime) : null;
+
+        const transformed = {
+          // include show meta that downstream might need
+          show: { id: show.id },
+          movie: {
+            id: movie.id,
+            title: movie.title,
+            genre: Array.isArray(movie.genres)
+              ? movie.genres[0] || ""
+              : movie.genre || "",
+            duration: movie.duration_minutes || 0,
+            rating: movie.rating || "",
+            posterUrl: movie.poster_url || "",
+          },
+          venue: {
+            name: theatre.name || "",
+            address: theatre.address || "",
+          },
+          screen: {
+            name: auditorium.name || "Screen",
+            seatMap: { rows },
+          },
+          showtime: {
+            date: dt ? dt.toISOString() : "",
+            time: dt
+              ? dt.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "",
+            pricing: show.pricing || { premium: 0, regular: 0 },
+          },
+          bookedSeats,
+          seatIdMap,
+        } as any;
+
+        setShowData(transformed);
       } catch (e: any) {
         setError(
           e?.response?.data?.error || e.message || "Failed to load seat map"
@@ -57,7 +148,6 @@ export default function BookingPage({
     };
     loadSeatMap();
   }, [params.movieId]);
-
 
   // Seat categories with pricing and availability
   const seatCategories = useMemo(

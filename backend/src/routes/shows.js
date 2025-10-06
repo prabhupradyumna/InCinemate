@@ -68,7 +68,7 @@ export function createShowsRouter() {
       body: req.body,
       tenantIdFromBody,
       tenantIdFromMiddleware,
-      user: req.user?.id
+      user: req.user?.userId
     })
 
     // Find the selected tenant to get the tenant_id string for storage

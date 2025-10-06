@@ -12,10 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { User } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
-
-
 
 interface ShowData {
   movie: {

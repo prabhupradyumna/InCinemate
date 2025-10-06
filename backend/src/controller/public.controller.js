@@ -48,17 +48,21 @@ export default class PublicController {
         include: [
           {
             model: Movie,
+            as: 'Movie',
             where: movieFilters,
             attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'genres', 'genres', 'duration_minutes', 'rating', 'languages']
           },
           {
             model: Auditorium,
+            as: 'Auditorium',
             attributes: ['id', 'name'],
+            required: false,
             include: [{
               model: Theatre,
+              as: 'Theatre',
               where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
               attributes: ['id', 'name', 'address', 'city']
-            }]
+            , required: !!city }]
           }
         ],
         order: [['show_datetime', 'ASC']]
@@ -76,27 +80,32 @@ export default class PublicController {
           })
         }
 
-        const theatreId = show.Auditorium.Theatre.id
-        if (!moviesMap.get(movieId).theatres.has(theatreId)) {
-          moviesMap.get(movieId).theatres.set(theatreId, {
-            theatre: show.Auditorium.Theatre,
-            auditoriums: new Map()
+        const auditorium = show.Auditorium || null
+        const theatre = auditorium?.Theatre || null
+
+        if (auditorium && theatre) {
+          const theatreId = theatre.id
+          if (!moviesMap.get(movieId).theatres.has(theatreId)) {
+            moviesMap.get(movieId).theatres.set(theatreId, {
+              theatre,
+              auditoriums: new Map()
+            })
+          }
+
+          const auditoriumId = auditorium.id
+          if (!moviesMap.get(movieId).theatres.get(theatreId).auditoriums.has(auditoriumId)) {
+            moviesMap.get(movieId).theatres.get(theatreId).auditoriums.set(auditoriumId, {
+              auditorium,
+              shows: []
+            })
+          }
+
+          moviesMap.get(movieId).theatres.get(theatreId).auditoriums.get(auditoriumId).shows.push({
+            id: show.id,
+            show_datetime: show.show_datetime,
+            pricing: show.pricing
           })
         }
-
-        const auditoriumId = show.Auditorium.id
-        if (!moviesMap.get(movieId).theatres.get(theatreId).auditoriums.has(auditoriumId)) {
-          moviesMap.get(movieId).theatres.get(theatreId).auditoriums.set(auditoriumId, {
-            auditorium: show.Auditorium,
-            shows: []
-          })
-        }
-
-        moviesMap.get(movieId).theatres.get(theatreId).auditoriums.get(auditoriumId).shows.push({
-          id: show.id,
-          show_datetime: show.show_datetime,
-          pricing: show.pricing
-        })
       })
 
       // Convert to response format for movies that have shows
@@ -179,13 +188,17 @@ export default class PublicController {
           where: showFilters,
           include: [
             {
-              model: Auditorium,
-              attributes: ['id', 'name'],
-              include: [{
-                model: Theatre,
-                where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
-                attributes: ['id', 'name', 'address', 'city']
-              }]
+            model: Auditorium,
+            as: 'Auditorium',
+            attributes: ['id', 'name'],
+            required: false,
+            include: [{
+              model: Theatre,
+              as: 'Theatre',
+              where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
+              attributes: ['id', 'name', 'address', 'city'],
+              required: !!city
+            }]
             }
           ],
           order: [['show_datetime', 'ASC']]
@@ -263,11 +276,15 @@ export default class PublicController {
         include: [
           {
             model: Auditorium,
+            as: 'Auditorium',
             attributes: ['id', 'name'],
+            required: false,
             include: [{
               model: Theatre,
+              as: 'Theatre',
               where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
-              attributes: ['id', 'name', 'address', 'city']
+              attributes: ['id', 'name', 'address', 'city'],
+              required: !!city
             }]
           }
         ],
@@ -336,6 +353,7 @@ export default class PublicController {
       const { show_id } = req.params
 
       // Use centralized models with pre-configured associations
+      const sequelize = req.db
       const { Show, Seat, Auditorium, Theatre, Movie, Booking, BookedSeat } = req.models
 
       // Get show details
@@ -348,13 +366,16 @@ export default class PublicController {
         include: [
           {
             model: Movie,
+            as: 'Movie',
             attributes: ['id', 'title', 'poster_url', 'duration_minutes']
           },
           {
             model: Auditorium,
-            attributes: ['id', 'name'],
+            as: 'Auditorium',
+            attributes: ['id', 'name', 'total_seats'],
             include: [{
               model: Theatre,
+              as: 'Theatre',
               attributes: ['id', 'name', 'address', 'city']
             }]
           }
@@ -431,6 +452,7 @@ export default class PublicController {
             theatre: show.Auditorium.Theatre
           },
           seat_map: seatsByRow,
+          seats_flat: seatMap,
           statistics: {
             total_seats: show.Auditorium.total_seats || allSeats.length,
             available_seats: allSeats.length - bookedSeatIds.size,
@@ -844,16 +866,21 @@ export default class PublicController {
         include: [
           {
             model: Movie,
+            as: 'Movie',
             where: movieFilters,
             attributes: ['id', 'title', 'poster_url', 'backdrop_url', 'trailer_url', 'synopsis', 'genres', 'duration_minutes', 'rating', 'platform_status', 'is_featured', 'is_trending']
           },
           {
             model: Auditorium,
+            as: 'Auditorium',
             attributes: ['id', 'name'],
+            required: false,
             include: [{
               model: Theatre,
+              as: 'Theatre',
               where: cityFilters,
-              attributes: ['id', 'name', 'city']
+              attributes: ['id', 'name', 'city'],
+              required: Object.keys(cityFilters).length > 0
             }]
           }
         ],

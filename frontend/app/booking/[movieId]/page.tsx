@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { SeatSelection } from "@/components/seat-selection";
+import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
-import { BookingSummary } from "@/components/booking-summary";
+import { BookingSummary } from "@/components/customer/booking-summary";
 import { Separator } from "@/components/ui/separator";
-import { SeatQuantitySelector } from "@/components/seat-quantity-selector";
-import { SeatSelectionSummary } from "@/components/seat-selection-summary";
+import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
+import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
 
 type PublicMovie = {
   id: string;

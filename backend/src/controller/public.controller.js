@@ -18,14 +18,6 @@ export default class PublicController {
     try {
       const { city, date, genre, language } = req.query
 
-      if (!city) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          error: 'city parameter is required',
-          message: 'Movie search failed'
-        })
-      }
-
       const sequelize = req.db
       const Movie = defineMovie(sequelize)
       const Show = defineShow(sequelize)
@@ -33,6 +25,26 @@ export default class PublicController {
       const Theatre = defineTheatre(sequelize)
       
       await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+
+      // Ensure associations exist on this sequelize instance to allow includes
+      if (!('Movie' in Show.associations)) {
+        Show.belongsTo(Movie, { foreignKey: 'movie_id' })
+      }
+      if (!('Shows' in Movie.associations)) {
+        Movie.hasMany(Show, { foreignKey: 'movie_id' })
+      }
+      if (!('Theatre' in Auditorium.associations)) {
+        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
+      }
+      if (!('Auditoriums' in Theatre.associations)) {
+        Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
+      }
+      if (!('Auditorium' in Show.associations)) {
+        Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+      }
+      if (!('Shows' in Auditorium.associations)) {
+        Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
+      }
 
       // Build date filter
       let dateFilter = {}
@@ -54,12 +66,13 @@ export default class PublicController {
         }
       }
 
-      // Build movie filters
+      // Build movie filters - simplified for now
       const movieFilters = { is_active: true }
-      if (genre) movieFilters.genre = genre
-      if (language) movieFilters.language = language
+      // TODO: Add genre and language filtering once schema is confirmed
+      // if (genre) movieFilters.genres = { [Op.contains]: [genre] }
+      // if (language) movieFilters.languages = { [Op.contains]: [language] }
 
-      // Find shows in the specified city
+      // Find shows in the specified city (if provided)
       const shows = await Show.findAll({
         where: {
           ...dateFilter,
@@ -69,14 +82,14 @@ export default class PublicController {
           {
             model: Movie,
             where: movieFilters,
-            attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'cast', 'genre', 'duration_minutes', 'rating', 'language']
+            attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'genres', 'genres', 'duration_minutes', 'rating', 'languages']
           },
           {
             model: Auditorium,
             attributes: ['id', 'name'],
             include: [{
               model: Theatre,
-              where: { city: { [Op.iLike]: `%${city}%` } },
+              where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
               attributes: ['id', 'name', 'address', 'city']
             }]
           }
@@ -119,8 +132,8 @@ export default class PublicController {
         })
       })
 
-      // Convert to response format
-      const movies = Array.from(moviesMap.values()).map(({ movie, theatres }) => ({
+      // Convert to response format for movies that have shows
+      let movies = Array.from(moviesMap.values()).map(({ movie, theatres }) => ({
         ...movie.toJSON(),
         theatres: Array.from(theatres.values()).map(({ theatre, auditoriums }) => ({
           ...theatre.toJSON(),
@@ -130,6 +143,19 @@ export default class PublicController {
           }))
         }))
       }))
+
+      // Fallback: include active movies without shows so they appear on homepage
+      if (movies.length === 0) {
+        const cityFilter = city ? { city: { [Op.iLike]: `%${city}%` } } : {}
+        const fallbackMovies = await Movie.findAll({
+          where: { ...movieFilters, ...cityFilter },
+          attributes: ['id', 'title', 'poster_url', 'backdrop_url', 'trailer_url', 'synopsis', 'genres', 'duration_minutes', 'rating', 'platform_status', 'is_featured', 'is_trending']
+        })
+        movies = fallbackMovies.map(m => ({
+          ...m.toJSON(),
+          theatres: []
+        }))
+      }
 
       return res.json({
         data: {
@@ -166,6 +192,20 @@ export default class PublicController {
       const Theatre = defineTheatre(sequelize)
       
       await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+
+      // Ensure associations exist on this sequelize instance to allow includes
+      if (!('Theatre' in Auditorium.associations)) {
+        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
+      }
+      if (!('Auditoriums' in Theatre.associations)) {
+        Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
+      }
+      if (!('Auditorium' in Show.associations)) {
+        Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+      }
+      if (!('Shows' in Auditorium.associations)) {
+        Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
+      }
 
       const movie = await Movie.findOne({
         where: { id, is_active: true }
@@ -620,13 +660,14 @@ export default class PublicController {
       const movieFilters = {
         is_active: true,
         [Op.or]: [
-          { title: { [Op.iLike]: `%${q}%` } },
-          { cast: { [Op.contains]: [{ name: { [Op.iLike]: `%${q}%` } }] } }
+          { title: { [Op.iLike]: `%${q}%` } }
+          // Note: Cast search will be handled separately once cast relationships are properly set up
         ]
       }
 
-      if (genre) movieFilters.genre = genre
-      if (language) movieFilters.language = language
+      // TODO: Add genre and language filtering once schema is confirmed
+      // if (genre) movieFilters.genres = { [Op.contains]: [genre] }
+      // if (language) movieFilters.languages = { [Op.contains]: [language] }
 
       // Build show filters
       let showFilters = {
@@ -650,7 +691,7 @@ export default class PublicController {
           {
             model: Movie,
             where: movieFilters,
-            attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'cast', 'genre', 'duration_minutes', 'rating', 'language']
+            attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'genres', 'genres', 'duration_minutes', 'rating', 'languages']
           },
           {
             model: Auditorium,
@@ -761,6 +802,166 @@ export default class PublicController {
         success: false,
         error: err.message,
         message: 'Failed to retrieve cities'
+      })
+    }
+  }
+
+  // ==============================
+  // FEATURED & POPULAR MOVIES
+  // ==============================
+
+  static async getFeaturedMovies(req, res) {
+    try {
+      const { city, limit = 10 } = req.query
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      const Show = defineShow(sequelize)
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      
+      await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+
+      // Build filters for featured movies
+      const movieFilters = {
+        is_active: true,
+        is_featured: true
+      }
+
+      let cityFilters = {}
+      if (city) {
+        cityFilters = { city: { [Op.iLike]: `%${city}%` } }
+      }
+
+      // Get featured movies with upcoming shows
+      const shows = await Show.findAll({
+        where: {
+          show_datetime: { [Op.gte]: new Date() },
+          status: { [Op.in]: ['scheduled', 'live'] }
+        },
+        include: [
+          {
+            model: Movie,
+            where: movieFilters,
+            attributes: ['id', 'title', 'poster_url', 'backdrop_url', 'trailer_url', 'synopsis', 'genres', 'duration_minutes', 'rating', 'platform_status', 'is_featured', 'is_trending']
+          },
+          {
+            model: Auditorium,
+            attributes: ['id', 'name'],
+            include: [{
+              model: Theatre,
+              where: cityFilters,
+              attributes: ['id', 'name', 'city']
+            }]
+          }
+        ],
+        order: [['show_datetime', 'ASC']],
+        limit: parseInt(limit)
+      })
+
+      // Extract unique movies
+      const uniqueMovies = []
+      const movieIds = new Set()
+
+      shows.forEach(show => {
+        if (!movieIds.has(show.Movie.id)) {
+          movieIds.add(show.Movie.id)
+          uniqueMovies.push(show.Movie.toJSON())
+        }
+      })
+
+      return res.json({
+        data: uniqueMovies.slice(0, parseInt(limit)),
+        message: 'Featured movies retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[PublicController]-[getFeaturedMovies]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve featured movies'
+      })
+    }
+  }
+
+  static async getPopularMovies(req, res) {
+    try {
+      const { city, limit = 10, period = 'month' } = req.query
+      const sequelize = req.db
+      const Movie = defineMovie(sequelize)
+      const Booking = defineBooking(sequelize)
+      const Show = defineShow(sequelize)
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+      
+      await Promise.all([Movie.sync(), Booking.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+
+      // Calculate date range based on period
+      let dateFilter = {}
+      const now = new Date()
+      if (period === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        dateFilter = { created_at: { [Op.gte]: weekAgo } }
+      } else if (period === 'month') {
+        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        dateFilter = { created_at: { [Op.gte]: monthAgo } }
+      }
+
+      // Get popular movies based on booking count
+      const popularMovies = await Movie.findAll({
+        attributes: [
+          'id', 'title', 'poster_url', 'backdrop_url', 'genres', 'duration_minutes', 'rating', 'platform_status', 'is_trending',
+          [sequelize.fn('COUNT', sequelize.col('Shows.Bookings.id')), 'booking_count'],
+          [sequelize.fn('SUM', sequelize.col('Shows.Bookings.total_price')), 'revenue']
+        ],
+        where: { is_active: true },
+        include: [
+          {
+            model: Show,
+            attributes: [],
+            include: [
+              {
+                model: Booking,
+                attributes: [],
+                where: {
+                  status: ['paid', 'pending'],
+                  ...dateFilter
+                },
+                required: false
+              },
+              {
+                model: Auditorium,
+                attributes: [],
+                include: [{
+                  model: Theatre,
+                  attributes: [],
+                  where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
+                  required: !!city
+                }],
+                required: !!city
+              }
+            ],
+            required: false
+          }
+        ],
+        group: ['Movie.id'],
+        order: [[sequelize.literal('booking_count'), 'DESC']],
+        limit: parseInt(limit)
+      })
+
+      return res.json({
+        data: popularMovies.map(movie => ({
+          ...movie.toJSON(),
+          booking_count: parseInt(movie.dataValues.booking_count) || 0,
+          revenue: parseFloat(movie.dataValues.revenue) || 0
+        })),
+        message: 'Popular movies retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[PublicController]-[getPopularMovies]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve popular movies'
       })
     }
   }

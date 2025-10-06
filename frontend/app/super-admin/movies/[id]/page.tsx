@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { ProtectedRoute } from "@/components/auth/protected-route";
+import { ProtectedRoute } from "@/components/customer/protected-route";
 import AdminShell from "@/components/layout/AdminShell";
 import Link from "next/link";
 import { ArrowLeft, Edit, Trash } from "lucide-react";

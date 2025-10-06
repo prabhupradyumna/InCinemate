@@ -119,6 +119,12 @@ export function defineMovie(sequelize) {
         defaultValue: ['India'],
         comment: 'Release countries: ["India", "United States", "United Kingdom"]'
       },
+      // Primary release city for discovery filtering
+      city: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'Primary city used for discovery filtering'
+      },
       
       // External Ratings (Optional)
       imdb_rating: {
@@ -360,7 +366,7 @@ export function defineMovie(sequelize) {
     },
     { 
       tableName: 'movies',
-      timestamps: true,
+      timestamps: true, // Re-enabled timestamps for super-admin compatibility
       underscored: true, // Use snake_case for timestamp columns (created_at, updated_at)
       indexes: [
         {
@@ -373,8 +379,9 @@ export function defineMovie(sequelize) {
           fields: ['genres']
         },
         {
-          fields: ['created_at']
+          fields: ['city']
         }
+        // Removed created_at index temporarily until columns exist
       ]
     },
   )

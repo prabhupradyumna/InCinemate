@@ -1,5 +1,5 @@
 "use client";
-import { MovieBrowser } from "@/components/movie-browser"
+import { MovieBrowser } from "@/components/customer/movie-browser"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { MovieForm } from "@/components/super-admin/movie-form";
-import { ProtectedRoute } from "@/components/auth/protected-route";
+import { ProtectedRoute } from "@/components/customer/protected-route";
 import AdminShell from "@/components/layout/AdminShell";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";

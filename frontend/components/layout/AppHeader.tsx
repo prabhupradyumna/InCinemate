@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Button } from "@/components/ui/button";
 import { Bell, Menu, Search, User, LogOut, Settings } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default function AppHeader() {

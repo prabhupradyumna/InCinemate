@@ -1,5 +1,5 @@
 import MovieListTable from "../../../components/super-admin/movie-list-table";
-import { ProtectedRoute } from "@/components/auth/protected-route";
+import { ProtectedRoute } from "@/components/customer/protected-route";
 import AdminShell from "@/components/layout/AdminShell";
 
 export default function MoviesPage() {

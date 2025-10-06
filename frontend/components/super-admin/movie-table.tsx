@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Edit, Trash2, Search, Eye, Check, X } from "lucide-react";
 import { listMovies, updateMovie, deleteMovie, listTenants, type MovieDTO } from "@/lib/superadmin";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 
 export const MovieTable = forwardRef<{ refresh: () => void }, { statusFilter?: 'all' | 'active' | 'inactive' }>(

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -49,7 +50,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { MovieDTO, CreateMoviePayload, listTenants, createMovie, updateMovie, getMovie, addMovieCast, addMovieCrew, updateMovieCast, updateMovieCrew, createActor, createCrewPerson, updateCrewPerson, AddMovieCastPayload, AddMovieCrewPayload, removeMovieCast, removeMovieCrew, listActors, listCrewPersons } from "@/lib/superadmin";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 
 // Helper to allow empty strings for numeric inputs (treated as undefined)
 const numberOptional = z.preprocess((val) => {
@@ -68,6 +69,8 @@ const movieFormSchema = z.object({
   synopsis: z.string().optional(),
   short_description: z.string().optional(),
   tagline: z.string().optional(),
+  // Location
+  city: z.string().min(1, 'City is required'),
   
   // Media Assets
   poster_url: z.string().optional(),
@@ -210,6 +213,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     defaultValues: {
       title: "",
       tenant_id: "",
+      city: "",
       synopsis: "",
       short_description: "",
       tagline: "",
@@ -341,6 +345,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         const formData = {
           title: movie.title || "",
           tenant_id: movie.tenant_id || "",
+          city: (movie as any).city || "",
           synopsis: movie.synopsis || "",
           short_description: movie.short_description || "",
           tagline: movie.tagline || "",
@@ -773,6 +778,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       // Prepare payload for API
       let payload: CreateMoviePayload = {
         ...values,
+        city: values.city,
         poster_url: posterUrl,
         backdrop_url: backdropUrl
       };
@@ -1269,11 +1275,26 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                   options={FORMATS}
                 />
 
-                <ArrayInputField 
-                  field="countries" 
-                  label="Release Countries" 
-                  options={COUNTRIES}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ArrayInputField 
+                    field="countries" 
+                    label="Release Countries" 
+                    options={COUNTRIES}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Release City *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter primary city (e.g., Mumbai)" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

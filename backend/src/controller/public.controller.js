@@ -1,11 +1,3 @@
-import { defineMovie } from '../models/Movie.js'
-import { defineShow } from '../models/Show.js'
-import { defineSeat } from '../models/Seat.js'
-import { defineAuditorium } from '../models/Auditorium.js'
-import { defineTheatre } from '../models/Theatre.js'
-import { defineBooking } from '../models/Booking.js'
-import { defineBookedSeat } from '../models/BookedSeat.js'
-import { defineCoupon } from '../models/Coupon.js'
 import { HTTP_STATUS, API_MESSAGES } from '../constants.js'
 import { Op } from 'sequelize'
 
@@ -18,33 +10,8 @@ export default class PublicController {
     try {
       const { city, date, genre, language } = req.query
 
-      const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      const Show = defineShow(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
-      
-      await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
-
-      // Ensure associations exist on this sequelize instance to allow includes
-      if (!('Movie' in Show.associations)) {
-        Show.belongsTo(Movie, { foreignKey: 'movie_id' })
-      }
-      if (!('Shows' in Movie.associations)) {
-        Movie.hasMany(Show, { foreignKey: 'movie_id' })
-      }
-      if (!('Theatre' in Auditorium.associations)) {
-        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
-      }
-      if (!('Auditoriums' in Theatre.associations)) {
-        Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
-      }
-      if (!('Auditorium' in Show.associations)) {
-        Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
-      }
-      if (!('Shows' in Auditorium.associations)) {
-        Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
-      }
+      // Use centralized models with pre-configured associations
+      const { Movie, Show, Auditorium, Theatre } = req.models
 
       // Build date filter
       let dateFilter = {}
@@ -185,27 +152,8 @@ export default class PublicController {
       const { id } = req.params
       const { city } = req.query
 
-      const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      const Show = defineShow(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
-      
-      await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
-
-      // Ensure associations exist on this sequelize instance to allow includes
-      if (!('Theatre' in Auditorium.associations)) {
-        Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
-      }
-      if (!('Auditoriums' in Theatre.associations)) {
-        Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
-      }
-      if (!('Auditorium' in Show.associations)) {
-        Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
-      }
-      if (!('Shows' in Auditorium.associations)) {
-        Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
-      }
+      // Use centralized models with pre-configured associations
+      const { Movie, Show, Auditorium, Theatre } = req.models
 
       const movie = await Movie.findOne({
         where: { id, is_active: true }
@@ -303,19 +251,8 @@ export default class PublicController {
     try {
       const { show_id } = req.params
 
-      const sequelize = req.db
-      const Show = defineShow(sequelize)
-      const Seat = defineSeat(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
-      const Movie = defineMovie(sequelize)
-      const Booking = defineBooking(sequelize)
-      const BookedSeat = defineBookedSeat(sequelize)
-      
-      await Promise.all([
-        Show.sync(), Seat.sync(), Auditorium.sync(), 
-        Theatre.sync(), Movie.sync(), Booking.sync(), BookedSeat.sync()
-      ])
+      // Use centralized models with pre-configured associations
+      const { Show, Seat, Auditorium, Theatre, Movie, Booking, BookedSeat } = req.models
 
       // Get show details
       const show = await Show.findOne({
@@ -451,17 +388,8 @@ export default class PublicController {
         })
       }
 
-      const sequelize = req.db
-      const Show = defineShow(sequelize)
-      const Seat = defineSeat(sequelize)
-      const Booking = defineBooking(sequelize)
-      const BookedSeat = defineBookedSeat(sequelize)
-      const Coupon = defineCoupon(sequelize)
-      
-      await Promise.all([
-        Show.sync(), Seat.sync(), Booking.sync(), 
-        BookedSeat.sync(), Coupon.sync()
-      ])
+      // Use centralized models with pre-configured associations
+      const { Show, Seat, Booking, BookedSeat, Coupon } = req.models
 
       // Verify show exists and is available
       const show = await Show.findOne({
@@ -648,13 +576,8 @@ export default class PublicController {
         })
       }
 
-      const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      const Show = defineShow(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
-      
-      await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+      // Use centralized models with pre-configured associations
+      const { Movie, Show, Auditorium, Theatre } = req.models
 
       // Build search filters
       const movieFilters = {
@@ -778,9 +701,9 @@ export default class PublicController {
 
   static async getAvailableCities(req, res) {
     try {
+      // Use centralized models with pre-configured associations
+      const { Theatre } = req.models
       const sequelize = req.db
-      const Theatre = defineTheatre(sequelize)
-      await Theatre.sync()
 
       const cities = await Theatre.findAll({
         attributes: [
@@ -813,13 +736,9 @@ export default class PublicController {
   static async getFeaturedMovies(req, res) {
     try {
       const { city, limit = 10 } = req.query
-      const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      const Show = defineShow(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
       
-      await Promise.all([Movie.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+      // Use centralized models with pre-configured associations
+      const { Movie, Show, Auditorium, Theatre } = req.models
 
       // Build filters for featured movies
       const movieFilters = {
@@ -887,13 +806,9 @@ export default class PublicController {
     try {
       const { city, limit = 10, period = 'month' } = req.query
       const sequelize = req.db
-      const Movie = defineMovie(sequelize)
-      const Booking = defineBooking(sequelize)
-      const Show = defineShow(sequelize)
-      const Auditorium = defineAuditorium(sequelize)
-      const Theatre = defineTheatre(sequelize)
       
-      await Promise.all([Movie.sync(), Booking.sync(), Show.sync(), Auditorium.sync(), Theatre.sync()])
+      // Use centralized models with pre-configured associations
+      const { Movie, Booking, Show, Auditorium, Theatre } = req.models
 
       // Calculate date range based on period
       let dateFilter = {}

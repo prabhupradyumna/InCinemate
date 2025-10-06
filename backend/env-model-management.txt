@@ -1,0 +1,37 @@
+# Model Management Configuration
+# ================================
+
+# Database Sync Control
+# ---------------------
+# DB_SYNC_ALTER=true     # Automatically alter existing tables (add/remove columns)
+# DB_SYNC_FORCE=false    # Force recreate all tables (DANGER: will lose data)
+# LOG_SQL=true          # Enable SQL query logging
+
+# Model Management
+# ----------------
+# MODEL_AUTO_SYNC=true          # Automatically sync models on startup (default: true)
+# MODEL_CACHE=true              # Cache models globally (default: true)
+# MODEL_REQUEST_SCOPED=false    # Create new model instances per request (default: false)
+
+# Recommended Settings:
+# ====================
+# Development:
+# DB_SYNC_ALTER=true
+# DB_SYNC_FORCE=false
+# MODEL_AUTO_SYNC=true
+# MODEL_CACHE=true
+# MODEL_REQUEST_SCOPED=false
+
+# Production:
+# DB_SYNC_ALTER=false
+# DB_SYNC_FORCE=false
+# MODEL_AUTO_SYNC=true
+# MODEL_CACHE=true
+# MODEL_REQUEST_SCOPED=false
+
+# Testing:
+# DB_SYNC_ALTER=false
+# DB_SYNC_FORCE=true
+# MODEL_AUTO_SYNC=true
+# MODEL_CACHE=false
+# MODEL_REQUEST_SCOPED=true

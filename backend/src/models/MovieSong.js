@@ -82,8 +82,7 @@ export function defineMovieSong(sequelize) {
       },
       song_type: {
         type: DataTypes.ENUM('title_track', 'romantic', 'dance', 'sad', 'devotional', 'item_number', 'background', 'other'),
-        allowNull: true,
-        comment: 'Type/category of song'
+        allowNull: true
       },
       is_featured: {
         type: DataTypes.BOOLEAN,

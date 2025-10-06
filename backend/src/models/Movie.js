@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize'
 
 export function defineMovie(sequelize) {
-  return sequelize.define(
+  const Movie = sequelize.define(
     'Movie',
     {
       id: {
@@ -333,11 +333,11 @@ export function defineMovie(sequelize) {
       },
       
       // Administrative
-      approval_status: {
-        type: DataTypes.ENUM('draft', 'pending_review', 'approved', 'published', 'archived'),
-        defaultValue: 'draft',
-        comment: 'Movie approval workflow status'
-      },
+      // approval_status: {
+      //   type: DataTypes.ENUM('draft', 'pending_review', 'approved', 'published', 'archived'),
+      //   defaultValue: 'draft',
+      //   comment: 'Movie approval workflow status'
+      // },
       approved_by: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -385,4 +385,8 @@ export function defineMovie(sequelize) {
       ]
     },
   )
+
+  // Associations are defined in models/index.js and MovieRelationships.js
+
+  return Movie
 }

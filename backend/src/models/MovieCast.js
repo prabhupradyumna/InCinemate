@@ -43,8 +43,7 @@ export function defineMovieCast(sequelize) {
       },
       role_type: {
         type: DataTypes.ENUM('lead', 'supporting', 'special_appearance', 'cameo', 'voice', 'narrator'),
-        allowNull: false,
-        comment: 'Type of role in the movie'
+        allowNull: false
       },
       
       // Display & Ordering
@@ -73,8 +72,7 @@ export function defineMovieCast(sequelize) {
       },
       character_type: {
         type: DataTypes.ENUM('protagonist', 'antagonist', 'supporting', 'comic_relief', 'love_interest', 'mentor', 'other'),
-        allowNull: true,
-        comment: 'Character archetype'
+        allowNull: true
       },
       
       // Administrative

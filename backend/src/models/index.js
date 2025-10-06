@@ -140,7 +140,7 @@ class ModelManager {
 
     // Theatre & Auditorium associations
     Theatre.hasMany(Auditorium, { foreignKey: 'theatre_id' })
-    Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id' })
+    Auditorium.belongsTo(Theatre, { foreignKey: 'theatre_id', as: 'Theatre' })
 
     // Auditorium & Seat associations
     Auditorium.hasMany(Seat, { foreignKey: 'auditorium_id' })
@@ -158,26 +158,26 @@ class ModelManager {
 
     // Movie associations
     Tenant.hasMany(Movie, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
-    Movie.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+    Movie.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id', as: 'Tenant' })
 
     // Show associations
-    Movie.hasMany(Show, { foreignKey: 'movie_id' })
-    Show.belongsTo(Movie, { foreignKey: 'movie_id' })
+    Movie.hasMany(Show, { foreignKey: 'movie_id', as: 'shows' })
+    Show.belongsTo(Movie, { foreignKey: 'movie_id', as: 'Movie' })
 
-    Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
-    Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+    Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' }) // Reference tenants.tenant_id (string)
+    Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' }) // Reference tenants.tenant_id (string)
 
     Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
-    Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+    Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id', as: 'Auditorium' })
 
     User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
-    Show.belongsTo(User, { foreignKey: 'created_by', as: 'createdBy' })
+    Show.belongsTo(User, { foreignKey: 'created_by', as: 'CreatedBy' })
 
     // Booking associations
     User.hasMany(Booking, { foreignKey: 'customer_id', as: 'customerBookings' })
     Booking.belongsTo(User, { foreignKey: 'customer_id', as: 'customer' })
 
-    Show.hasMany(Booking, { foreignKey: 'show_id' })
+    Show.hasMany(Booking, { foreignKey: 'show_id', as: 'bookings' })
     Booking.belongsTo(Show, { foreignKey: 'show_id' })
 
     Tenant.hasMany(Booking, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
@@ -199,6 +199,13 @@ class ModelManager {
 
     Booking.belongsTo(Coupon, { foreignKey: 'coupon_id' })
     Coupon.hasMany(Booking, { foreignKey: 'coupon_id' })
+
+    // Call associate methods for models that have them
+    Object.values(models).forEach(model => {
+      if (model.associate) {
+        model.associate(models)
+      }
+    })
   }
 
   /**

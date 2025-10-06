@@ -184,12 +184,17 @@
 
 .menu-section-title {
   padding: 0.5rem 0.75rem 0.25rem;
-  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: .05em;
   color: var(--muted-foreground);
 }
 
-.menu-item+.menu-item {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+/* Custom animations */
+@keyframes slow-zoom {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-slow-zoom {
+  animation: slow-zoom 20s ease-in-out infinite;
 }

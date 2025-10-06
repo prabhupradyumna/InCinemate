@@ -1,7 +1,7 @@
 import { DataTypes } from 'sequelize'
 
 export function defineShow(sequelize) {
-  return sequelize.define(
+  const Show = sequelize.define(
     'Show',
     {
       id: {
@@ -46,15 +46,19 @@ export function defineShow(sequelize) {
         type: DataTypes.STRING,
         allowNull: false,
         index: true,
-        comment: 'Admin tenant who scheduled this show'
+        comment: 'Reference to tenant.tenant_id (string)',
+        references: {
+          model: 'tenants',
+          key: 'tenant_id'
+        }
       },
       created_by: {
         type: DataTypes.UUID,
-        allowNull: false,
+        allowNull: true, // Made optional for now - can be added back later
         comment: 'Admin user who created this show'
       },
     },
-    { 
+    {
       tableName: 'shows',
       indexes: [
         {
@@ -72,4 +76,8 @@ export function defineShow(sequelize) {
       ]
     },
   )
+
+  // Associations are defined in models/index.js
+
+  return Show
 }

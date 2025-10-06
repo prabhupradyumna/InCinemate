@@ -20,6 +20,7 @@ import {
   Wrench,
   Film,
   Plus,
+  Calendar,
 } from "lucide-react";
 
 type NavItem = {
@@ -69,6 +70,11 @@ export default function AppSidebar() {
             { name: "All Movies", path: "/super-admin/movies", icon: <Film className="h-3 w-3" /> },
             { name: "Create Movie", path: "/super-admin/movies/add", icon: <Plus className="h-3 w-3" /> },
           ],
+        },
+        {
+          icon: <Calendar className="h-4 w-4" />,
+          name: "Shows Management",
+          path: "/super-admin?tab=shows",
         },
         {
           icon: <Settings className="h-4 w-4" />,

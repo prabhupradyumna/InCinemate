@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,8 +51,10 @@ interface ShowData {
 }
 
 interface BookingSummaryProps {
+  showId: string;
   showData: ShowData;
   selectedSeats?: Array<{
+    id: string;
     row: string;
     seat: number;
     type: "premium" | "regular";
@@ -61,7 +63,18 @@ interface BookingSummaryProps {
   onBack?: () => void;
 }
 
+
+interface BookingDetails {
+  booking_id: string;
+  booking_reference: string;
+  hold_id: string;
+  hold_expires_at: string;
+  subtotal: number;
+  total_price: number;
+}
+
 export function BookingSummary({
+  showId,
   showData,
   selectedSeats = [],
   selectedQuantity = 1,
@@ -71,7 +84,10 @@ export function BookingSummary({
   const initialStep: "summary" | "payment" = "summary";
   const [step, setStep] = useState<"summary" | "payment">(initialStep);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isHoldingSeats, setIsHoldingSeats] = useState(false);
   const router = useRouter();
 
   const [customerDetails, setCustomerDetails] = useState({
@@ -103,6 +119,30 @@ export function BookingSummary({
 
   const convenienceFee = 2.5;
   const total = subtotal + convenienceFee;
+
+  useEffect(() => {
+    const holdSeats = async () => {
+      if (selectedSeats.length > 0) {
+        setIsHoldingSeats(true);
+        setBookingError(null);
+        try {
+          const { holdSeats } = await import("@/lib/api");
+          const res = await holdSeats({
+            show_id: showId,
+            seat_ids: selectedSeats.map((s) => s.id),
+          });
+          setBookingDetails(res.data);
+        } catch (e: any) {
+          setBookingError(
+            e?.response?.data?.error || e?.message || "Failed to hold seats"
+          );
+        } finally {
+          setIsHoldingSeats(false);
+        }
+      }
+    };
+    holdSeats();
+  }, [selectedSeats, showId]);
 
   const handleContinue = async () => {
     if (step === "summary") {
@@ -137,13 +177,23 @@ export function BookingSummary({
   };
 
   const handleCompleteBooking = async () => {
+    if (!bookingDetails) return;
     setIsProcessing(true);
-
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-
-    // Redirect to confirmation page
-    router.push("/booking/confirmation");
+    try {
+      const { confirmBooking } = await import("@/lib/api");
+      await confirmBooking({
+        booking_id: bookingDetails.booking_id,
+        payment_method: "card", // Mock
+        payment_details: paymentDetails, // Mock
+      });
+      router.push(`/booking/confirmation?booking_id=${bookingDetails.booking_id}`);
+    } catch (e: any) {
+      setBookingError(
+        e?.response?.data?.error || e?.message || "Failed to confirm booking"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const isDetailsValid = customerDetails.fullName && !!customerDetails.phone;
@@ -217,6 +267,16 @@ export function BookingSummary({
             </Badge>
           </CardTitle>
         </CardHeader>
+
+        {bookingError && (
+          <div className="px-6 pb-4">
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg p-3">
+              <p className="font-bold mb-1">Booking Error</p>
+              <p>{bookingError}</p>
+            </div>
+          </div>
+        )}
+
         <CardContent className="space-y-3 md:space-y-4">
           {/* Movie Details */}
           <div className="space-y-2">
@@ -281,7 +341,11 @@ export function BookingSummary({
             <Separator />
             <div className="flex justify-between font-semibold text-sm md:text-base">
               <span>Total</span>
-              <span className="text-primary">${total.toFixed(2)}</span>
+              <span className="text-primary">
+                {isHoldingSeats
+                  ? "Calculating..."
+                  : `$${(bookingDetails?.total_price || total).toFixed(2)}`}
+              </span>
             </div>
           </div>
           {/* Payment Form */}
@@ -376,7 +440,11 @@ export function BookingSummary({
           <div className="space-y-2 pt-4">
             {step === "summary" && mockSelectedSeats.length > 0 && (
               <>
-                <Button className="w-full cinema-glow" onClick={handleContinue}>
+                <Button
+                  className="w-full cinema-glow"
+                  onClick={handleContinue}
+                  disabled={isHoldingSeats || !!bookingError}
+                >
                   Continue to Details
                 </Button>
                 {onBack && (

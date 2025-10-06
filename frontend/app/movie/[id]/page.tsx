@@ -1,467 +1,384 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Star, ThumbsUp, ThumbsDown } from "lucide-react"
-
-// Mock data for a single movie
-const movieDetails = {
-  id: "movie_001",
-  title: "The Dark Knight",
-  poster_url: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
-  banner_url: "https://image.tmdb.org/t/p/original/dqK9Hag1054tghRQSqLSfrkvQnA.jpg",
-  format: "2D",
-  language: "English",
-  duration: "2h 32m",
-  genres: ["Action", "Crime", "Drama"],
-  certificate: "U/A",
-  release_date: "July 18, 2008",
-  rating: 8.9,
-  imdb_rating: 9.0,
-  about:
-    "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
-  trailer: "https://www.youtube.com/watch?v=EXeTwQWrcwY",
-}
-
-// Mock data for cast and crew
-const cast = [
-  { id: 1, name: "Christian Bale", role: "Bruce Wayne", image_url: "https://placehold.co/150" },
-  { id: 2, name: "Heath Ledger", role: "Joker", image_url: "https://placehold.co/150" },
-  { id: 3, name: "Aaron Eckhart", role: "Harvey Dent", image_url: "https://placehold.co/150" },
-  { id: 4, name: "Michael Caine", role: "Alfred", image_url: "https://placehold.co/150" },
-  { id: 5, name: "Maggie Gyllenhaal", role: "Rachel", image_url: "https://placehold.co/150" },
-]
-
-const crew = [
-  { id: 1, name: "Christopher Nolan", role: "Director", image_url: "https://placehold.co/150" },
-  { id: 2, name: "Jonathan Nolan", role: "Screenplay", image_url: "https://placehold.co/150" },
-  { id: 3, name: "Hans Zimmer", role: "Music", image_url: "https://placehold.co/150" },
-]
-
-// Mock data for awards
-const awards = [
-  { 
-    id: 1, 
-    award_name: "Academy Awards", 
-    recipient: "Heath Ledger", 
-    category: "Winner, Best Supporting Actor", 
-    image_url: "https://placehold.co/100x100?text=Oscar" 
-  },
-  { 
-    id: 2, 
-    award_name: "Golden Globe Awards", 
-    recipient: "Heath Ledger", 
-    category: "Winner, Best Supporting Actor", 
-    image_url: "https://placehold.co/100x100?text=Globe" 
-  },
-  { 
-    id: 3, 
-    award_name: "BAFTA Awards", 
-    recipient: "Heath Ledger", 
-    category: "Winner, Best Supporting Actor", 
-    image_url: "https://placehold.co/100x100?text=BAFTA" 
-  },
-]
-
-// Mock data for reviews
-const reviews = [
-  { id: 1, author: "Cinephile_Max", rating: 5, text: "An absolute masterpiece. Heath Ledger's Joker is legendary.", likes: 112, dislikes: 3 },
-  { id: 2, author: "MovieFan_88", rating: 4, text: "Still holds up as one of the best comic book movies ever made.", likes: 98, dislikes: 1 },
-  { id: 3, author: "Sarah_G", rating: 5, text: "The tension and storytelling are top-notch. A must-watch.", likes: 154, dislikes: 5 },
-]
+import { Star, Clock, Calendar, Film, Languages, Loader2, Play } from "lucide-react"
+import { getMovieDetails } from "@/lib/public"
 
 export default function MovieDetailPage({ params }: { params: { id: string } }) {
-  // Use route param for booking link; the visual is based on mock movieDetails
-  const bookingId = params.id || movieDetails.id
-  const [showAllReviews, setShowAllReviews] = useState(false)
-  
-  // Review form state
-  const [newReviewRating, setNewReviewRating] = useState(0)
-  const [newReviewText, setNewReviewText] = useState("")
-  const [hoveredStar, setHoveredStar] = useState(0)
-  
-  // Voting state - track which reviews have been voted on
-  const [votedReviews, setVotedReviews] = useState<Set<number>>(new Set())
-  const [reviewVotes, setReviewVotes] = useState<{[key: number]: {likes: number, dislikes: number}}>({})
+  const [movieData, setMovieData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const visibleReviews = showAllReviews ? reviews : reviews.slice(0, 2)
-  
-  // Initialize review votes
-  const getReviewVotes = (reviewId: number) => {
-    const review = reviews.find(r => r.id === reviewId)
-    return reviewVotes[reviewId] || { likes: review?.likes || 0, dislikes: review?.dislikes || 0 }
-  }
-  
-  // Handle voting
-  const handleVote = (reviewId: number, voteType: 'like' | 'dislike') => {
-    if (votedReviews.has(reviewId)) return
-    
-    setVotedReviews(prev => new Set([...prev, reviewId]))
-    setReviewVotes(prev => {
-      const current = getReviewVotes(reviewId)
-      return {
-        ...prev,
-        [reviewId]: {
-          likes: voteType === 'like' ? current.likes + 1 : current.likes,
-          dislikes: voteType === 'dislike' ? current.dislikes + 1 : current.dislikes
-        }
+  // Fetch movie details on mount
+  useEffect(() => {
+    const fetchMovieDetails = async () => {
+      try {
+        setLoading(true)
+        const data = await getMovieDetails(params.id)
+        setMovieData(data)
+      } catch (err: any) {
+        console.error('Error fetching movie details:', err)
+        setError(err.message || 'Failed to load movie details')
+      } finally {
+        setLoading(false)
       }
-    })
-  }
-  
-  // Handle review submission
-  const handleSubmitReview = () => {
-    if (newReviewRating > 0 && newReviewText.trim()) {
-      // In a real app, this would send to backend
-      console.log('New review:', { rating: newReviewRating, text: newReviewText })
-      setNewReviewRating(0)
-      setNewReviewText("")
     }
+
+    if (params.id) {
+      fetchMovieDetails()
+    }
+  }, [params.id])
+
+  // Helper functions
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return 'N/A'
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    return `${hours}h ${mins}m`
   }
-  
-  // Render stars for display (used in review cards)
-  const renderStars = (rating: number, size: string = "h-4 w-4") => {
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  }
+
+  // Loading state
+  if (loading) {
     return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${size} ${
-              star <= rating 
-                ? 'text-yellow-400 fill-yellow-400' 
-                : 'text-gray-600'
-            }`}
-          />
-        ))}
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-red-600 mx-auto" />
+          <p className="text-gray-300 text-lg">Loading movie details...</p>
+        </div>
       </div>
     )
   }
 
+  // Error state
+  if (error || !movieData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-red-500 text-6xl">⚠️</div>
+          <h2 className="text-2xl font-bold text-white">Movie Not Found</h2>
+          <p className="text-gray-400">{error || 'Unable to load movie details'}</p>
+          <Link href="/">
+            <Button className="bg-red-600 hover:bg-red-700">Back to Home</Button>
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  const { movie, theatres, total_shows } = movieData
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
-      <style jsx>{`
-        @keyframes slow-zoom {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        .animate-slow-zoom {
-          animation: slow-zoom 20s ease-in-out infinite;
-        }
-      `}</style>
-
       {/* Main Page Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
-        {/* Hero Section - BookMyShow Style */}
+        {/* Hero Section */}
         <section className="relative w-full h-[60vh] md:h-[70vh]">
-          {/* Full-Width Background Banner */}
-          <Image
-            src={movieDetails.banner_url}
-            alt={movieDetails.title}
-            fill
-            className="absolute inset-0 w-full h-full object-cover animate-slow-zoom"
-            priority
-          />
+          {movie.backdrop_url && (
+            <Image
+              src={movie.backdrop_url}
+              alt={movie.title}
+              fill
+              className="absolute inset-0 w-full h-full object-cover"
+              priority
+            />
+          )}
 
-          {/* Dark Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-transparent" />
 
-          {/* Centered Content Wrapper */}
           <div className="relative z-10 max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center gap-10">
-            {/* Left div (Poster) */}
             <div className="relative flex-shrink-0 w-full max-w-[240px] sm:max-w-[280px] md:max-w-[250px] aspect-[2/3]">
-              <Image
-                src={movieDetails.poster_url}
-                alt={movieDetails.title}
-                fill
-                className="rounded-lg shadow-2xl object-cover"
-              />
+              {movie.poster_url ? (
+                <Image
+                  src={movie.poster_url}
+                  alt={movie.title}
+                  fill
+                  className="rounded-lg shadow-2xl object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-700 rounded-lg flex items-center justify-center">
+                  <Film className="h-20 w-20 text-gray-500" />
+                </div>
+              )}
             </div>
 
-            {/* Right div (Text Details) */}
             <div className="flex-grow space-y-6">
-              {/* Movie Title */}
               <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-white">
-                {movieDetails.title}
+                {movie.title}
               </h1>
 
-              {/* Ratings */}
+              {movie.tagline && (
+                <p className="text-lg text-gray-300 italic">{movie.tagline}</p>
+              )}
+
               <div className="flex items-center gap-4 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-400" />
-                  <span className="font-semibold">{movieDetails.rating}/10</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center rounded bg-[#F5C518] text-black px-1.5 py-0.5 text-xs font-bold">IMDb</span>
-                  <span className="font-semibold">{movieDetails.imdb_rating}/10</span>
-                </div>
+                {movie.average_user_rating && (
+                  <div className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+                    <span className="font-semibold">{movie.average_user_rating}/5</span>
+                    <span className="text-xs">({movie.total_ratings} ratings)</span>
+                  </div>
+                )}
+                {movie.imdb_rating && (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded bg-[#F5C518] text-black px-1.5 py-0.5 text-xs font-bold">IMDb</span>
+                    <span className="font-semibold">{movie.imdb_rating}/10</span>
+                  </div>
+                )}
+                {movie.rotten_tomatoes && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">🍅 {movie.rotten_tomatoes}%</span>
+                  </div>
+                )}
               </div>
 
-              {/* Metadata Bar */}
-              <div className="text-sm text-gray-300">
-                <span className="font-medium text-white">
-                  {movieDetails.format}
-                </span>
-                <span className="px-2">•</span>
-                <span>{movieDetails.language}</span>
-                <span className="px-2">•</span>
-                <span>{movieDetails.duration}</span>
-                <span className="px-2">•</span>
-                <span>{movieDetails.genres.join(", ")}</span>
-                <span className="px-2">•</span>
-                <span>{movieDetails.certificate}</span>
-                <span className="px-2">•</span>
-                <span>{movieDetails.release_date}</span>
+              <div className="text-sm text-gray-300 flex flex-wrap gap-2">
+                {movie.formats && movie.formats.length > 0 && (
+                  <>
+                    <span className="font-medium text-white">{movie.formats.join(', ')}</span>
+                    <span>•</span>
+                  </>
+                )}
+                {movie.languages && movie.languages.length > 0 && (
+                  <>
+                    <span>{movie.languages.join(', ')}</span>
+                    <span>•</span>
+                  </>
+                )}
+                {movie.duration_minutes && (
+                  <>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatDuration(movie.duration_minutes)}
+                    </span>
+                    <span>•</span>
+                  </>
+                )}
+                {movie.genres && movie.genres.length > 0 && (
+                  <>
+                    <span>{movie.genres.join(', ')}</span>
+                    <span>•</span>
+                  </>
+                )}
+                {movie.rating && (
+                  <>
+                    <span className="px-2 py-0.5 border border-gray-500 rounded text-xs">{movie.rating}</span>
+                    <span>•</span>
+                  </>
+                )}
+                {movie.release_date && (
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(movie.release_date)}
+                  </span>
+                )}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center gap-4">
-                <Link href={`/booking/${bookingId}`}>
+                <Link href={`/booking/${params.id}`}>
                   <button className="w-40 h-12 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all duration-300 hover:scale-105">
                     Book Tickets
                   </button>
                 </Link>
-                <a
-                  href={movieDetails.trailer}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="w-40 h-12 flex items-center justify-center border-2 border-white/70 bg-transparent text-white hover:bg-white/10 hover:border-white rounded-lg transition-all duration-300"
-                >
-                  Watch Trailer
-                </a>
+                {movie.trailer_url && (
+                  <a
+                    href={movie.trailer_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-40 h-12 flex items-center justify-center gap-2 border-2 border-white/70 bg-transparent text-white hover:bg-white/10 hover:border-white rounded-lg transition-all duration-300"
+                  >
+                    <Play className="h-4 w-4" />
+                    Watch Trailer
+                  </a>
+                )}
               </div>
             </div>
           </div>
         </section>
 
         {/* About the Movie Section */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold text-white">About the movie</h3>
-          <p className="text-base text-gray-300 leading-relaxed max-w-4xl">
-            {movieDetails.about}
-          </p>
-        </section>
+        {movie.synopsis && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">About the movie</h3>
+            <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+              {movie.synopsis}
+            </p>
+          </section>
+        )}
 
-        {/* Section Divider */}
-        <hr className="border-gray-700 opacity-50" />
+        {/* Production Details */}
+        {(movie.production_houses?.length > 0 || movie.distributors?.length > 0) && (
+          <section className="space-y-4">
+            <h3 className="text-2xl font-semibold text-white">Production Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
+              {movie.production_houses?.length > 0 && (
+                <div>
+                  <span className="font-semibold text-white">Production: </span>
+                  <span>{movie.production_houses.join(', ')}</span>
+                </div>
+              )}
+              {movie.distributors?.length > 0 && (
+                <div>
+                  <span className="font-semibold text-white">Distribution: </span>
+                  <span>{movie.distributors.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
-        {/* Cast & Crew Section */}
-        <section className="space-y-8">
-          <h2 className="text-3xl font-semibold text-white mb-6">Cast & Crew</h2>
+        {/* Important Information */}
+        {movie.things_to_know?.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-2xl font-semibold text-white">Important Information</h3>
+            <ul className="list-disc list-inside space-y-2 text-gray-300">
+              {movie.things_to_know.map((info: string, idx: number) => (
+                <li key={idx}>{info}</li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-          {/* Cast */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-gray-300">Cast</h3>
-            <div className="-mx-4 px-4 overflow-x-auto">
-              <div className="flex gap-4">
-                {cast.map((person) => (
-                  <div key={person.id} className="w-32 shrink-0 text-center bg-gray-800 border border-gray-700 rounded-lg p-3">
-                    <div className="w-20 h-20 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
-                      <Image src={person.image_url} alt={person.name} width={80} height={80} className="object-cover w-full h-full" />
+        {/* Cast Section */}
+        {movie.castMembers && movie.castMembers.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">Cast</h3>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pb-2">
+                {movie.castMembers.map((cast: any) => (
+                  <div key={cast.id} className="flex-shrink-0 w-32 sm:w-auto">
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
+                        {cast.actor?.profile_image_url ? (
+                          <Image src={cast.actor.profile_image_url} alt={cast.actor.name} width={96} height={96} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
+                            {cast.actor?.name?.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center space-y-1">
+                        <div className="text-xs sm:text-sm font-medium text-white truncate">{cast.actor?.name || 'Unknown'}</div>
+                        {cast.character_name && <div className="text-xs text-gray-400 truncate">as {cast.character_name}</div>}
+                      </div>
                     </div>
-                    <div className="text-sm font-medium text-white truncate">{person.name}</div>
-                    <div className="text-xs text-gray-400 truncate">{person.role}</div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
+          </section>
+        )}
 
-          {/* Crew */}
-          <div className="space-y-4">
-            <h3 className="text-xl font-medium text-gray-300">Crew</h3>
-            <div className="-mx-4 px-4 overflow-x-auto">
-              <div className="flex gap-4">
-                {crew.map((person) => (
-                  <div key={person.id} className="w-32 shrink-0 text-center bg-gray-800 border border-gray-700 rounded-lg p-3">
-                    <div className="w-20 h-20 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
-                      <Image src={person.image_url} alt={person.name} width={80} height={80} className="object-cover w-full h-full" />
+        {/* Crew Section */}
+        {movie.crewMembers && movie.crewMembers.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">Crew</h3>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pb-2">
+                {movie.crewMembers.map((crew: any) => (
+                  <div key={crew.id} className="flex-shrink-0 w-32 sm:w-auto">
+                    <div className="bg-gray-800 border border-gray-700 rounded-lg p-3 hover:border-gray-600 transition-colors">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-gray-600 mb-3">
+                        {crew.person?.profile_image_url ? (
+                          <Image src={crew.person.profile_image_url} alt={crew.person.name} width={96} height={96} className="object-cover w-full h-full" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
+                            {crew.person?.name?.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center space-y-1">
+                        <div className="text-xs sm:text-sm font-medium text-white truncate">{crew.person?.name || 'Unknown'}</div>
+                        {crew.role_title && <div className="text-xs text-gray-400 truncate">{crew.role_title}</div>}
+                      </div>
                     </div>
-                    <div className="text-sm font-medium text-white truncate">{person.name}</div>
-                    <div className="text-xs text-gray-400 truncate">{person.role}</div>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        {/* Section Divider */}
-        <hr className="border-gray-700 opacity-50" />
-
-        {/* Awards & Achievements Section */}
-        <section className="space-y-6">
-          <h2 className="text-3xl font-semibold text-white">Awards & Achievements</h2>
-          <div className="flex flex-col gap-4">
-            {awards.map((award, index) => (
-              <div key={award.id} className={`flex items-center gap-4 ${index !== awards.length - 1 ? 'border-b border-gray-700 pb-4' : ''}`}>
-                {/* Icon/Image */}
-                <div className="flex-shrink-0">
-                  <Image 
-                    src={award.image_url} 
-                    alt={award.award_name}
-                    width={60}
-                    height={60}
-                    className="rounded-lg object-cover"
-                  />
-                </div>
-                {/* Award Details */}
-                <div className="flex-grow">
-                  <h3 className="text-white text-base">
-                    <span className="font-bold">{award.recipient}</span>
-                    <span className="text-gray-300 font-normal"> - {award.category}</span>
-                  </h3>
-                  <p className="text-gray-400 text-sm mt-1">{award.award_name}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Section Divider */}
-        <hr className="border-gray-700 opacity-50" />
-
-        {/* Ratings & Reviews Section */}
-        <section className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-3xl font-semibold text-white">Reviews</h2>
-            <Button
-              variant="outline"
-              className="bg-transparent border-gray-600 text-gray-300 hover:text-white hover:border-gray-400"
-              onClick={() => setShowAllReviews((v) => !v)}
-            >
-              {showAllReviews ? `Show less` : `View all (${reviews.length}) reviews`}
-            </Button>
-          </div>
-
-          {/* Two-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Write a Review Form - Left Column */}
-            <div className="lg:col-span-1">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 space-y-4 sticky top-4">
-                <h3 className="text-lg font-semibold text-white">Write a Review</h3>
-                
-                {/* 5-Star Rating Input */}
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-300">Rating</label>
-                  <div className="flex gap-1 items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-7 w-7 cursor-pointer transition-colors ${
-                          star <= (hoveredStar || newReviewRating)
-                            ? 'text-yellow-400 fill-yellow-400'
-                            : 'text-gray-600 hover:text-yellow-300'
-                        }`}
-                        onMouseEnter={() => setHoveredStar(star)}
-                        onMouseLeave={() => setHoveredStar(0)}
-                        onClick={() => setNewReviewRating(star)}
-                      />
-                    ))}
-                    <span className="ml-2 text-sm text-gray-400">
-                      {newReviewRating > 0 ? `${newReviewRating}/5` : 'Select rating'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Text Area */}
-                <div className="space-y-2">
-                  <label className="text-sm text-gray-300">Your Review</label>
-                  <textarea
-                    value={newReviewText}
-                    onChange={(e) => setNewReviewText(e.target.value)}
-                    placeholder="Share your thoughts..."
-                    className="w-full h-32 bg-transparent border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 resize-none focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
-                  />
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  onClick={handleSubmitReview}
-                  disabled={!newReviewRating || !newReviewText.trim()}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  Submit Review
-                </Button>
-              </div>
-            </div>
-
-            {/* Reviews List - Right Two Columns */}
-            <div className="lg:col-span-2 space-y-4">
-              {visibleReviews.map((r) => {
-                const votes = getReviewVotes(r.id)
-                const hasVoted = votedReviews.has(r.id)
-                
-                return (
-                  <div key={r.id} className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-5">
-                    <div className="flex gap-4">
-                      {/* Left Side - Author Info */}
-                      <div className="flex-shrink-0">
-                        <div className="h-12 w-12 rounded-full bg-gray-600 flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">
-                            {r.author.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Right Side - Review Content */}
-                      <div className="flex-grow space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h4 className="font-semibold text-white text-base">{r.author}</h4>
-                          </div>
-                          {/* 5-Star Rating Display */}
-                          <div className="flex items-center gap-2">
-                            {renderStars(r.rating, "h-4 w-4")}
-                            <span className="text-sm text-gray-400">({r.rating}/5)</span>
-                          </div>
-                        </div>
-                        
-                        {/* Review Text */}
-                        <p className="text-gray-300 text-sm leading-relaxed">{r.text}</p>
-                        
-                        {/* Voting Buttons */}
-                        <div className="flex items-center gap-3 pt-2">
-                          <button
-                            onClick={() => handleVote(r.id, 'like')}
-                            disabled={hasVoted}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
-                              hasVoted 
-                                ? 'text-gray-500 cursor-not-allowed' 
-                                : 'text-gray-400 hover:text-green-400 hover:bg-green-400/10'
-                            }`}
-                          >
-                            <ThumbsUp className="h-3 w-3" />
-                            <span>{votes.likes}</span>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleVote(r.id, 'dislike')}
-                            disabled={hasVoted}
-                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors ${
-                              hasVoted 
-                                ? 'text-gray-500 cursor-not-allowed' 
-                                : 'text-gray-400 hover:text-red-400 hover:bg-red-400/10'
-                            }`}
-                          >
-                            <ThumbsDown className="h-3 w-3" />
-                            <span>{votes.dislikes}</span>
-                          </button>
-                        </div>
+        {/* Songs Section */}
+        {movie.songs && movie.songs.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">Songs</h3>
+            <div className="space-y-3">
+              {movie.songs.map((song: any, idx: number) => (
+                <div key={song.id} className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold text-sm">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-grow space-y-2">
+                      <h4 className="text-sm sm:text-base font-semibold text-white">{song.title}</h4>
+                      <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+                        {song.singers && <span>Singers: {song.singers.join(', ')}</span>}
+                        {song.music_director && <span>• Music: {song.music_director}</span>}
                       </div>
                     </div>
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
+
+        {/* Technical Specifications */}
+        {(movie.aspect_ratio || movie.sound_mix?.length > 0) && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">Technical Specifications</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
+              {movie.aspect_ratio && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
+                  <span className="text-gray-400 block mb-1">Aspect Ratio</span>
+                  <span className="text-white font-medium">{movie.aspect_ratio}</span>
+                </div>
+              )}
+              {movie.sound_mix && movie.sound_mix.length > 0 && (
+                <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 sm:p-4">
+                  <span className="text-gray-400 block mb-1">Sound Mix</span>
+                  <span className="text-white font-medium">{movie.sound_mix.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Reviews */}
+        {movie.reviews && movie.reviews.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-white">Critic Reviews</h3>
+            <div className="space-y-3 sm:space-y-4">
+              {movie.reviews.map((review: any) => (
+                <div key={review.id} className="bg-gray-800/30 border border-gray-700/50 rounded-lg p-4">
+                  <div className="flex gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
+                      {review.reviewer_name?.charAt(0) || 'R'}
+                    </div>
+                    <div className="flex-grow space-y-2">
+                      <h4 className="font-semibold text-white text-sm sm:text-base">{review.reviewer_name}</h4>
+                      <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">{review.review_text}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Sticky CTA for mobile */}
-        <div className="fixed bottom-0 inset-x-0 p-3 md:hidden bg-gray-900/90 backdrop-blur border-t border-gray-700">
+        <div className="fixed bottom-0 inset-x-0 p-3 md:hidden bg-gray-900/90 backdrop-blur border-t border-gray-700 z-50">
           <div className="container mx-auto px-0">
-            <Link href={`/booking/${bookingId}`}>
+            <Link href={`/booking/${params.id}`}>
               <Button className="w-full bg-red-600 hover:bg-red-700 text-white">Book Tickets</Button>
             </Link>
           </div>

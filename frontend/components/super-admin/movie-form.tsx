@@ -780,12 +780,15 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         ...values,
         city: values.city,
         poster_url: posterUrl,
-        backdrop_url: backdropUrl
+        backdrop_url: backdropUrl,
+        tenant_id: values.tenant_id  // Explicitly ensure tenant_id is included
       };
 
-      // Convert empty image URLs to null to allow clearing
-      if (payload.poster_url === "") payload.poster_url = undefined; // omit to keep existing unless explicitly cleared
-      if (payload.backdrop_url === "") payload.backdrop_url = undefined;
+      console.log('🎬 Movie payload with tenant_id:', {
+        tenant_id: values.tenant_id,
+        title: values.title,
+        full_payload: payload
+      });
 
       // Remove empty string fields to avoid storing blanks
       payload = Object.fromEntries(

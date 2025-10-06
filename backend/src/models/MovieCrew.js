@@ -33,8 +33,7 @@ export function defineMovieCrew(sequelize) {
       // Role Information
       role_category: {
         type: DataTypes.ENUM('direction', 'writing', 'production', 'music', 'technical', 'art', 'other'),
-        allowNull: false,
-        comment: 'Category of the role'
+        allowNull: false
       },
       role_title: {
         type: DataTypes.STRING,

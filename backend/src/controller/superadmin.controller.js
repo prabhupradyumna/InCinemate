@@ -790,7 +790,8 @@ export default class SuperadminController {
       const auditorium = await Auditorium.create({
         theatre_id,
         name,
-        capacity: (total_seats || seat_map.length || 0),
+        capacity: seat_map.length,
+        total_seats: total_seats || seat_map.length,
         configuration: configuration || {},
         is_active: true
       })
@@ -1009,7 +1010,7 @@ export default class SuperadminController {
         series_order: movieData.series_order || null,
         
         // Admin
-        approval_status: movieData.approval_status || 'draft',
+        // approval_status: movieData.approval_status || 'draft',
         internal_notes: movieData.internal_notes || null,
         is_active: movieData.is_active !== false
       }

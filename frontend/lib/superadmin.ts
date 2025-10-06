@@ -269,7 +269,7 @@ export interface MovieDTO {
   total_reviews?: number;
   
   // Administrative
-  approval_status: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
+  // approval_status: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
   approved_by?: string;
   approved_at?: string;
   internal_notes?: string;
@@ -376,7 +376,7 @@ export interface CreateMoviePayload {
   series_order?: number;
   
   // Administrative
-  approval_status?: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
+  // approval_status?: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
   internal_notes?: string;
   is_active?: boolean;
 }
@@ -715,6 +715,44 @@ export async function createCrewPerson(payload: CreateCrewPersonPayload): Promis
 export async function updateCrewPerson(id: string, payload: Partial<CreateCrewPersonPayload>): Promise<CrewPersonDTO> {
   const res = await api.put(`/superadmin/crew-persons/${id}`, payload);
   return res.data?.data;
+}
+
+// Shows Management API Functions
+export async function listShows() {
+  const res = await api.get("/shows");
+  return res.data || [];
+}
+
+export async function createShow(payload: {
+  tenant_id: string;
+  movie_id: string;
+  auditorium_id: string;
+  show_datetime: string;
+  status: string;
+  pricing: any;
+}) {
+  const res = await api.post("/shows", payload);
+  return res.data?.data;
+}
+
+export async function deleteShow(showId: string) {
+  const res = await api.delete(`/shows/${showId}`);
+  return res.data;
+}
+
+export async function getMoviesByTenant(tenantId: string) {
+  const res = await api.get(`/superadmin/movies`, { params: { tenant_id: tenantId } });
+  return res.data?.data || [];
+}
+
+export async function getTheatresByTenant(tenantId: string) {
+  const res = await api.get(`/superadmin/theatres`, { params: { tenant_id: tenantId } });
+  return res.data?.data || [];
+}
+
+export async function getAuditoriumsByTheatre(theatreId: string) {
+  const res = await api.get(`/superadmin/auditoriums`, { params: { theatre_id: theatreId } });
+  return res.data?.data || [];
 }
 
 

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
-import { AuthProvider } from "@/components/auth/auth-provider";
+import { AuthProvider } from "@/components/customer/auth-provider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 

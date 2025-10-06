@@ -929,6 +929,8 @@ export default class SuperadminController {
       const moviePayload = {
         title: title.trim(),
         tenant_id,
+        // Location
+        city: (movieData.city || '').trim() || null,
         
         // Media Assets
         poster_url: movieData.poster_url || null,
@@ -1257,6 +1259,11 @@ export default class SuperadminController {
           error: 'Movie not found',
           message: 'Movie update failed'
         })
+      }
+
+      // Normalize optional city
+      if (Object.prototype.hasOwnProperty.call(updateData, 'city')) {
+        updateData.city = (updateData.city || '').trim() || null
       }
 
       // Update the movie with provided data

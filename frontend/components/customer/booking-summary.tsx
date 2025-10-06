@@ -8,10 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, Clock, MapPin, CreditCard, User, Lock } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
-import { CustomerDetailsModal } from "@/components/customer-details-modal";
+import { CustomerDetailsModal } from "@/components/customer/customer-details-modal";
 
 interface ShowData {
   movie: {

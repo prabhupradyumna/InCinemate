@@ -276,6 +276,7 @@ export interface MovieDTO {
   
   // Core
   tenant_id: string;
+  city?: string;
   is_active: boolean;
   status?: boolean; // Alias for is_active
   createdAt: string;
@@ -296,6 +297,7 @@ export interface CreateMoviePayload {
   // Required
   title: string;
   tenant_id: string;
+  city?: string;
   
   // Media Assets
   poster_url?: string;

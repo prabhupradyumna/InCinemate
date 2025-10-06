@@ -18,7 +18,7 @@ import {
   Settings,
   Home,
 } from "lucide-react";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +60,17 @@ export function Header() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <Select defaultValue="Bengaluru">
+              <Select
+                defaultValue={(typeof window !== 'undefined' && localStorage.getItem('app_city')) || 'Mumbai'}
+                onValueChange={(value) => {
+                  try {
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('app_city', value)
+                      window.dispatchEvent(new CustomEvent('city-change', { detail: value }))
+                    }
+                  } catch {}
+                }}
+              >
                 <SelectTrigger size="sm" className="w-[160px]">
                   <SelectValue />
                 </SelectTrigger>

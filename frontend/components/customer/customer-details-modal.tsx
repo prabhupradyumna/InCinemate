@@ -15,6 +15,8 @@ import { User } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
 
+
+
 interface ShowData {
   movie: {
     id: string;

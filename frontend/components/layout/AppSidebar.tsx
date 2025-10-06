@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/layout/sidebar-context";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { useMemo, useState } from "react";
 import {
   ChevronDown,

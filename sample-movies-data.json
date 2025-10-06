@@ -1,0 +1,172 @@
+{
+  "sample_movies": [
+    {
+      "title": "Avengers: Endgame",
+      "synopsis": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions and restore balance to the universe.",
+      "short_description": "The epic conclusion to the Infinity Saga that brings together all Marvel heroes for the ultimate battle.",
+      "tagline": "Avenge the fallen.",
+      "genres": ["Action", "Adventure", "Sci-Fi"],
+      "languages": ["English", "Hindi"],
+      "formats": ["2D", "3D", "IMAX"],
+      "countries": ["United States", "India"],
+      "duration_minutes": 181,
+      "rating": "U/A 13+",
+      "cbfc_certificate": "U/A",
+      "platform_status": "now_showing",
+      "is_featured": true,
+      "is_trending": true,
+      "production_houses": ["Marvel Studios", "Walt Disney Pictures"],
+      "suggested_base_price_min": 200,
+      "suggested_base_price_max": 500,
+      "meta_title": "Avengers: Endgame - Book Movie Tickets Online",
+      "meta_description": "Book tickets for Avengers: Endgame, the epic Marvel superhero movie. Available in 2D, 3D, and IMAX formats.",
+      "keywords": ["Avengers", "Marvel", "Superhero", "Action", "IMAX"],
+      "poster_placeholder": "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
+      "backdrop_placeholder": "https://image.tmdb.org/t/p/original/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg"
+    },
+    {
+      "title": "RRR",
+      "synopsis": "A fearless revolutionary and an officer in the British force, who once shared a deep bond, decide to join forces and chart out an inspirational path of freedom against the despotic rulers.",
+      "short_description": "An epic period action film about two legendary revolutionaries and their journey away from home.",
+      "tagline": "Rise. Roar. Revolt.",
+      "genres": ["Action", "Drama", "History"],
+      "languages": ["Telugu", "Hindi", "Tamil", "English"],
+      "formats": ["2D", "3D", "IMAX"],
+      "countries": ["India"],
+      "duration_minutes": 187,
+      "rating": "U/A 13+",
+      "cbfc_certificate": "U/A",
+      "platform_status": "now_showing",
+      "is_featured": true,
+      "is_trending": true,
+      "production_houses": ["DVV Entertainment"],
+      "suggested_base_price_min": 150,
+      "suggested_base_price_max": 400,
+      "meta_title": "RRR - Book Movie Tickets Online",
+      "meta_description": "Book tickets for RRR, the epic period action drama. Available in multiple languages and formats.",
+      "keywords": ["RRR", "Telugu", "Period", "Action", "Drama"],
+      "poster_placeholder": "https://image.tmdb.org/t/p/w500/f4h5zWql44KE2KzOZgNiOJKbYZh.jpg",
+      "backdrop_placeholder": "https://image.tmdb.org/t/p/original/8jJkAg3AcUSUJUlGGQpv5wgFfPa.jpg"
+    },
+    {
+      "title": "Spider-Man: No Way Home",
+      "synopsis": "Peter Parker's secret identity is revealed to the entire world. Desperate for help, Peter turns to Doctor Strange to make the world forget that he is Spider-Man. The spell goes horribly wrong and shatters the multiverse.",
+      "short_description": "Spider-Man faces his greatest challenge when his identity is revealed and the multiverse is unleashed.",
+      "tagline": "The multiverse unleashed.",
+      "genres": ["Action", "Adventure", "Sci-Fi"],
+      "languages": ["English", "Hindi"],
+      "formats": ["2D", "3D", "IMAX", "4DX"],
+      "countries": ["United States", "India"],
+      "duration_minutes": 148,
+      "rating": "U/A 13+",
+      "cbfc_certificate": "U/A",
+      "platform_status": "coming_soon",
+      "is_featured": false,
+      "is_trending": true,
+      "production_houses": ["Marvel Studios", "Sony Pictures"],
+      "suggested_base_price_min": 180,
+      "suggested_base_price_max": 450,
+      "meta_title": "Spider-Man: No Way Home - Book Movie Tickets",
+      "meta_description": "Book tickets for Spider-Man: No Way Home, the multiverse adventure. Available in 2D, 3D, IMAX, and 4DX.",
+      "keywords": ["Spider-Man", "Marvel", "Multiverse", "Action", "Adventure"],
+      "poster_placeholder": "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg",
+      "backdrop_placeholder": "https://image.tmdb.org/t/p/original/14QbnygCuTO0vl7CAFmPf1fgZfV.jpg"
+    },
+    {
+      "title": "KGF: Chapter 2",
+      "synopsis": "The blood-soaked land of Kolar Gold Fields (KGF) has a new overlord now - Rocky, whose name strikes fear in the heart of his foes. His allies look up to Rocky as their savior, the government sees him as a threat to law and order.",
+      "short_description": "Rocky takes over the Kolar Gold Fields and becomes the most feared man in the region.",
+      "tagline": "The monster will not stop.",
+      "genres": ["Action", "Crime", "Drama"],
+      "languages": ["Kannada", "Hindi", "Telugu", "Tamil"],
+      "formats": ["2D", "IMAX"],
+      "countries": ["India"],
+      "duration_minutes": 168,
+      "rating": "U/A 16+",
+      "cbfc_certificate": "U/A",
+      "platform_status": "now_showing",
+      "is_featured": true,
+      "is_trending": false,
+      "production_houses": ["Hombale Films"],
+      "suggested_base_price_min": 120,
+      "suggested_base_price_max": 350,
+      "meta_title": "KGF: Chapter 2 - Book Movie Tickets Online",
+      "meta_description": "Book tickets for KGF: Chapter 2, the action-packed sequel. Available in multiple South Indian languages.",
+      "keywords": ["KGF", "Kannada", "Action", "Crime", "Yash"],
+      "poster_placeholder": "https://image.tmdb.org/t/p/w500/lP0THKRchH6LnViSuJ4JfqQgTjV.jpg",
+      "backdrop_placeholder": "https://image.tmdb.org/t/p/original/ngBFDOsx13sFXiMweDoL54XYknR.jpg"
+    },
+    {
+      "title": "Top Gun: Maverick",
+      "synopsis": "After thirty years, Maverick is still pushing the envelope as a top naval aviator, but must confront ghosts of his past when he leads an elite squad of graduates from the Navy's elite fighter weapons school on a mission that demands the ultimate sacrifice.",
+      "short_description": "Maverick returns to train a new generation of pilots for a dangerous mission.",
+      "tagline": "Feel the need... the need for speed.",
+      "genres": ["Action", "Drama"],
+      "languages": ["English", "Hindi"],
+      "formats": ["2D", "IMAX", "4DX"],
+      "countries": ["United States", "India"],
+      "duration_minutes": 131,
+      "rating": "U/A 13+",
+      "cbfc_certificate": "U/A",
+      "platform_status": "coming_soon",
+      "is_featured": false,
+      "is_trending": false,
+      "production_houses": ["Paramount Pictures", "Skydance Media"],
+      "suggested_base_price_min": 170,
+      "suggested_base_price_max": 420,
+      "meta_title": "Top Gun: Maverick - Book Movie Tickets Online",
+      "meta_description": "Book tickets for Top Gun: Maverick, the high-flying action sequel. Available in IMAX and 4DX.",
+      "keywords": ["Top Gun", "Action", "Aviation", "Tom Cruise", "IMAX"],
+      "poster_placeholder": "https://image.tmdb.org/t/p/w500/62HCnUTziyWcpDaBO2i1DX17ljH.jpg",
+      "backdrop_placeholder": "https://image.tmdb.org/t/p/original/odJ4hx6g6vBt4lBWKFD1tI8WS4x.jpg"
+    }
+  ],
+  "sample_theatres": [
+    {
+      "name": "PVR Cinemas Forum Mall",
+      "address": "Forum Fiza Mall, Pandeshwar, Mangalore",
+      "city": "Mangalore",
+      "state": "Karnataka",
+      "country": "India",
+      "postal_code": "575001",
+      "contact_phone": "+91-824-2123456",
+      "contact_email": "mangalore@pvrcinemas.com",
+      "tax_rate_percent": 18.0,
+      "auditoriums": [
+        {
+          "name": "Audi 1 - Premium",
+          "seat_categories": ["Premium", "Standard"],
+          "total_seats": 120
+        },
+        {
+          "name": "Audi 2 - IMAX",
+          "seat_categories": ["IMAX Premium", "IMAX Standard"],
+          "total_seats": 200
+        }
+      ]
+    },
+    {
+      "name": "Cinepolis City Centre Mall",
+      "address": "City Centre Mall, Ballalbagh, Mangalore",
+      "city": "Mangalore",
+      "state": "Karnataka",
+      "country": "India",
+      "postal_code": "575003",
+      "contact_phone": "+91-824-2987654",
+      "contact_email": "mangalore@cinepolis.com",
+      "tax_rate_percent": 18.0,
+      "auditoriums": [
+        {
+          "name": "Screen 1",
+          "seat_categories": ["VIP", "Premium", "Normal"],
+          "total_seats": 150
+        },
+        {
+          "name": "Screen 2 - 4DX",
+          "seat_categories": ["4DX"],
+          "total_seats": 80
+        }
+      ]
+    }
+  ]
+}

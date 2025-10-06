@@ -58,7 +58,7 @@ import {
 
 import { listMovies, updateMovie, deleteMovie, type MovieDTO } from "@/lib/superadmin";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth/auth-provider";
+import { useAuth } from "@/components/customer/auth-provider";
 import { useSearchParams } from "next/navigation";
 
 function MovieListTableContent() {

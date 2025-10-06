@@ -9,6 +9,7 @@
     "build": "echo 'no build step'",
     "seed": "node ./src/scripts/seed.js",
     "seed:permissions": "node ./src/scripts/seed-permissions.js",
+    "migrate:add-movie-city": "node ./src/scripts/add-movie-city.js",
     "test:redis": "node ./src/scripts/test-redis.js",
     "test:fallback": "node ./src/scripts/test-fallback.js",
     "test:startup": "node ./src/scripts/test-startup-time.js"

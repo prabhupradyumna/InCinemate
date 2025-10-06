@@ -10,7 +10,13 @@ const router = Router()
 // Search movies by location
 router.get('/movies', PublicController.searchMoviesByLocation)
 
-// Get movie details with showtimes
+// Get featured movies - MUST be before /movies/:id route
+router.get('/movies/featured', PublicController.getFeaturedMovies)
+
+// Get popular movies
+router.get('/analytics/popular-movies', PublicController.getPopularMovies)
+
+// Get movie details with showtimes - MUST be after specific routes
 router.get('/movies/:id', PublicController.getMovieDetails)
 
 // Search movies by query (title, cast, etc.)

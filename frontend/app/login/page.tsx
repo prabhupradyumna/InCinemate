@@ -16,7 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Eye, EyeOff, Film } from "lucide-react";
 import Link from "next/link";
-import { useAuth } from "@/components/auth/auth-provider";
+import { AuthProvider, useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
 import { useEffect } from "react";

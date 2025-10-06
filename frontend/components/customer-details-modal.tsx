@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { User } from "lucide-react";
 import { useAuth } from "@/components/auth/auth-provider";
+import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
 
 interface ShowData {
   movie: {
@@ -81,6 +82,9 @@ export function CustomerDetailsModal({
     phone: user?.phone || "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   const subtotal = selectedSeats.reduce((total, seat) => {
     return total + showData.showtime.pricing[seat.type];
@@ -94,6 +98,25 @@ export function CustomerDetailsModal({
     setIsLoading(true);
 
     try {
+      setOtpError(null);
+      if (!otpRequested) {
+        // Send OTP via SMS first and keep modal open
+        await requestCustomerOtp({
+          phone: formData.phone,
+          channel: "sms" as any,
+          purpose: "login",
+        });
+        setOtpRequested(true);
+        return;
+      }
+
+      // Verify OTP then continue
+      await verifyCustomerOtp({
+        phone: formData.phone,
+        email: formData.email || undefined,
+        code: otpCode.trim(),
+        channel: "sms" as any,
+      });
       await onContinue(formData);
     } finally {
       setIsLoading(false);
@@ -201,13 +224,32 @@ export function CustomerDetailsModal({
               />
             </div>
 
+            {otpRequested && (
+              <div className="space-y-2">
+                <Label htmlFor="otp">Enter OTP</Label>
+                <Input
+                  id="otp"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  placeholder="6-digit code"
+                />
+                {otpError ? (
+                  <p className="text-xs text-red-500">{otpError}</p>
+                ) : null}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-4">
               <Button
                 type="submit"
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
                 disabled={isLoading}
               >
-                {isLoading ? "Sending..." : "Send OTP & Continue"}
+                {isLoading
+                  ? "Processing..."
+                  : otpRequested
+                    ? "Verify OTP & Continue"
+                    : "Send OTP & Continue"}
               </Button>
               <Button
                 type="button"

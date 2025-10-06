@@ -123,9 +123,11 @@ export function BookingSummary({
   }) => {
     setCustomerDetails(details);
     setShowCustomerModal(false);
-
-    // Trigger OTP flow for guest before allowing payment
-    await handleGuestAuth();
+    // After modal verifies OTP, refresh auth state and move to payment
+    try {
+      await refresh();
+    } catch {}
+    setStep("payment");
   };
 
   const handleBack = () => {

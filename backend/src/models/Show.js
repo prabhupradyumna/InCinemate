@@ -34,8 +34,8 @@ export function defineShow(sequelize) {
       },
       pricing: {
         type: DataTypes.JSONB,
-        allowNull: false,
-        comment: 'Dynamic pricing structure: { "Standard": 250, "VIP": 500 } or { "row_A": 300, "row_B": 250 }'
+        allowNull: true,
+        comment: 'Dynamic pricing structure: { "Standard": 250, "VIP": 500 } or { "row_A": 300, "row_B": 250 } - DEPRECATED: Use SeatPricing model instead'
       },
       status: {
         type: DataTypes.ENUM('scheduled', 'live', 'completed', 'cancelled'),

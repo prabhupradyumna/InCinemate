@@ -1,5 +1,7 @@
 import { HTTP_STATUS, API_MESSAGES } from '../constants.js'
 import { Op } from 'sequelize'
+import PricingService from '../services/pricing.service.js'
+import { defineSeatPricing } from '../models/SeatPricing.js'
 
 export default class PublicController {
   // ==============================
@@ -188,17 +190,15 @@ export default class PublicController {
           where: showFilters,
           include: [
             {
-            model: Auditorium,
-            as: 'Auditorium',
-            attributes: ['id', 'name'],
-            required: false,
-            include: [{
-              model: Theatre,
-              as: 'Theatre',
-              where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
-              attributes: ['id', 'name', 'address', 'city'],
-              required: !!city
-            }]
+              model: Auditorium,
+              as: 'Auditorium',
+              attributes: ['id', 'name'],
+              include: [{
+                model: Theatre,
+                as: 'Theatre',
+                where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
+                attributes: ['id', 'name', 'address', 'city']
+              }]
             }
           ],
           order: [['show_datetime', 'ASC']]
@@ -354,7 +354,7 @@ export default class PublicController {
 
       // Use centralized models with pre-configured associations
       const sequelize = req.db
-      const { Show, Seat, Auditorium, Theatre, Movie, Booking, BookedSeat } = req.models
+      const { Show, Seat, Auditorium, Theatre, Movie, Booking, BookedSeat, SeatPricing } = req.models
 
       // Get show details
       const show = await Show.findOne({
@@ -372,7 +372,7 @@ export default class PublicController {
           {
             model: Auditorium,
             as: 'Auditorium',
-            attributes: ['id', 'name', 'total_seats'],
+            attributes: ['id', 'name'],
             include: [{
               model: Theatre,
               as: 'Theatre',
@@ -411,15 +411,27 @@ export default class PublicController {
 
       const bookedSeatIds = new Set(bookedSeats.map(bs => bs.seat_id))
 
+      // Get pricing for all seats using the new pricing service
+      const seatIds = allSeats.map(seat => seat.id)
+      const pricingMap = await PricingService.resolvePricesForSeats({
+        sequelize,
+        models: { SeatPricing, Seat },
+        seatIds,
+        show,
+        defaultPrice: 250
+      })
+
       // Create seat map with availability status
       const seatMap = allSeats.map(seat => {
-        let price = 250 // Default price
+        let price = pricingMap.get(seat.id) || 250 // Default price
         
-        // Get price from show pricing structure
-        if (show.pricing[seat.category]) {
-          price = show.pricing[seat.category]
-        } else if (show.pricing[`row_${seat.row}`]) {
-          price = show.pricing[`row_${seat.row}`]
+        // Fallback to show.pricing if seat_pricing doesn't have a price
+        if (price === null && show.pricing) {
+          if (show.pricing[seat.category]) {
+            price = show.pricing[seat.category]
+          } else if (show.pricing[`row_${seat.row}`]) {
+            price = show.pricing[`row_${seat.row}`]
+          }
         }
 
         return {
@@ -441,18 +453,26 @@ export default class PublicController {
         seatsByRow[seat.row].push(seat)
       })
 
+      // Create pricing summary for frontend compatibility
+      const pricingSummary = {}
+      seatMap.forEach(seat => {
+        if (!pricingSummary[seat.category]) {
+          pricingSummary[seat.category] = seat.price
+        }
+      })
+
       return res.json({
         data: {
           show: {
             id: show.id,
             show_datetime: show.show_datetime,
-            pricing: show.pricing,
+            pricing: pricingSummary,
             movie: show.Movie,
             auditorium: show.Auditorium,
             theatre: show.Auditorium.Theatre
           },
           seat_map: seatsByRow,
-          seats_flat: seatMap,
+          seats_flat: seatMap, // Include flat array for frontend compatibility
           statistics: {
             total_seats: show.Auditorium.total_seats || allSeats.length,
             available_seats: allSeats.length - bookedSeatIds.size,
@@ -552,21 +572,26 @@ export default class PublicController {
         })
       }
 
-      // Calculate pricing
+      // Calculate pricing using SeatPricing with fallback to Show.pricing
+      const seatIds = seats.map(s => s.id)
+      const resolvedMap = await PricingService.resolvePricesForSeats({
+        sequelize,
+        models: { SeatPricing: defineSeatPricing(sequelize) },
+        seatIds,
+        show,
+        defaultPrice: 250
+      })
+
       const seatPricing = []
       let subtotal = 0
-
       for (const seat of seats) {
-        let price = 0
-        
-        if (show.pricing[seat.category]) {
-          price = show.pricing[seat.category]
-        } else if (show.pricing[`row_${seat.row}`]) {
-          price = show.pricing[`row_${seat.row}`]
-        } else {
-          price = 250
+        let price = resolvedMap.get(seat.id)
+        if (price == null) {
+          // fallback to show matrix
+          if (show.pricing && show.pricing[seat.category] != null) price = show.pricing[seat.category]
+          else if (show.pricing && show.pricing[`row_${seat.row}`] != null) price = show.pricing[`row_${seat.row}`]
+          else price = 250
         }
-
         seatPricing.push({ seat_id: seat.id, price })
         subtotal += price
       }

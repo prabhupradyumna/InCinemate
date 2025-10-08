@@ -1,16 +1,35 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Edit, Trash2, Calendar, Clock, DollarSign } from "lucide-react"
-import { formatDate } from "@/lib/utils"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Edit, Trash2, Calendar, Clock, DollarSign } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 // Mock data
 const shows = [
@@ -50,22 +69,22 @@ const shows = [
     totalSeats: 120,
     status: "scheduled",
   },
-]
+];
 
 const movies = [
   { id: "1", title: "The Dark Knight Returns", duration: 165 },
   { id: "2", title: "Cosmic Journey", duration: 142 },
   { id: "3", title: "Love in Paris", duration: 118 },
   { id: "4", title: "Action Hero", duration: 135 },
-]
+];
 
 const screens = [
   { id: "1", name: "Screen 1", capacity: 120 },
   { id: "2", name: "Screen 2", capacity: 80 },
-]
+];
 
 export function ShowsManagement() {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newShow, setNewShow] = useState({
     movieId: "",
     screenId: "",
@@ -73,12 +92,12 @@ export function ShowsManagement() {
     time: "",
     premiumPrice: "",
     regularPrice: "",
-  })
+  });
 
   const handleCreateShow = () => {
     // In real app, this would make an API call
-    console.log("Creating show:", newShow)
-    setIsCreateDialogOpen(false)
+    console.log("Creating show:", newShow);
+    setIsCreateDialogOpen(false);
     setNewShow({
       movieId: "",
       screenId: "",
@@ -86,25 +105,33 @@ export function ShowsManagement() {
       time: "",
       premiumPrice: "",
       regularPrice: "",
-    })
-  }
+    });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/40">Active</Badge>
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/40">
+            Active
+          </Badge>
+        );
       case "scheduled":
-        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40">Scheduled</Badge>
+        return (
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40">
+            Scheduled
+          </Badge>
+        );
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   const getOccupancyColor = (percentage: number) => {
-    if (percentage >= 80) return "text-red-400"
-    if (percentage >= 60) return "text-yellow-400"
-    return "text-green-400"
-  }
+    if (percentage >= 80) return "text-red-400";
+    if (percentage >= 60) return "text-yellow-400";
+    return "text-green-400";
+  };
 
   return (
     <div className="space-y-6">
@@ -112,7 +139,9 @@ export function ShowsManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Shows Management</h2>
-          <p className="text-muted-foreground">Create and manage movie shows for your venue</p>
+          <p className="text-muted-foreground">
+            Create and manage movie shows for your venue
+          </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -130,7 +159,9 @@ export function ShowsManagement() {
                 <Label htmlFor="movie">Movie</Label>
                 <Select
                   value={newShow.movieId}
-                  onValueChange={(value) => setNewShow((prev) => ({ ...prev, movieId: value }))}
+                  onValueChange={(value) =>
+                    setNewShow((prev) => ({ ...prev, movieId: value }))
+                  }
                 >
                   <SelectTrigger className="bg-input border-border">
                     <SelectValue placeholder="Select a movie" />
@@ -149,7 +180,9 @@ export function ShowsManagement() {
                 <Label htmlFor="screen">Screen</Label>
                 <Select
                   value={newShow.screenId}
-                  onValueChange={(value) => setNewShow((prev) => ({ ...prev, screenId: value }))}
+                  onValueChange={(value) =>
+                    setNewShow((prev) => ({ ...prev, screenId: value }))
+                  }
                 >
                   <SelectTrigger className="bg-input border-border">
                     <SelectValue placeholder="Select a screen" />
@@ -171,7 +204,9 @@ export function ShowsManagement() {
                     id="date"
                     type="date"
                     value={newShow.date}
-                    onChange={(e) => setNewShow((prev) => ({ ...prev, date: e.target.value }))}
+                    onChange={(e) =>
+                      setNewShow((prev) => ({ ...prev, date: e.target.value }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -181,7 +216,9 @@ export function ShowsManagement() {
                     id="time"
                     type="time"
                     value={newShow.time}
-                    onChange={(e) => setNewShow((prev) => ({ ...prev, time: e.target.value }))}
+                    onChange={(e) =>
+                      setNewShow((prev) => ({ ...prev, time: e.target.value }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -189,24 +226,34 @@ export function ShowsManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="premiumPrice">Premium Price ($)</Label>
+                  <Label htmlFor="premiumPrice">Premium Price (₹)</Label>
                   <Input
                     id="premiumPrice"
                     type="number"
                     step="0.01"
                     value={newShow.premiumPrice}
-                    onChange={(e) => setNewShow((prev) => ({ ...prev, premiumPrice: e.target.value }))}
+                    onChange={(e) =>
+                      setNewShow((prev) => ({
+                        ...prev,
+                        premiumPrice: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="regularPrice">Regular Price ($)</Label>
+                  <Label htmlFor="regularPrice">Regular Price (₹)</Label>
                   <Input
                     id="regularPrice"
                     type="number"
                     step="0.01"
                     value={newShow.regularPrice}
-                    onChange={(e) => setNewShow((prev) => ({ ...prev, regularPrice: e.target.value }))}
+                    onChange={(e) =>
+                      setNewShow((prev) => ({
+                        ...prev,
+                        regularPrice: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -216,7 +263,11 @@ export function ShowsManagement() {
                 <Button onClick={handleCreateShow} className="flex-1">
                   Create Show
                 </Button>
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} className="flex-1">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  className="flex-1"
+                >
                   Cancel
                 </Button>
               </div>
@@ -245,7 +296,9 @@ export function ShowsManagement() {
             </TableHeader>
             <TableBody>
               {shows.map((show) => {
-                const occupancyPercentage = Math.round((show.bookedSeats / show.totalSeats) * 100)
+                const occupancyPercentage = Math.round(
+                  (show.bookedSeats / show.totalSeats) * 100
+                );
                 return (
                   <TableRow key={show.id} className="border-border">
                     <TableCell className="font-medium">{show.movie}</TableCell>
@@ -266,17 +319,19 @@ export function ShowsManagement() {
                       <div className="space-y-1 text-sm">
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3" />
-                          Premium: ${show.pricing.premium}
+                          Premium: ₹{show.pricing.premium}
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <DollarSign className="h-3 w-3" />
-                          Regular: ${show.pricing.regular}
+                          Regular: ₹{show.pricing.regular}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <div className={`text-sm font-medium ${getOccupancyColor(occupancyPercentage)}`}>
+                        <div
+                          className={`text-sm font-medium ${getOccupancyColor(occupancyPercentage)}`}
+                        >
                           {occupancyPercentage}%
                         </div>
                         <div className="text-xs text-muted-foreground">
@@ -290,18 +345,22 @@ export function ShowsManagement() {
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                )
+                );
               })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

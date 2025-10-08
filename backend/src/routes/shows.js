@@ -100,13 +100,53 @@ export function createShowsRouter() {
     const payload = {
       ...req.body,
       tenant_id: actualTenantId, // Use the tenant_id string for storage
-      created_by: req.user?.id
+      created_by: req.user.userId
     }
 
     console.log('🎭 Creating show with payload:', payload)
 
     const show = await Show.create(payload)
     res.status(201).json(show)
+  })
+
+  // DELETE /shows/:id - Delete a show (admin/super_admin only)
+  router.delete('/:id', authorizeRoles('admin', 'super_admin'), async (req, res) => {
+    const sequelize = req.db
+    const Show = defineShow(sequelize)
+    await Show.sync()
+
+    const { id } = req.params
+
+    try {
+      const show = await Show.findByPk(id)
+      if (!show) {
+        return res.status(404).json({
+          success: false,
+          error: 'Show not found'
+        })
+      }
+
+      // Check if user has permission to delete this show
+      if (req.user.role !== 'super_admin' && show.tenant_id !== req.user.tenantId) {
+        return res.status(403).json({
+          success: false,
+          error: 'Insufficient permissions to delete this show'
+        })
+      }
+
+      await show.destroy()
+      
+      res.json({
+        success: true,
+        message: 'Show deleted successfully'
+      })
+    } catch (error) {
+      console.error('Error deleting show:', error)
+      res.status(500).json({
+        success: false,
+        error: error.message
+      })
+    }
   })
 
   return router

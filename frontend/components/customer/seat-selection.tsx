@@ -12,6 +12,8 @@ interface SeatData {
   seat: number;
   type: "premium" | "regular";
   status: "available" | "selected" | "booked";
+  price?: number; // Individual seat price
+  id?: string; // Seat ID for backend operations
 }
 
 interface ShowData {
@@ -49,6 +51,14 @@ interface ShowData {
     row: string;
     seat: number;
   }>;
+  seats_flat?: Array<{
+    id: string;
+    row: string;
+    number: number;
+    category: string;
+    price: number;
+    is_available: boolean;
+  }>; // Individual seat data with prices
 }
 
 interface SeatSelectionProps {
@@ -64,7 +74,7 @@ export function SeatSelection({
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
 
-  // Create seat data with status
+  // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
     const seats: SeatData[] = [];
 
@@ -79,11 +89,18 @@ export function SeatSelection({
             selectedSeat.row === rowData.row && selectedSeat.seat === seatNumber
         );
 
+        // Find individual seat data with price
+        const seatData = showData.seats_flat?.find(
+          (seat) => seat.row === rowData.row && seat.number === seatNumber
+        );
+
         seats.push({
           row: rowData.row,
           seat: seatNumber,
           type: rowData.type,
           status: isBooked ? "booked" : isSelected ? "selected" : "available",
+          price: seatData?.price, // Use individual seat price
+          id: seatData?.id, // Include seat ID
         });
       });
     });
@@ -140,7 +157,9 @@ export function SeatSelection({
 
   const seatData = createSeatData();
   const totalPrice = selectedSeats.reduce((total, seat) => {
-    return total + showData.showtime.pricing[seat.type];
+    // Use individual seat price if available, fallback to category pricing
+    const seatPrice = seat.price || showData.showtime.pricing[seat.type];
+    return total + seatPrice;
   }, 0);
 
   return (
@@ -275,7 +294,7 @@ export function SeatSelection({
               </div>
               <div className="text-left sm:text-right">
                 <p className="text-xl sm:text-2xl font-bold text-primary">
-                  ${totalPrice.toFixed(2)}
+                  ₹{totalPrice.toFixed(2)}
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   {selectedSeats.length} seat(s)

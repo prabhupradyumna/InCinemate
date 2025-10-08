@@ -17,6 +17,7 @@ import { defineShow } from './Show.js'
 import { defineBooking } from './Booking.js'
 import { defineBookedSeat } from './BookedSeat.js'
 import { defineCoupon } from './Coupon.js'
+import { defineSeatPricing } from './SeatPricing.js'
 
 // Import relationship setups
 import { setupMovieRelationships } from './MovieRelationships.js'
@@ -82,7 +83,8 @@ class ModelManager {
       Show: defineShow(this.sequelize),
       Booking: defineBooking(this.sequelize),
       BookedSeat: defineBookedSeat(this.sequelize),
-      Coupon: defineCoupon(this.sequelize)
+      Coupon: defineCoupon(this.sequelize),
+      SeatPricing: defineSeatPricing(this.sequelize)
     }
 
     // Setup core associations
@@ -269,7 +271,8 @@ class ModelManager {
       Show: defineShow(this.sequelize),
       Booking: defineBooking(this.sequelize),
       BookedSeat: defineBookedSeat(this.sequelize),
-      Coupon: defineCoupon(this.sequelize)
+      Coupon: defineCoupon(this.sequelize),
+      SeatPricing: defineSeatPricing(this.sequelize)
     }
   }
 

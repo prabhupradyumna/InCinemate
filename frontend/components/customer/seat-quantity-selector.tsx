@@ -42,13 +42,13 @@ export function SeatQuantitySelector({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800";
       case "almost_full":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800";
       case "sold_out":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -109,7 +109,7 @@ export function SeatQuantitySelector({
             {categories.map((category, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-3 rounded-lg border"
+                className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
               >
                 <div className="flex items-center gap-3">
                   <div className="font-medium">{category.name}</div>

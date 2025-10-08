@@ -7,11 +7,13 @@ import { defineAuditorium } from '../models/Auditorium.js'
 import { defineTheatre } from '../models/Theatre.js'
 import { defineCoupon } from '../models/Coupon.js'
 import { defineUser } from '../models/User.js'
+import { defineSeatPricing } from '../models/SeatPricing.js'
 import { HTTP_STATUS, API_MESSAGES } from '../constants.js'
 import { Op } from 'sequelize'
 import TokenCacheService from '../services/tokenCache.js'
 import SeatHoldService from '../services/seatHoldService.js'
 import PaymentService from '../services/paymentService.js'
+import PricingService from '../services/pricing.service.js'
 
 export default class CustomerController {
   // ==============================
@@ -429,23 +431,23 @@ export default class CustomerController {
         tenant_id: show.tenant_id
       })
 
-      // Calculate pricing for each seat
+      // Calculate pricing for each seat via SeatPricing, with fallback to Show.pricing
+      const seatIds = seats.map(s => s.id)
+      const resolvedMap = await PricingService.resolvePricesForSeats({
+        sequelize,
+        models: { SeatPricing: defineSeatPricing(sequelize), Seat: defineSeat(sequelize) },
+        seatIds,
+        show,
+        defaultPrice: 250
+      })
+
       const seatPricing = []
       let subtotal = 0
-
       for (const seat of seats) {
-        let price = 0
-        
-        // Get price from show pricing structure
-        if (show.pricing[seat.category]) {
-          price = show.pricing[seat.category]
-        } else if (show.pricing[`row_${seat.row}`]) {
-          price = show.pricing[`row_${seat.row}`]
-        } else {
-          // Default pricing if not specified
-          price = 250
+        let price = resolvedMap.get(seat.id)
+        if (price == null) {
+          price = PricingService.resolveFromShowMatrix({ seat, show, defaultPrice: 250 })
         }
-
         seatPricing.push({ seat_id: seat.id, price })
         subtotal += price
       }
@@ -468,8 +470,8 @@ export default class CustomerController {
         total_price: subtotal // No taxes or discounts for now
       })
 
-      // Store seat hold using SeatHoldService
-      const holdResult = await SeatHoldService.holdSeats(show_id, seat_ids, req.user.userId, 900) // 15 minutes
+      // Store seat hold using SeatHoldService (long duration since we release manually on cancel)
+      const holdResult = await SeatHoldService.holdSeats(show_id, seat_ids, req.user.userId, 3600) // 1 hour
 
       return res.status(HTTP_STATUS.CREATED).json({
         data: {
@@ -598,6 +600,97 @@ export default class CustomerController {
         success: false,
         error: err.message,
         message: 'Booking confirmation failed'
+      })
+    }
+  }
+
+  // ==============================
+  // SEAT HOLD MANAGEMENT
+  // ==============================
+
+  static async releaseSeatHold(req, res) {
+    try {
+      const { booking_id } = req.body
+
+      if (!booking_id) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'booking_id is required',
+          message: 'Seat hold release failed'
+        })
+      }
+
+      const sequelize = req.db
+      const Booking = defineBooking(sequelize)
+      await Booking.sync()
+
+      // Verify booking belongs to user and is pending
+      const booking = await Booking.findOne({
+        where: { 
+          id: booking_id, 
+          customer_id: req.user.userId,
+          status: 'pending'
+        }
+      })
+
+      if (!booking) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Booking not found or not in pending status',
+          message: 'Seat hold release failed'
+        })
+      }
+
+      // Get hold info and release seats
+      const holdInfo = await SeatHoldService.getHoldInfo(booking_id)
+      
+      if (holdInfo) {
+        // Release Redis seat hold
+        await SeatHoldService.releaseSeats(holdInfo.holdId)
+        
+        // Delete the BookedSeat records to free up the seats
+        const BookedSeat = defineBookedSeat(sequelize)
+        await BookedSeat.sync()
+        await BookedSeat.destroy({
+          where: { booking_id: booking_id }
+        })
+        
+        // Update booking status to cancelled
+        await booking.update({ status: 'cancelled' })
+        
+        return res.json({
+          data: {
+            booking_id: booking.id,
+            hold_released: true,
+            seats_released: holdInfo.seatIds
+          },
+          message: 'Seat hold released successfully'
+        })
+      } else {
+        // Even if no hold info, still clean up the booking and seats
+        const BookedSeat = defineBookedSeat(sequelize)
+        await BookedSeat.sync()
+        await BookedSeat.destroy({
+          where: { booking_id: booking_id }
+        })
+        
+        await booking.update({ status: 'cancelled' })
+        
+        return res.json({
+          data: {
+            booking_id: booking.id,
+            hold_released: true,
+            seats_released: []
+          },
+          message: 'Booking cancelled successfully'
+        })
+      }
+    } catch (err) {
+      console.error(`[CustomerController]-[releaseSeatHold]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Seat hold release failed'
       })
     }
   }

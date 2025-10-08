@@ -6,6 +6,8 @@ import { defineTheatre } from '../models/Theatre.js'
 import { defineAuditoriumRequest } from '../models/AuditoriumRequest.js'
 import { defineAuditorium } from '../models/Auditorium.js'
 import { defineSeat } from '../models/Seat.js'
+import { defineSeatPricing } from '../models/SeatPricing.js'
+import { defineShow } from '../models/Show.js'
 import { defineMovie } from '../models/Movie.js'
 import { setupMovieRelationships, syncAllMovieTables, getMovieWithAllRelations, searchMoviesWithCastCrew } from '../models/MovieRelationships.js'
 import { hashPassword, generateTemporaryPassword } from '../util/auth.util.js'
@@ -550,11 +552,32 @@ export default class SuperadminController {
   static async getAuditoriumSeats(req, res) {
     try {
       const { id } = req.params
+      console.log(`[getAuditoriumSeats] Request for auditorium ID: ${id}`)
+      
       const sequelize = req.db
       const Seat = defineSeat(sequelize)
       await Seat.sync()
 
       const seats = await Seat.findAll({ where: { auditorium_id: id }, order: [['row', 'ASC'], ['number', 'ASC']] })
+      console.log(`[getAuditoriumSeats] Found ${seats.length} seats for auditorium ${id}`)
+      
+      if (seats.length > 0) {
+        console.log(`[getAuditoriumSeats] First seat:`, {
+          id: seats[0].id,
+          row: seats[0].row,
+          number: seats[0].number,
+          category: seats[0].category,
+          x_position: seats[0].x_position,
+          y_position: seats[0].y_position
+        })
+        console.log(`[getAuditoriumSeats] All seats data:`, seats.map(s => ({
+          id: s.id,
+          row: s.row,
+          number: s.number,
+          category: s.category
+        })))
+      }
+      
       return res.json({ data: seats, message: 'Seats retrieved successfully' })
     } catch (err) {
       console.error(`[SuperadminController]-[getAuditoriumSeats]: ${err.message}`)
@@ -606,6 +629,193 @@ export default class SuperadminController {
     } catch (err) {
       console.error(`[SuperadminController]-[updateAuditoriumConfiguration]: ${err.message}`)
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Failed to update auditorium' })
+    }
+  }
+
+  // ==============================
+  // SEAT PRICING (BASE) FOR AUDITORIUM
+  // ==============================
+
+  static async bulkUpdateBaseSeatPricing(req, res) {
+    try {
+      const { auditorium_id } = req.params
+      const { filters = {}, price, is_dynamic = false, effective_from = null, effective_to = null } = req.body
+
+      if (price == null || Number(price) <= 0) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'price is required and must be > 0' })
+      }
+
+      const sequelize = req.db
+      const Seat = defineSeat(sequelize)
+      const SeatPricing = defineSeatPricing(sequelize)
+      await Promise.all([Seat.sync(), SeatPricing.sync()])
+
+      const where = { auditorium_id }
+      if (Array.isArray(filters.categories) && filters.categories.length > 0) {
+        where.category = { [Op.in]: filters.categories }
+      }
+      if (Array.isArray(filters.rows) && filters.rows.length > 0) {
+        where.row = { [Op.in]: filters.rows }
+      }
+      if (Array.isArray(filters.seat_ids) && filters.seat_ids.length > 0) {
+        where.id = { [Op.in]: filters.seat_ids }
+      }
+
+      const seats = await Seat.findAll({ where, attributes: ['id'] })
+      if (seats.length === 0) {
+        return res.json({ success: true, data: { updated: 0 }, message: 'No seats matched filters' })
+      }
+
+      const transaction = await sequelize.transaction()
+      try {
+        // Upsert base pricing (show_id null)
+        for (const s of seats) {
+          // Try update first
+          const [count] = await SeatPricing.update(
+            { price, currency: 'INR', pricing_type: 'base', is_dynamic, effective_from, effective_to },
+            { where: { seat_id: s.id, auditorium_id, show_id: null }, transaction }
+          )
+          if (count === 0) {
+            await SeatPricing.create({
+              seat_id: s.id,
+              auditorium_id,
+              show_id: null,
+              price,
+              currency: 'INR',
+              pricing_type: 'base',
+              is_dynamic,
+              effective_from,
+              effective_to
+            }, { transaction })
+          }
+        }
+        await transaction.commit()
+        return res.json({ success: true, data: { updated: seats.length }, message: 'Base pricing updated' })
+      } catch (e) {
+        await transaction.rollback()
+        throw e
+      }
+    } catch (err) {
+      console.error(`[SuperadminController]-[bulkUpdateBaseSeatPricing]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Bulk pricing update failed' })
+    }
+  }
+
+  static async getAuditoriumPricingPreview(req, res) {
+    try {
+      const { auditorium_id } = req.params
+      const { show_id } = req.query
+      const sequelize = req.db
+      const Seat = defineSeat(sequelize)
+      const SeatPricing = defineSeatPricing(sequelize)
+      await Promise.all([Seat.sync(), SeatPricing.sync()])
+
+      const seats = await Seat.findAll({ where: { auditorium_id }, attributes: ['id','row','number','category'] })
+      const seatIds = seats.map(s => s.id)
+
+      // Fetch base pricing
+      const basePricing = await SeatPricing.findAll({ where: { auditorium_id, show_id: null, seat_id: { [Op.in]: seatIds } } })
+      const baseMap = new Map(basePricing.map(p => [p.seat_id, Number(p.price)]))
+
+      let showMap = new Map()
+      if (show_id) {
+        const showPricing = await SeatPricing.findAll({ where: { auditorium_id, show_id, seat_id: { [Op.in]: seatIds } } })
+        showMap = new Map(showPricing.map(p => [p.seat_id, Number(p.price)]))
+      }
+
+      const result = seats.map(s => ({
+        seat_id: s.id,
+        row: s.row,
+        number: s.number,
+        category: s.category,
+        base_price: baseMap.get(s.id) ?? null,
+        show_price: showMap.get(s.id) ?? null
+      }))
+
+      return res.json({ success: true, data: { seats: result }, message: 'Pricing preview generated' })
+    } catch (err) {
+      console.error(`[SuperadminController]-[getAuditoriumPricingPreview]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, error: err.message, message: 'Failed to get pricing preview' })
+    }
+  }
+
+  static async bulkUpdateShowSeatPricing(req, res) {
+    try {
+      const { show_id } = req.params
+      const { seat_pricing } = req.body
+
+      console.log(`[bulkUpdateShowSeatPricing] Called for show_id: ${show_id}`)
+      console.log(`[bulkUpdateShowSeatPricing] Seat pricing data:`, seat_pricing)
+
+      if (!Array.isArray(seat_pricing) || seat_pricing.length === 0) {
+        console.log(`[bulkUpdateShowSeatPricing] Invalid seat_pricing array`)
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'seat_pricing array is required and must not be empty'
+        })
+      }
+
+      const sequelize = req.db
+      const Show = defineShow(sequelize)
+      const SeatPricing = defineSeatPricing(sequelize)
+      await Promise.all([Show.sync(), SeatPricing.sync()])
+
+      // Verify show exists
+      const show = await Show.findByPk(show_id)
+      if (!show) {
+        console.log(`[bulkUpdateShowSeatPricing] Show not found: ${show_id}`)
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Show not found'
+        })
+      }
+
+      console.log(`[bulkUpdateShowSeatPricing] Show found:`, show.id)
+
+      const transaction = await sequelize.transaction()
+      try {
+        // Delete existing show-specific pricing for this show
+        const deletedCount = await SeatPricing.destroy({
+          where: { show_id },
+          transaction
+        })
+        console.log(`[bulkUpdateShowSeatPricing] Deleted ${deletedCount} existing pricing records`)
+
+        // Create new show-specific pricing records
+        const pricingRecords = seat_pricing.map(item => ({
+          seat_id: item.seat_id,
+          auditorium_id: show.auditorium_id,
+          show_id: show_id,
+          price: Number(item.price),
+          currency: 'INR',
+          pricing_type: 'show_specific',
+          is_dynamic: false
+        }))
+
+        console.log(`[bulkUpdateShowSeatPricing] Creating ${pricingRecords.length} pricing records`)
+
+        const createdRecords = await SeatPricing.bulkCreate(pricingRecords, { transaction })
+        console.log(`[bulkUpdateShowSeatPricing] Created ${createdRecords.length} pricing records`)
+
+        await transaction.commit()
+
+        return res.json({
+          success: true,
+          data: { updated: pricingRecords.length },
+          message: `Show-specific pricing updated for ${pricingRecords.length} seats`
+        })
+      } catch (error) {
+        await transaction.rollback()
+        console.error(`[bulkUpdateShowSeatPricing] Transaction error:`, error)
+        throw error
+      }
+    } catch (err) {
+      console.error(`[SuperadminController]-[bulkUpdateShowSeatPricing]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to update show-specific pricing'
+      })
     }
   }
 

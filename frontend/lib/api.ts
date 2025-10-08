@@ -25,15 +25,18 @@ api.interceptors.request.use(
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     } else {
-      console.warn('❌ API Interceptor - No token found in localStorage');
-      if (typeof window !== 'undefined') {
+      console.warn("❌ API Interceptor - No token found in localStorage");
+      if (typeof window !== "undefined") {
         try {
-          console.log('🔍 API Interceptor - All localStorage keys:', Object.keys(localStorage || {}));
+          console.log(
+            "🔍 API Interceptor - All localStorage keys:",
+            Object.keys(localStorage || {})
+          );
         } catch {
-          console.log('🔍 API Interceptor - Unable to read localStorage keys');
+          console.log("🔍 API Interceptor - Unable to read localStorage keys");
         }
       } else {
-        console.log('🔍 API Interceptor - Running on server (no localStorage)');
+        console.log("🔍 API Interceptor - Running on server (no localStorage)");
       }
     }
 
@@ -215,6 +218,10 @@ export async function confirmBooking(payload: {
   payment_details: any;
 }) {
   return http("POST", "/customer/bookings/confirm", payload);
+}
+
+export async function releaseSeatHold(payload: { booking_id: string }) {
+  return http("POST", "/customer/bookings/release-hold", payload);
 }
 
 export default api;

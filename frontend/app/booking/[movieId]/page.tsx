@@ -34,16 +34,30 @@ export default function BookingPage({
       row: string;
       seat: number;
       type: "premium" | "regular";
+      price?: number; // Individual seat price
     }>
   >([]);
   const [showQuantitySelector, setShowQuantitySelector] = useState(true);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback((seats: any[]) => {
     setSelectedSeats(seats);
   }, []);
+
+  // Handle back navigation - check if there's an active booking
+  const handleBackFromBooking = useCallback(() => {
+    if (activeBookingId) {
+      // There's an active booking, don't go back - the BookingSummary component will handle the cancel popup
+      // The component's back button will show the cancel popup instead
+      return;
+    } else {
+      // No active booking, safe to go back
+      setShowBookingFlow(false);
+    }
+  }, [activeBookingId]);
 
   useEffect(() => {
     const loadSeatMap = async () => {
@@ -135,6 +149,7 @@ export default function BookingPage({
           },
           bookedSeats,
           seatIdMap,
+          seats_flat: apiData.seats_flat || [], // Include seats_flat for category analysis
         } as any;
 
         setShowData(transformed);
@@ -149,16 +164,54 @@ export default function BookingPage({
     loadSeatMap();
   }, [params.movieId]);
 
-  // Seat categories with pricing and availability
-  const seatCategories = useMemo(
-    () => [
-      { name: "RECLINER", price: 500, status: "sold_out" as const },
-      { name: "GOLD", price: 330, status: "sold_out" as const },
-      { name: "SILVER", price: 330, status: "almost_full" as const },
-      { name: "SPECIAL", price: 330, status: "available" as const },
-    ],
-    []
-  );
+  // Seat categories with pricing and availability from backend data
+  const seatCategories = useMemo(() => {
+    if (!showData) return [];
+
+    const pricing = showData.showtime?.pricing || {};
+    const seatsFlat = (showData as any)?.seats_flat || [];
+
+    // Extract unique categories from seats
+    const categoryMap = new Map();
+
+    seatsFlat.forEach((seat: any) => {
+      const category = seat.category?.toUpperCase() || "REGULAR";
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, {
+          name: category,
+          price: pricing[seat.category] || pricing[`row_${seat.row}`] || 250,
+          totalSeats: 0,
+          availableSeats: 0,
+        });
+      }
+
+      const cat = categoryMap.get(category);
+      cat.totalSeats++;
+      if (seat.is_available) {
+        cat.availableSeats++;
+      }
+    });
+
+    // Convert to array and determine status
+    return Array.from(categoryMap.values()).map((cat) => {
+      let status: "available" | "almost_full" | "sold_out";
+      const availabilityRatio = cat.availableSeats / cat.totalSeats;
+
+      if (availabilityRatio === 0) {
+        status = "sold_out";
+      } else if (availabilityRatio < 0.2) {
+        status = "almost_full";
+      } else {
+        status = "available";
+      }
+
+      return {
+        name: cat.name,
+        price: cat.price,
+        status,
+      };
+    });
+  }, [showData]);
 
   const handleQuantityConfirm = (quantity: number) => {
     setSelectedQuantity(quantity);
@@ -195,7 +248,9 @@ export default function BookingPage({
             showData={showData}
             selectedSeats={selectedSeats}
             selectedQuantity={selectedQuantity}
-            onBack={() => setShowBookingFlow(false)}
+            onBack={handleBackFromBooking}
+            onBookingCreated={setActiveBookingId}
+            onBookingCancelled={() => setActiveBookingId(null)}
           />
         ) : (
           <>

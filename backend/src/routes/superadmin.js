@@ -52,6 +52,12 @@ router.get('/auditoriums', SuperadminController.listAuditoriums)
 router.get('/auditoriums/:id', SuperadminController.getAuditorium)
 router.get('/auditoriums/:id/seats', SuperadminController.getAuditoriumSeats)
 router.put('/auditoriums/:id', SuperadminController.updateAuditoriumConfiguration)
+// Base seat pricing bulk update and preview
+router.put('/auditoriums/:auditorium_id/seat-pricing/base', SuperadminController.bulkUpdateBaseSeatPricing)
+router.get('/auditoriums/:auditorium_id/seat-pricing/preview', SuperadminController.getAuditoriumPricingPreview)
+
+// Show-specific seat pricing
+router.put('/shows/:show_id/seat-pricing', SuperadminController.bulkUpdateShowSeatPricing)
 
 // ==============================
 // TENANT MANAGEMENT ROUTES

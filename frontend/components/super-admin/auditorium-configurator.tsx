@@ -25,6 +25,15 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
+  bulkUpdateBaseSeatPricing,
+  getAuditoriumPricingPreview,
+} from "@/lib/superadmin";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -80,6 +89,19 @@ export function AuditoriumConfigurator({
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [confirmEmptySaveOpen, setConfirmEmptySaveOpen] = useState(false);
   const [auditoriumName, setAuditoriumName] = useState("");
+  const [bulkPriceOpen, setBulkPriceOpen] = useState(false);
+  const [bulkPrice, setBulkPrice] = useState<string>("");
+  const [bulkCategories, setBulkCategories] = useState<string[]>([]);
+  const [bulkRows, setBulkRows] = useState<string[]>([]);
+  const [pricingPreview, setPricingPreview] = useState<any[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedSeats, setSelectedSeats] = useState<
+    Array<{ row: string; number: number }>
+  >([]);
+  const [perSeatPrice, setPerSeatPrice] = useState<string>("");
+
+  const isSeatSelected = (row: string, number: number) =>
+    selectedSeats.some((s) => s.row === row && s.number === number);
 
   const blueprintRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -214,13 +236,25 @@ export function AuditoriumConfigurator({
   };
 
   const handleSeatClick = (rowIndex: number, seatIndex: number) => {
+    const row = seatMap[rowIndex];
+    const number = row.seats[seatIndex];
+    if (selectionMode && isEditing) {
+      setSelectedSeats((prev) => {
+        const exists = prev.some(
+          (s) => s.row === row.row && s.number === number
+        );
+        if (exists)
+          return prev.filter(
+            (s) => !(s.row === row.row && s.number === number)
+          );
+        return [...prev, { row: row.row, number }];
+      });
+      return;
+    }
     setSeatMap((prev) =>
-      prev.map((row, index) => {
-        if (index === rowIndex) {
-          return { ...row, type: selectedSeatType };
-        }
-        return row;
-      })
+      prev.map((r, index) =>
+        index === rowIndex ? { ...r, type: selectedSeatType } : r
+      )
     );
   };
 
@@ -471,6 +505,25 @@ export function AuditoriumConfigurator({
                   <SelectItem value="vip">VIP</SelectItem>
                 </SelectContent>
               </Select>
+              {isEditing && (
+                <div className="flex items-center gap-2 ml-2">
+                  <Label className="text-sm">Select seats</Label>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={selectionMode}
+                    onChange={(e) => {
+                      setSelectionMode(e.target.checked);
+                      if (!e.target.checked) setSelectedSeats([]);
+                    }}
+                  />
+                  {selectionMode && (
+                    <span className="text-xs text-muted-foreground">
+                      {selectedSeats.length} selected
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="flex gap-2">
                 <div
                   className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("regular").split(" ").slice(2, 4).join(" ")}`}
@@ -537,14 +590,46 @@ export function AuditoriumConfigurator({
                     </div>
                     <div className="flex gap-1">
                       {rowData.seats.map((seatNumber, seatIndex) => (
-                        <div
-                          key={`${rowData.row}-${seatNumber}`}
-                          className={getSeatButtonClass(rowData.type)}
-                          onClick={() => handleSeatClick(rowIndex, seatIndex)}
-                          title={`Click to change to ${selectedSeatType}`}
-                        >
-                          {seatNumber}
-                        </div>
+                        <Tooltip key={`${rowData.row}-${seatNumber}`}>
+                          <TooltipTrigger asChild>
+                            <div
+                              className={
+                                getSeatButtonClass(rowData.type) +
+                                (selectionMode &&
+                                isEditing &&
+                                isSeatSelected(rowData.row, seatNumber)
+                                  ? " ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
+                                  : selectionMode && isEditing
+                                    ? " outline outline-1 outline-dashed outline-primary/40"
+                                    : "")
+                              }
+                              onClick={() =>
+                                handleSeatClick(rowIndex, seatIndex)
+                              }
+                              title={
+                                selectionMode && isEditing
+                                  ? isSeatSelected(rowData.row, seatNumber)
+                                    ? "Selected"
+                                    : "Click to select"
+                                  : `Click to change to ${selectedSeatType}`
+                              }
+                              aria-selected={
+                                selectionMode &&
+                                isEditing &&
+                                isSeatSelected(rowData.row, seatNumber)
+                              }
+                            >
+                              {seatNumber}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={4}>
+                            <SeatPriceHint
+                              row={rowData.row}
+                              number={seatNumber}
+                              pricingPreview={pricingPreview}
+                            />
+                          </TooltipContent>
+                        </Tooltip>
                       ))}
                     </div>
                     <div className="w-8 text-center font-medium text-muted-foreground">
@@ -627,10 +712,198 @@ export function AuditoriumConfigurator({
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Reset Layout
               </Button>
+              <Button variant="outline" onClick={() => setBulkPriceOpen(true)}>
+                Set Bulk Pricing
+              </Button>
             </div>
+            {isEditing && selectionMode && (
+              <div className="mt-3 p-3 border rounded-md bg-blue-50 border-blue-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="text-sm font-medium text-blue-900">
+                    Base Pricing Mode
+                  </div>
+                </div>
+                <p className="text-xs text-blue-700 mb-3">
+                  Set base prices for seats. These will apply to all shows
+                  unless overridden by show-specific pricing.
+                </p>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm">Per-seat price (INR)</div>
+                  <Input
+                    className="max-w-[140px]"
+                    placeholder="e.g. 320"
+                    value={perSeatPrice}
+                    onChange={(e) => setPerSeatPrice(e.target.value)}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={selectedSeats.length === 0 || !perSeatPrice}
+                    onClick={async () => {
+                      try {
+                        const auditoriumId =
+                          (request && (request.id || request.auditorium_id)) ||
+                          null;
+                        if (!auditoriumId) return;
+                        const idMap = new Map<string, string>();
+                        (initialSeats || []).forEach((s: any) => {
+                          idMap.set(
+                            `${String(s.row)}-${Number(s.number)}`,
+                            s.id
+                          );
+                        });
+                        const seat_ids = selectedSeats
+                          .map((s) => idMap.get(`${s.row}-${s.number}`))
+                          .filter(Boolean) as string[];
+                        if (seat_ids.length === 0) {
+                          toast({
+                            title: "No matching seats",
+                            description:
+                              "Save configuration first to get seat IDs, then set per-seat prices.",
+                          });
+                          return;
+                        }
+                        await bulkUpdateBaseSeatPricing(auditoriumId, {
+                          filters: { seat_ids },
+                          price: Number(perSeatPrice),
+                        });
+                        const preview =
+                          await getAuditoriumPricingPreview(auditoriumId);
+                        setPricingPreview(preview?.seats || []);
+                        toast({
+                          title: "Per-seat pricing applied",
+                          description: `${seat_ids.length} seat(s) updated`,
+                        });
+                        setSelectedSeats([]);
+                      } catch (e: any) {
+                        toast({
+                          title: "Error",
+                          description:
+                            e?.message || "Failed to set per-seat pricing",
+                        });
+                      }
+                    }}
+                  >
+                    Apply to selected ({selectedSeats.length})
+                  </Button>
+                  <Button variant="ghost" onClick={() => setSelectedSeats([])}>
+                    Clear selection
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+      {/* Bulk Pricing Dialog */}
+      <Dialog open={bulkPriceOpen} onOpenChange={setBulkPriceOpen}>
+        <DialogContent className="bg-card border-border max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bulk Pricing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Categories</Label>
+                <Input
+                  placeholder="vip,premium,regular"
+                  value={bulkCategories.join(",")}
+                  onChange={(e) =>
+                    setBulkCategories(
+                      e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <Label>Rows</Label>
+                <Input
+                  placeholder="A,B,C"
+                  value={bulkRows.join(",")}
+                  onChange={(e) =>
+                    setBulkRows(
+                      e.target.value
+                        .toUpperCase()
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                    )
+                  }
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Price (INR)</Label>
+              <Input
+                placeholder="e.g. 300"
+                value={bulkPrice}
+                onChange={(e) => setBulkPrice(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const auditoriumId = request?.id || request?.auditorium_id;
+                    if (!auditoriumId) return;
+                    await bulkUpdateBaseSeatPricing(auditoriumId, {
+                      filters: {
+                        categories: bulkCategories.length
+                          ? bulkCategories
+                          : undefined,
+                        rows: bulkRows.length ? bulkRows : undefined,
+                      },
+                      price: Number(bulkPrice),
+                    });
+                    const preview =
+                      await getAuditoriumPricingPreview(auditoriumId);
+                    setPricingPreview(preview?.seats || []);
+                    toast({
+                      title: "Pricing updated",
+                      description: "Base pricing applied",
+                    });
+                  } catch (e: any) {
+                    toast({
+                      title: "Error",
+                      description: e?.message || "Failed to set pricing",
+                    });
+                  }
+                }}
+              >
+                Apply
+              </Button>
+              <Button variant="ghost" onClick={() => setBulkPriceOpen(false)}>
+                Close
+              </Button>
+            </div>
+            {pricingPreview && pricingPreview.length > 0 && (
+              <div className="max-h-48 overflow-y-auto text-xs mt-2 border rounded p-2">
+                {pricingPreview.slice(0, 50).map((p) => (
+                  <div key={p.seat_id} className="flex justify-between">
+                    <span>
+                      {p.row}
+                      {p.number} ({p.category})
+                    </span>
+                    <span>
+                      ₹{p.base_price ?? "-"}
+                      {p.show_price ? ` (show ₹${p.show_price})` : ""}
+                    </span>
+                  </div>
+                ))}
+                {pricingPreview.length > 50 && (
+                  <div className="text-muted-foreground">
+                    Showing first 50...
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       {/* Confirm Reset Dialog */}
       <Dialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
         <DialogContent className="bg-card border-border max-w-md">
@@ -706,4 +979,46 @@ export function AuditoriumConfigurator({
       </Dialog>
     </div>
   );
+}
+
+function SeatPriceHint({
+  row,
+  number,
+  pricingPreview,
+}: {
+  row: string;
+  number: number;
+  pricingPreview: any[];
+}) {
+  const match = Array.isArray(pricingPreview)
+    ? pricingPreview.find(
+        (p) => p.row === row && Number(p.number) === Number(number)
+      )
+    : null;
+  if (!match)
+    return (
+      <div className="flex items-center gap-2">
+        <span className="font-medium">
+          Row {row}
+          {number}
+        </span>
+        <span className="text-muted-foreground">No price set</span>
+      </div>
+    );
+  return (
+    <div className="flex items-center gap-3">
+      <span className="font-medium">
+        Row {row}
+        {number}
+      </span>
+      <span>₹{match.show_price ?? match.base_price ?? "-"}</span>
+      {match.show_price != null && (
+        <span className="text-xs text-muted-foreground">(show override)</span>
+      )}
+    </div>
+  );
+}
+
+function SeatPriceHintHost() {
+  return null;
 }

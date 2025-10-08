@@ -6,7 +6,7 @@ const router = Router()
 
 // All customer routes require authentication and customer role
 router.use(authenticate)
-router.use(authorizeRoles('customer'))
+router.use(authorizeRoles('customer', 'admin', 'super_admin'))
 
 // Profile
 router.get('/profile', CustomerController.getProfile)
@@ -32,10 +32,13 @@ router.post('/bookings/:id/cancel', CustomerController.cancelBooking)
 // Hold seats for a show
 router.post('/bookings/hold-seats', CustomerController.holdSeats)
 
-// Confirm booking with payment
-router.post('/bookings/confirm', CustomerController.confirmBooking)
-
-// ==============================
+  // Confirm booking with payment
+  router.post('/bookings/confirm', CustomerController.confirmBooking)
+  
+  // Release seat hold manually
+  router.post('/bookings/release-hold', CustomerController.releaseSeatHold)
+  
+  // ==============================
 // COUPON ROUTES
 // ==============================
 

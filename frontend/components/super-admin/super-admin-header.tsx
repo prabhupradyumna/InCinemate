@@ -40,7 +40,7 @@ export function SuperAdminHeader() {
               <div className="text-muted-foreground">Screens</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-primary">$45.2K</div>
+              <div className="font-semibold text-primary">₹45.2K</div>
               <div className="text-muted-foreground">Revenue</div>
             </div>
           </div>

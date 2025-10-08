@@ -12,6 +12,8 @@ import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { CustomerDetailsModal } from "@/components/customer/customer-details-modal";
+import { TermsConditionsPopup } from "@/components/customer/terms-conditions-popup";
+import { CancelTransactionPopup } from "@/components/customer/cancel-transaction-popup";
 
 interface ShowData {
   movie: {
@@ -58,9 +60,12 @@ interface BookingSummaryProps {
     row: string;
     seat: number;
     type: "premium" | "regular";
+    price?: number; // Individual seat price
   }>;
   selectedQuantity?: number;
   onBack?: () => void;
+  onBookingCreated?: (bookingId: string) => void;
+  onBookingCancelled?: () => void;
 }
 
 interface BookingDetails {
@@ -78,10 +83,15 @@ export function BookingSummary({
   selectedSeats = [],
   selectedQuantity = 1,
   onBack,
+  onBookingCreated,
+  onBookingCancelled,
 }: BookingSummaryProps) {
   const { user, refresh } = useAuth();
-  const initialStep: "summary" | "payment" = "summary";
-  const [step, setStep] = useState<"summary" | "payment">(initialStep);
+  const router = useRouter();
+
+  // New flow states
+  const [showTermsPopup, setShowTermsPopup] = useState(false);
+  const [showCancelPopup, setShowCancelPopup] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
@@ -89,7 +99,6 @@ export function BookingSummary({
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
-  const router = useRouter();
 
   const [customerDetails, setCustomerDetails] = useState({
     fullName: (user as any)?.fullName || (user as any)?.full_name || "",
@@ -115,52 +124,83 @@ export function BookingSummary({
         }));
 
   const subtotal = mockSelectedSeats.reduce((total, seat) => {
-    return total + showData.showtime.pricing[seat.type];
+    // Use individual seat price if available, fallback to category pricing
+    const seatPrice =
+      (seat as any).price || showData.showtime.pricing[seat.type];
+    return total + seatPrice;
   }, 0);
 
-  const convenienceFee = 2.5;
-  const total = subtotal + convenienceFee;
+  const total = subtotal;
 
+  // No timer needed - seats are released immediately on cancel
+
+  // Handle browser back button and navigation
   useEffect(() => {
-    const attemptHoldSeats = async () => {
-      // Only hold seats when user is authenticated AND we are on the payment step
-      if (step !== "payment" || !user) return;
-      if (selectedSeats.length === 0) return;
-      setIsHoldingSeats(true);
-      setBookingError(null);
-      try {
-        const { holdSeats } = await import("@/lib/api");
-        // Map to backend seat ids, falling back to row-seat mapping from showData
-        const seatIdMap: Record<string, string> =
-          (showData as any).seatIdMap || {};
-        const seatIds = selectedSeats
-          .map((s) => s.id || seatIdMap[`${s.row}-${s.seat}`])
-          .filter(Boolean);
-        const res = await holdSeats({
-          show_id: showId,
-          seat_ids: seatIds as string[],
-        });
-        setBookingDetails(res.data);
-      } catch (e: any) {
-        setBookingError(
-          e?.response?.data?.error || e?.message || "Failed to hold seats"
+    if (!bookingDetails) return;
+
+    console.log(
+      "Setting up browser back button handler for booking:",
+      bookingDetails.booking_id
+    );
+    let isNavigating = false;
+
+    const handlePopState = (event: PopStateEvent) => {
+      console.log(
+        "Browser back button clicked, bookingDetails:",
+        bookingDetails
+      );
+      if (bookingDetails && !isNavigating) {
+        isNavigating = true;
+        console.log("Showing cancel popup for browser back button");
+        // Show cancel popup
+        setShowCancelPopup(true);
+        // Push the state back to prevent navigation
+        window.history.pushState(
+          { bookingActive: true },
+          "",
+          window.location.href
         );
-      } finally {
-        setIsHoldingSeats(false);
+        isNavigating = false;
       }
     };
-    attemptHoldSeats();
-  }, [step, user, selectedSeats, showId, showData]);
 
-  const handleContinue = async () => {
-    if (step === "summary") {
-      if (user) {
-        // Logged in users go to payment; hold will trigger via effect
-        setStep("payment");
-      } else {
-        // Show customer details modal for guest users
-        setShowCustomerModal(true);
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (bookingDetails) {
+        // Show browser's default confirmation dialog
+        event.preventDefault();
+        event.returnValue =
+          "You have an active booking. Are you sure you want to leave?";
+        return "You have an active booking. Are you sure you want to leave?";
       }
+    };
+
+    // Push a state when booking is active to intercept back button
+    window.history.pushState({ bookingActive: true }, "", window.location.href);
+
+    // Add event listeners
+    window.addEventListener("popstate", handlePopState);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [bookingDetails]);
+
+  // New BookMyShow-style flow handlers
+  const handlePayNow = () => {
+    setShowTermsPopup(true);
+  };
+
+  const handleAcceptTerms = async () => {
+    setShowTermsPopup(false);
+
+    if (user) {
+      // User is logged in, proceed to hold seats
+      await holdSeats();
+    } else {
+      // User not logged in, show existing customer modal for OTP auth
+      setShowCustomerModal(true);
     }
   };
 
@@ -171,19 +211,92 @@ export function BookingSummary({
   }) => {
     setCustomerDetails(details);
     setShowCustomerModal(false);
-    // After modal verifies OTP, refresh auth state and move to payment
+
+    // After OTP verification, refresh auth state and hold seats
     try {
       await refresh();
-    } catch {}
-    // After successful OTP/login we consider the user authenticated, then move to payment.
-    setStep("payment");
+      await holdSeats();
+    } catch (error) {
+      console.error("Failed to refresh auth state:", error);
+    }
   };
 
-  const handleBack = () => {
-    if (step === "payment") {
-      setStep("summary");
-    } else if (step === "summary" && onBack) {
+  const handleBackFromTerms = () => {
+    setShowTermsPopup(false);
+  };
+
+  const handleCancelTransaction = () => {
+    setShowCancelPopup(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    setShowCancelPopup(false);
+
+    // Release seat hold if exists
+    if (bookingDetails?.booking_id) {
+      try {
+        const { releaseSeatHold } = await import("@/lib/api");
+        await releaseSeatHold({ booking_id: bookingDetails.booking_id });
+        console.log(
+          "Released seat hold for booking:",
+          bookingDetails.booking_id
+        );
+      } catch (error) {
+        console.error("Failed to release seat hold:", error);
+      }
+    }
+
+    // Reset state
+    setBookingDetails(null);
+    setBookingError(null);
+
+    // Notify parent component that booking was cancelled
+    if (onBookingCancelled) {
+      onBookingCancelled();
+    }
+
+    // Go back to seat selection
+    if (onBack) {
       onBack();
+    }
+  };
+
+  const handleCancelCancel = () => {
+    setShowCancelPopup(false);
+  };
+
+  const holdSeats = async () => {
+    if (selectedSeats.length === 0) return;
+
+    setIsHoldingSeats(true);
+    setBookingError(null);
+
+    try {
+      const { holdSeats } = await import("@/lib/api");
+      // Map to backend seat ids, falling back to row-seat mapping from showData
+      const seatIdMap: Record<string, string> =
+        (showData as any).seatIdMap || {};
+      const seatIds = selectedSeats
+        .map((s) => s.id || seatIdMap[`${s.row}-${s.seat}`])
+        .filter(Boolean);
+
+      const res = await holdSeats({
+        show_id: showId,
+        seat_ids: seatIds as string[],
+      });
+
+      setBookingDetails(res.data);
+
+      // Notify parent component that a booking was created
+      if (onBookingCreated) {
+        onBookingCreated(res.data.booking_id);
+      }
+    } catch (e: any) {
+      setBookingError(
+        e?.response?.data?.error || e?.message || "Failed to hold seats"
+      );
+    } finally {
+      setIsHoldingSeats(false);
     }
   };
 
@@ -226,7 +339,8 @@ export function BookingSummary({
 
   async function handleGuestAuth() {
     if (user) {
-      setStep("payment");
+      // User is already authenticated, proceed to hold seats
+      await holdSeats();
       return;
     }
     try {
@@ -259,7 +373,8 @@ export function BookingSummary({
         });
         // After verify, token is stored and AuthProvider will pick up on next getMe/refresh.
         await refresh();
-        setStep("payment");
+        // After successful OTP verification, hold seats
+        await holdSeats();
       }
     } catch (e: any) {
       setOtpError(
@@ -276,7 +391,7 @@ export function BookingSummary({
           <CardTitle className="flex items-center justify-between text-base md:text-lg">
             <span>Booking Summary</span>
             <Badge variant="outline" className="text-xs">
-              Step {step === "summary" ? "1" : "2"} of 2
+              {bookingDetails ? "Payment" : "Summary"}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -331,7 +446,11 @@ export function BookingSummary({
                       {seat.seat} ({seat.type})
                     </span>
                     <span>
-                      ${showData.showtime.pricing[seat.type].toFixed(2)}
+                      ₹
+                      {(
+                        (seat as any).price ||
+                        showData.showtime.pricing[seat.type]
+                      ).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -345,11 +464,7 @@ export function BookingSummary({
           <div className="space-y-2">
             <div className="flex justify-between text-xs md:text-sm">
               <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-xs md:text-sm">
-              <span>Convenience Fee</span>
-              <span>${convenienceFee.toFixed(2)}</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between font-semibold text-sm md:text-base">
@@ -357,114 +472,30 @@ export function BookingSummary({
               <span className="text-primary">
                 {isHoldingSeats
                   ? "Calculating..."
-                  : `$${(bookingDetails?.total_price || total).toFixed(2)}`}
+                  : `₹${(bookingDetails?.total_price || total).toFixed(2)}`}
               </span>
             </div>
           </div>
-          {/* Payment Form */}
-          {step === "payment" && (
-            <>
-              <Separator />
-              <div className="space-y-4">
-                <h4 className="font-medium flex items-center gap-2 text-sm md:text-base">
-                  <CreditCard className="h-4 w-4" />
-                  Payment Details
-                </h4>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="nameOnCard">Name on Card</Label>
-                    <Input
-                      id="nameOnCard"
-                      placeholder="John Doe"
-                      value={paymentDetails.nameOnCard}
-                      onChange={(e) =>
-                        setPaymentDetails((prev) => ({
-                          ...prev,
-                          nameOnCard: e.target.value,
-                        }))
-                      }
-                      className="bg-input border-border"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Card Number</Label>
-                    <Input
-                      id="cardNumber"
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentDetails.cardNumber}
-                      onChange={(e) =>
-                        setPaymentDetails((prev) => ({
-                          ...prev,
-                          cardNumber: e.target.value,
-                        }))
-                      }
-                      className="bg-input border-border"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry">Expiry</Label>
-                      <Input
-                        id="expiry"
-                        placeholder="MM/YY"
-                        value={paymentDetails.expiry}
-                        onChange={(e) =>
-                          setPaymentDetails((prev) => ({
-                            ...prev,
-                            expiry: e.target.value,
-                          }))
-                        }
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input
-                        id="cvv"
-                        placeholder="123"
-                        value={paymentDetails.cvv}
-                        onChange={(e) =>
-                          setPaymentDetails((prev) => ({
-                            ...prev,
-                            cvv: e.target.value,
-                          }))
-                        }
-                        className="bg-input border-border"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Security Notice */}
-                <div className="flex items-start gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
-                  <Lock className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-muted-foreground">
-                    <p className="font-medium text-foreground">
-                      Secure Payment
-                    </p>
-                    <p>Your payment information is encrypted and secure.</p>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Action Buttons */}
           <div className="space-y-2 pt-4">
-            {step === "summary" && mockSelectedSeats.length > 0 && (
+            {/* Show Pay Now button when seats are selected but not held */}
+            {!bookingDetails && mockSelectedSeats.length > 0 && (
               <>
                 <Button
-                  className="w-full cinema-glow"
-                  onClick={handleContinue}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handlePayNow}
                   disabled={isHoldingSeats || !!bookingError}
                 >
-                  Continue to Details
+                  {isHoldingSeats
+                    ? "Processing..."
+                    : `Pay ₹${total.toFixed(0)}`}
                 </Button>
                 {onBack && (
                   <Button
                     variant="outline"
                     className="w-full bg-transparent"
-                    onClick={handleBack}
+                    onClick={onBack}
                   >
                     Back to Seat Selection
                   </Button>
@@ -472,10 +503,96 @@ export function BookingSummary({
               </>
             )}
 
-            {step === "payment" && (
+            {/* Show payment form when seats are held */}
+            {bookingDetails && (
               <>
+                <Separator />
+
+                {/* Payment Form */}
+                <div className="space-y-4">
+                  <h4 className="font-medium flex items-center gap-2 text-sm md:text-base">
+                    <CreditCard className="h-4 w-4" />
+                    Payment Details
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="nameOnCard">Name on Card</Label>
+                      <Input
+                        id="nameOnCard"
+                        placeholder="John Doe"
+                        value={paymentDetails.nameOnCard}
+                        onChange={(e) =>
+                          setPaymentDetails((prev) => ({
+                            ...prev,
+                            nameOnCard: e.target.value,
+                          }))
+                        }
+                        className="bg-input border-border"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="cardNumber">Card Number</Label>
+                      <Input
+                        id="cardNumber"
+                        placeholder="1234 5678 9012 3456"
+                        value={paymentDetails.cardNumber}
+                        onChange={(e) =>
+                          setPaymentDetails((prev) => ({
+                            ...prev,
+                            cardNumber: e.target.value,
+                          }))
+                        }
+                        className="bg-input border-border"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="expiry">Expiry</Label>
+                        <Input
+                          id="expiry"
+                          placeholder="MM/YY"
+                          value={paymentDetails.expiry}
+                          onChange={(e) =>
+                            setPaymentDetails((prev) => ({
+                              ...prev,
+                              expiry: e.target.value,
+                            }))
+                          }
+                          className="bg-input border-border"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cvv">CVV</Label>
+                        <Input
+                          id="cvv"
+                          placeholder="123"
+                          value={paymentDetails.cvv}
+                          onChange={(e) =>
+                            setPaymentDetails((prev) => ({
+                              ...prev,
+                              cvv: e.target.value,
+                            }))
+                          }
+                          className="bg-input border-border"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Notice */}
+                  <div className="flex items-start gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
+                    <Lock className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-medium text-foreground">
+                        Secure Payment
+                      </p>
+                      <p>Your payment information is encrypted and secure.</p>
+                    </div>
+                  </div>
+                </div>
+
                 <Button
-                  className="w-full cinema-glow"
+                  className="w-full bg-red-600 hover:bg-red-700 text-white"
                   onClick={handleCompleteBooking}
                   disabled={!isPaymentValid || isProcessing}
                 >
@@ -485,17 +602,28 @@ export function BookingSummary({
                       Processing Payment...
                     </div>
                   ) : (
-                    `Complete Booking - $${total.toFixed(2)}`
+                    `Pay ₹${(bookingDetails?.total_price || total).toFixed(0)}`
                   )}
                 </Button>
+
                 <Button
                   variant="outline"
                   className="w-full bg-transparent"
-                  onClick={handleBack}
-                  disabled={isProcessing}
+                  onClick={handleCancelTransaction}
                 >
-                  Back to Details
+                  Cancel Transaction
                 </Button>
+
+                {/* Back button for payment step - shows cancel popup */}
+                {onBack && (
+                  <Button
+                    variant="outline"
+                    className="w-full bg-transparent"
+                    onClick={handleCancelTransaction}
+                  >
+                    Back to Seat Selection
+                  </Button>
+                )}
               </>
             )}
 
@@ -507,7 +635,7 @@ export function BookingSummary({
           </div>
 
           {/* Terms Notice */}
-          {step === "payment" && (
+          {bookingDetails && (
             <div className="text-xs text-muted-foreground text-center pt-2">
               By completing this booking, you agree to our{" "}
               <a href="#" className="text-primary hover:underline">
@@ -529,6 +657,25 @@ export function BookingSummary({
         onContinue={handleCustomerDetailsSubmit}
         showData={showData}
         selectedSeats={mockSelectedSeats}
+      />
+
+      {/* Terms & Conditions Popup */}
+      <TermsConditionsPopup
+        isOpen={showTermsPopup}
+        onClose={handleBackFromTerms}
+        onAccept={handleAcceptTerms}
+        movieTitle={showData.movie.title}
+        showTime={`${formatDate(showData.showtime.date)} ${showData.showtime.time}`}
+        venue={showData.venue.name}
+        totalAmount={total}
+      />
+
+      {/* Cancel Transaction Popup */}
+      <CancelTransactionPopup
+        isOpen={showCancelPopup}
+        onClose={handleCancelCancel}
+        onConfirm={handleConfirmCancel}
+        onCancel={handleCancelCancel}
       />
     </div>
   );

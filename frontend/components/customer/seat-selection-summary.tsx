@@ -47,6 +47,7 @@ interface SeatSelectionSummaryProps {
     row: string;
     seat: number;
     type: "premium" | "regular";
+    price?: number; // Individual seat price
   }>;
   selectedQuantity: number;
   onPayNow: () => void;
@@ -59,11 +60,12 @@ export function SeatSelectionSummary({
   onPayNow,
 }: SeatSelectionSummaryProps) {
   const subtotal = selectedSeats.reduce((total, seat) => {
-    return total + showData.showtime.pricing[seat.type];
+    // Use individual seat price if available, fallback to category pricing
+    const seatPrice = seat.price || showData.showtime.pricing[seat.type];
+    return total + seatPrice;
   }, 0);
 
-  const convenienceFee = 2.5;
-  const total = subtotal + convenienceFee;
+  const total = subtotal;
 
   return (
     <Card className="bg-card border-border">

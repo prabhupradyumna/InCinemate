@@ -12,6 +12,7 @@ import { defineShow } from './Show.js'
 import { defineBooking } from './Booking.js'
 import { defineBookedSeat } from './BookedSeat.js'
 import { defineCoupon } from './Coupon.js'
+import { defineSeatPricing } from './SeatPricing.js'
 
 export function setupAssociations(sequelize) {
   // Define all models
@@ -29,6 +30,7 @@ export function setupAssociations(sequelize) {
   const Booking = defineBooking(sequelize)
   const BookedSeat = defineBookedSeat(sequelize)
   const Coupon = defineCoupon(sequelize)
+  const SeatPricing = defineSeatPricing(sequelize)
 
   // User & Tenant associations
   Tenant.hasMany(User, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
@@ -65,6 +67,14 @@ export function setupAssociations(sequelize) {
   // Auditorium & Seat associations
   Auditorium.hasMany(Seat, { foreignKey: 'auditorium_id' })
   Seat.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+
+  // SeatPricing associations
+  Seat.hasMany(SeatPricing, { foreignKey: 'seat_id' })
+  SeatPricing.belongsTo(Seat, { foreignKey: 'seat_id' })
+  Auditorium.hasMany(SeatPricing, { foreignKey: 'auditorium_id' })
+  SeatPricing.belongsTo(Auditorium, { foreignKey: 'auditorium_id' })
+  Show.hasMany(SeatPricing, { foreignKey: 'show_id' })
+  SeatPricing.belongsTo(Show, { foreignKey: 'show_id' })
 
   // Auditorium Request associations
   Tenant.hasMany(AuditoriumRequest, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
@@ -130,6 +140,7 @@ export function setupAssociations(sequelize) {
     Show,
     Booking,
     BookedSeat,
-    Coupon
+    Coupon,
+    SeatPricing
   }
 }

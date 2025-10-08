@@ -80,6 +80,51 @@ export async function getAuditoriumSeats(auditoriumId: string) {
   return res.data?.data || [];
 }
 
+// Seat pricing APIs
+export async function bulkUpdateBaseSeatPricing(
+  auditoriumId: string,
+  payload: {
+    filters?: { categories?: string[]; rows?: string[]; seat_ids?: string[] };
+    price: number;
+    is_dynamic?: boolean;
+    effective_from?: string | null;
+    effective_to?: string | null;
+  }
+) {
+  const res = await api.put(
+    `/superadmin/auditoriums/${auditoriumId}/seat-pricing/base`,
+    payload
+  );
+  return res.data;
+}
+
+export async function getAuditoriumPricingPreview(
+  auditoriumId: string,
+  params?: { show_id?: string }
+) {
+  const res = await api.get(
+    `/superadmin/auditoriums/${auditoriumId}/seat-pricing/preview`,
+    { params }
+  );
+  return res.data?.data;
+}
+
+export async function bulkUpdateShowSeatPricing(
+  showId: string,
+  payload: {
+    seat_pricing: Array<{
+      seat_id: string;
+      price: number;
+    }>;
+  }
+) {
+  const res = await api.put(
+    `/superadmin/shows/${showId}/seat-pricing`,
+    payload
+  );
+  return res.data;
+}
+
 export async function updateAuditoriumConfiguration(
   auditoriumId: string,
   payload: {
@@ -184,70 +229,76 @@ export async function createTenant(payload: {
 export interface MovieDTO {
   id: string;
   title: string;
-  
+
   // Media Assets
   poster_url?: string;
   backdrop_url?: string;
   trailer_url?: string;
   additional_trailers?: string[];
   photo_gallery?: string[];
-  
+
   // Content Details
   synopsis?: string;
   short_description?: string;
   tagline?: string;
   genres?: string[];
   sub_genres?: string[];
-  
+
   // Basic Info
   duration_minutes?: number;
   release_date?: string;
   rating?: string;
   cbfc_certificate?: string;
   content_advisories?: string[];
-  
+
   // Languages & Formats
   languages: string[];
   subtitle_languages?: string[];
   formats: string[];
   countries?: string[];
-  
+
   // External Ratings
   imdb_rating?: number;
   rotten_tomatoes?: number;
   metacritic_score?: number;
-  
+
   // Production
   production_houses?: string[];
   distributors?: string[];
   budget?: number;
-  
+
   // Technical
   aspect_ratio?: string;
   sound_mix?: string[];
   camera_used?: string;
-  
+
   // Music
   has_songs?: boolean;
   song_count?: number;
-  
+
   // Booking & Status
-  platform_status: 'coming_soon' | 'advance_booking' | 'now_showing' | 'running_successfully' | 'closing_soon' | 'ended';
+  platform_status:
+    | "coming_soon"
+    | "advance_booking"
+    | "now_showing"
+    | "running_successfully"
+    | "closing_soon"
+    | "ended";
   booking_opens_at?: string;
   booking_closes_at?: string;
   is_re_release?: boolean;
-  
+
   // Pricing
   suggested_base_price_min?: number;
   suggested_base_price_max?: number;
   premium_multiplier?: number;
-  
+
   // SEO & Marketing
   meta_title?: string;
   meta_description?: string;
   keywords?: string[];
   social_hashtags?: string[];
-  
+
   // Features
   is_featured?: boolean;
   is_trending?: boolean;
@@ -255,25 +306,25 @@ export interface MovieDTO {
   banner_position?: number;
   campaign_start_date?: string;
   campaign_end_date?: string;
-  
+
   // Additional Info
   things_to_know?: string[];
   is_part_of_series?: boolean;
   series_name?: string;
   series_order?: number;
-  
+
   // Analytics
   total_bookings?: number;
   average_user_rating?: number;
   total_ratings?: number;
   total_reviews?: number;
-  
+
   // Administrative
   // approval_status: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
   approved_by?: string;
   approved_at?: string;
   internal_notes?: string;
-  
+
   // Core
   tenant_id: string;
   city?: string;
@@ -281,11 +332,11 @@ export interface MovieDTO {
   status?: boolean; // Alias for is_active
   createdAt: string;
   updatedAt: string;
-  
+
   // Convenience properties
   duration?: number; // Alias for duration_minutes
   certificate_rating?: string; // Alias for cbfc_certificate
-  
+
   // Related entities (when included)
   cast?: MovieCastDTO[];
   crew?: MovieCrewDTO[];
@@ -298,69 +349,75 @@ export interface CreateMoviePayload {
   title: string;
   tenant_id: string;
   city?: string;
-  
+
   // Media Assets
   poster_url?: string;
   backdrop_url?: string;
   trailer_url?: string;
   additional_trailers?: string[];
   photo_gallery?: string[];
-  
+
   // Content Details
   synopsis?: string;
   short_description?: string;
   tagline?: string;
   genres?: string[];
   sub_genres?: string[];
-  
+
   // Basic Info
   duration_minutes?: number;
   release_date?: string;
   rating?: string;
   cbfc_certificate?: string;
   content_advisories?: string[];
-  
+
   // Languages & Formats
   languages?: string[];
   subtitle_languages?: string[];
   formats?: string[];
-  
+
   // External Ratings
   imdb_rating?: number;
   rotten_tomatoes?: number;
   metacritic_score?: number;
-  
+
   // Production
   production_houses?: string[];
   distributors?: string[];
   budget?: number;
-  
+
   // Technical
   aspect_ratio?: string;
   sound_mix?: string[];
   camera_used?: string;
-  
+
   // Music
   has_songs?: boolean;
   song_count?: number;
-  
+
   // Booking & Status
-  platform_status?: 'coming_soon' | 'advance_booking' | 'now_showing' | 'running_successfully' | 'closing_soon' | 'ended';
+  platform_status?:
+    | "coming_soon"
+    | "advance_booking"
+    | "now_showing"
+    | "running_successfully"
+    | "closing_soon"
+    | "ended";
   booking_opens_at?: string;
   booking_closes_at?: string;
   is_re_release?: boolean;
-  
+
   // Pricing
   suggested_base_price_min?: number;
   suggested_base_price_max?: number;
   premium_multiplier?: number;
-  
+
   // SEO & Marketing
   meta_title?: string;
   meta_description?: string;
   keywords?: string[];
   social_hashtags?: string[];
-  
+
   // Features
   is_featured?: boolean;
   is_trending?: boolean;
@@ -368,13 +425,13 @@ export interface CreateMoviePayload {
   banner_position?: number;
   campaign_start_date?: string;
   campaign_end_date?: string;
-  
+
   // Additional Info
   things_to_know?: string[];
   is_part_of_series?: boolean;
   series_name?: string;
   series_order?: number;
-  
+
   // Administrative
   // approval_status?: 'draft' | 'pending_review' | 'approved' | 'published' | 'archived';
   internal_notes?: string;
@@ -425,12 +482,25 @@ export interface MovieCastDTO {
   actor_id: string;
   character_name: string;
   character_description?: string;
-  role_type: 'lead' | 'supporting' | 'special_appearance' | 'cameo' | 'voice' | 'narrator';
+  role_type:
+    | "lead"
+    | "supporting"
+    | "special_appearance"
+    | "cameo"
+    | "voice"
+    | "narrator";
   display_order: number;
   is_featured: boolean;
   screen_time_minutes?: number;
   character_image_url?: string;
-  character_type?: 'protagonist' | 'antagonist' | 'supporting' | 'comic_relief' | 'love_interest' | 'mentor' | 'other';
+  character_type?:
+    | "protagonist"
+    | "antagonist"
+    | "supporting"
+    | "comic_relief"
+    | "love_interest"
+    | "mentor"
+    | "other";
   created_by?: string;
   actor?: ActorDTO;
   createdAt: string;
@@ -441,7 +511,14 @@ export interface MovieCrewDTO {
   id: string;
   movie_id: string;
   person_id: string;
-  role_category: 'direction' | 'writing' | 'production' | 'music' | 'technical' | 'art' | 'other';
+  role_category:
+    | "direction"
+    | "writing"
+    | "production"
+    | "music"
+    | "technical"
+    | "art"
+    | "other";
   role_title: string;
   custom_credit_text?: string;
   is_primary: boolean;
@@ -457,7 +534,7 @@ export interface MovieCrewDTO {
 export interface MovieReviewDTO {
   id: string;
   movie_id: string;
-  review_type: 'critic' | 'editorial' | 'user_featured';
+  review_type: "critic" | "editorial" | "user_featured";
   reviewer_name: string;
   reviewer_title?: string;
   publication?: string;
@@ -474,10 +551,10 @@ export interface MovieReviewDTO {
   is_featured: boolean;
   is_verified: boolean;
   display_order: number;
-  sentiment?: 'positive' | 'mixed' | 'negative';
+  sentiment?: "positive" | "mixed" | "negative";
   likes_count: number;
   helpful_count: number;
-  status: 'pending' | 'approved' | 'rejected' | 'archived';
+  status: "pending" | "approved" | "rejected" | "archived";
   created_by?: string;
   approved_by?: string;
   approved_at?: string;
@@ -499,7 +576,15 @@ export interface MovieSongDTO {
   video_url?: string;
   lyrics_url?: string;
   language: string;
-  song_type?: 'title_track' | 'romantic' | 'dance' | 'sad' | 'devotional' | 'item_number' | 'background' | 'other';
+  song_type?:
+    | "title_track"
+    | "romantic"
+    | "dance"
+    | "sad"
+    | "devotional"
+    | "item_number"
+    | "background"
+    | "other";
   is_featured: boolean;
   play_count: number;
   likes_count: number;
@@ -536,17 +621,37 @@ export interface AddMovieCastPayload {
   actor_id: string;
   character_name: string;
   character_description?: string;
-  role_type: 'lead' | 'supporting' | 'special_appearance' | 'cameo' | 'voice' | 'narrator';
+  role_type:
+    | "lead"
+    | "supporting"
+    | "special_appearance"
+    | "cameo"
+    | "voice"
+    | "narrator";
   display_order?: number;
   is_featured?: boolean;
   screen_time_minutes?: number;
   character_image_url?: string;
-  character_type?: 'protagonist' | 'antagonist' | 'supporting' | 'comic_relief' | 'love_interest' | 'mentor' | 'other';
+  character_type?:
+    | "protagonist"
+    | "antagonist"
+    | "supporting"
+    | "comic_relief"
+    | "love_interest"
+    | "mentor"
+    | "other";
 }
 
 export interface AddMovieCrewPayload {
   person_id: string;
-  role_category: 'direction' | 'writing' | 'production' | 'music' | 'technical' | 'art' | 'other';
+  role_category:
+    | "direction"
+    | "writing"
+    | "production"
+    | "music"
+    | "technical"
+    | "art"
+    | "other";
   role_title: string;
   custom_credit_text?: string;
   is_primary?: boolean;
@@ -556,7 +661,7 @@ export interface AddMovieCrewPayload {
 }
 
 export interface AddMovieReviewPayload {
-  review_type: 'critic' | 'editorial' | 'user_featured';
+  review_type: "critic" | "editorial" | "user_featured";
   reviewer_name: string;
   reviewer_title?: string;
   publication?: string;
@@ -571,34 +676,47 @@ export interface AddMovieReviewPayload {
   review_date?: string;
   language?: string;
   is_featured?: boolean;
-  sentiment?: 'positive' | 'mixed' | 'negative';
+  sentiment?: "positive" | "mixed" | "negative";
 }
 
 // Enhanced Movie API Functions
-export async function listMovies(params?: { 
-  page?: number; 
-  limit?: number; 
-  status?: 'active' | 'inactive';
+export async function listMovies(params?: {
+  page?: number;
+  limit?: number;
+  status?: "active" | "inactive";
   search?: string;
   genre?: string;
   language?: string;
   platform_status?: string;
   tenant_id?: string;
-  sort_by?: 'title' | 'release_date' | 'total_bookings' | 'average_user_rating' | 'created_at';
-  sort_order?: 'ASC' | 'DESC';
+  sort_by?:
+    | "title"
+    | "release_date"
+    | "total_bookings"
+    | "average_user_rating"
+    | "created_at";
+  sort_order?: "ASC" | "DESC";
   include_relations?: boolean;
-}): Promise<{ 
-  data: MovieDTO[]; 
-  pagination: { total: number; page: number; limit: number; totalPages: number };
+}): Promise<{
+  data: MovieDTO[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   filters?: any;
 }> {
-  const res = await api.get('/superadmin/movies', { params });
+  const res = await api.get("/superadmin/movies", { params });
   return res.data;
 }
 
-export async function getMovie(id: string, include_relations = true): Promise<MovieDTO> {
-  const res = await api.get(`/superadmin/movies/${id}`, { 
-    params: { include_relations } 
+export async function getMovie(
+  id: string,
+  include_relations = true
+): Promise<MovieDTO> {
+  const res = await api.get(`/superadmin/movies/${id}`, {
+    params: { include_relations },
   });
   const movie: MovieDTO = res.data?.data;
   // Normalize backend relation keys to legacy keys used throughout the frontend
@@ -613,12 +731,17 @@ export async function getMovie(id: string, include_relations = true): Promise<Mo
   return movie;
 }
 
-export async function createMovie(payload: CreateMoviePayload): Promise<MovieDTO> {
-  const res = await api.post('/superadmin/movies', payload);
+export async function createMovie(
+  payload: CreateMoviePayload
+): Promise<MovieDTO> {
+  const res = await api.post("/superadmin/movies", payload);
   return res.data?.data;
 }
 
-export async function updateMovie(id: string, payload: Partial<CreateMoviePayload>): Promise<MovieDTO> {
+export async function updateMovie(
+  id: string,
+  payload: Partial<CreateMoviePayload>
+): Promise<MovieDTO> {
   const res = await api.put(`/superadmin/movies/${id}`, payload);
   return res.data?.data;
 }
@@ -632,87 +755,133 @@ export async function bulkUpdateMovieStatus(payload: {
   status?: boolean;
   platform_status?: string;
 }): Promise<{ updatedCount: number }> {
-  const res = await api.patch('/superadmin/movies/bulk-update', payload);
+  const res = await api.patch("/superadmin/movies/bulk-update", payload);
   return res.data?.data;
 }
 
 // Movie Cast API Functions
-export async function addMovieCast(movieId: string, payload: AddMovieCastPayload): Promise<MovieCastDTO> {
+export async function addMovieCast(
+  movieId: string,
+  payload: AddMovieCastPayload
+): Promise<MovieCastDTO> {
   const res = await api.post(`/superadmin/movies/${movieId}/cast`, payload);
   return res.data?.data;
 }
 
-export async function removeMovieCast(movieId: string, castId: string): Promise<void> {
+export async function removeMovieCast(
+  movieId: string,
+  castId: string
+): Promise<void> {
   await api.delete(`/superadmin/movies/${movieId}/cast/${castId}`);
 }
 
-export async function updateMovieCast(movieId: string, castId: string, payload: Partial<AddMovieCastPayload>): Promise<MovieCastDTO> {
-  const res = await api.put(`/superadmin/movies/${movieId}/cast/${castId}`, payload);
+export async function updateMovieCast(
+  movieId: string,
+  castId: string,
+  payload: Partial<AddMovieCastPayload>
+): Promise<MovieCastDTO> {
+  const res = await api.put(
+    `/superadmin/movies/${movieId}/cast/${castId}`,
+    payload
+  );
   return res.data?.data;
 }
 
 // Movie Crew API Functions
-export async function addMovieCrew(movieId: string, payload: AddMovieCrewPayload): Promise<MovieCrewDTO> {
+export async function addMovieCrew(
+  movieId: string,
+  payload: AddMovieCrewPayload
+): Promise<MovieCrewDTO> {
   const res = await api.post(`/superadmin/movies/${movieId}/crew`, payload);
   return res.data?.data;
 }
 
-export async function removeMovieCrew(movieId: string, crewId: string): Promise<void> {
+export async function removeMovieCrew(
+  movieId: string,
+  crewId: string
+): Promise<void> {
   await api.delete(`/superadmin/movies/${movieId}/crew/${crewId}`);
 }
 
-export async function updateMovieCrew(movieId: string, crewId: string, payload: Partial<AddMovieCrewPayload>): Promise<MovieCrewDTO> {
-  const res = await api.put(`/superadmin/movies/${movieId}/crew/${crewId}`, payload);
+export async function updateMovieCrew(
+  movieId: string,
+  crewId: string,
+  payload: Partial<AddMovieCrewPayload>
+): Promise<MovieCrewDTO> {
+  const res = await api.put(
+    `/superadmin/movies/${movieId}/crew/${crewId}`,
+    payload
+  );
   return res.data?.data;
 }
 
 // Movie Reviews API Functions
-export async function addMovieReview(movieId: string, payload: AddMovieReviewPayload): Promise<MovieReviewDTO> {
+export async function addMovieReview(
+  movieId: string,
+  payload: AddMovieReviewPayload
+): Promise<MovieReviewDTO> {
   const res = await api.post(`/superadmin/movies/${movieId}/reviews`, payload);
   return res.data?.data;
 }
 
 // Actor Management API Functions
-export async function listActors(params?: { 
-  page?: number; 
-  limit?: number; 
-  search?: string; 
+export async function listActors(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
   nationality?: string;
   verified?: boolean;
-}): Promise<{ 
-  data: ActorDTO[]; 
-  pagination: { total: number; page: number; limit: number; totalPages: number };
+}): Promise<{
+  data: ActorDTO[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> {
-  const res = await api.get('/superadmin/actors', { params });
+  const res = await api.get("/superadmin/actors", { params });
   return res.data;
 }
 
-export async function createActor(payload: CreateActorPayload): Promise<ActorDTO> {
-  const res = await api.post('/superadmin/actors', payload);
+export async function createActor(
+  payload: CreateActorPayload
+): Promise<ActorDTO> {
+  const res = await api.post("/superadmin/actors", payload);
   return res.data?.data;
 }
 
 // Crew Management API Functions
-export async function listCrewPersons(params?: { 
-  page?: number; 
-  limit?: number; 
-  search?: string; 
+export async function listCrewPersons(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
   specialty?: string;
   verified?: boolean;
-}): Promise<{ 
-  data: CrewPersonDTO[]; 
-  pagination: { total: number; page: number; limit: number; totalPages: number };
+}): Promise<{
+  data: CrewPersonDTO[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }> {
-  const res = await api.get('/superadmin/crew', { params });
+  const res = await api.get("/superadmin/crew", { params });
   return res.data;
 }
 
-export async function createCrewPerson(payload: CreateCrewPersonPayload): Promise<CrewPersonDTO> {
-  const res = await api.post('/superadmin/crew-persons', payload);
+export async function createCrewPerson(
+  payload: CreateCrewPersonPayload
+): Promise<CrewPersonDTO> {
+  const res = await api.post("/superadmin/crew-persons", payload);
   return res.data?.data;
 }
 
-export async function updateCrewPerson(id: string, payload: Partial<CreateCrewPersonPayload>): Promise<CrewPersonDTO> {
+export async function updateCrewPerson(
+  id: string,
+  payload: Partial<CreateCrewPersonPayload>
+): Promise<CrewPersonDTO> {
   const res = await api.put(`/superadmin/crew-persons/${id}`, payload);
   return res.data?.data;
 }
@@ -729,10 +898,11 @@ export async function createShow(payload: {
   auditorium_id: string;
   show_datetime: string;
   status: string;
-  pricing: any;
+  pricing?: any; // Made optional since pricing is now handled separately
 }) {
   const res = await api.post("/shows", payload);
-  return res.data?.data;
+  console.log("createShow response:", res.data);
+  return res.data; // Backend returns show directly, not wrapped in data
 }
 
 export async function deleteShow(showId: string) {
@@ -741,18 +911,22 @@ export async function deleteShow(showId: string) {
 }
 
 export async function getMoviesByTenant(tenantId: string) {
-  const res = await api.get(`/superadmin/movies`, { params: { tenant_id: tenantId } });
+  const res = await api.get(`/superadmin/movies`, {
+    params: { tenant_id: tenantId },
+  });
   return res.data?.data || [];
 }
 
 export async function getTheatresByTenant(tenantId: string) {
-  const res = await api.get(`/superadmin/theatres`, { params: { tenant_id: tenantId } });
+  const res = await api.get(`/superadmin/theatres`, {
+    params: { tenant_id: tenantId },
+  });
   return res.data?.data || [];
 }
 
 export async function getAuditoriumsByTheatre(theatreId: string) {
-  const res = await api.get(`/superadmin/auditoriums`, { params: { theatre_id: theatreId } });
+  const res = await api.get(`/superadmin/auditoriums`, {
+    params: { theatre_id: theatreId },
+  });
   return res.data?.data || [];
 }
-
-

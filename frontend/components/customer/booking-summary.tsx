@@ -349,8 +349,7 @@ export function BookingSummary({
       setIsProcessing(false);
     }
   };
-
-cd.  const handleCompleteBooking = async () => {
+  const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
     setIsProcessing(true);
     try {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShowtimeSelector } from "@/components/customer/showtime-selector";
 import { Button } from "@/components/ui/button";
+import MobileMovieDetailPage from "./mobile-page";
 import {
   Star,
   Clock,
@@ -18,6 +19,26 @@ import {
 import { getMovieDetails } from "@/lib/public";
 
 export default function MovieDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  return (
+    <>
+      {/* Mobile Layout */}
+      <div className="md:hidden">
+        <MobileMovieDetailPage params={params} />
+      </div>
+      
+      {/* Desktop Layout */}
+      <div className="hidden md:block">
+        <DesktopMovieDetailPage params={params} />
+      </div>
+    </>
+  );
+}
+
+function DesktopMovieDetailPage({
   params,
 }: {
   params: { id: string };

@@ -89,6 +89,39 @@ export function defineBooking(sequelize) {
         allowNull: true,
         comment: 'Payment method used (card, upi, netbanking, etc.)'
       },
+      payment_status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'PENDING',
+        validate: {
+          isIn: [['PENDING', 'SUCCESS', 'FAILED', 'CANCELLED']]
+        },
+        comment: 'Payment status from gateway'
+      },
+      booking_status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'PENDING',
+        validate: {
+          isIn: [['PENDING', 'CONFIRMED', 'CANCELLED', 'REFUNDED']]
+        },
+        comment: 'Booking status'
+      },
+      merchant_order_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        comment: 'PhonePe merchant order ID'
+      },
+      payment_response: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        comment: 'Payment gateway response data'
+      },
+      payment_completed_at: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Payment completion timestamp'
+      },
       status: {
         type: DataTypes.ENUM('pending', 'paid', 'cancelled', 'refunded'),
         allowNull: false,
@@ -132,6 +165,9 @@ export function defineBooking(sequelize) {
         },
         {
           fields: ['payment_id']
+        },
+        {
+          fields: ['merchant_order_id']
         }
       ]
     },

@@ -110,16 +110,6 @@ export function MovieBrowser() {
     setSelectedGenre(genre)
   }
 
-  // Filter movies by platform status
-  const nowShowing = allMovies.filter(m => 
-    m.platform_status === 'now_showing' || m.platform_status === 'running_successfully'
-  ).slice(0, 10)
-  
-  const comingSoon = allMovies.filter(m => 
-    m.platform_status === 'coming_soon' || m.platform_status === 'advance_booking'
-  ).slice(0, 10)
-  
-  const trending = allMovies.filter(m => m.is_trending === true).slice(0, 10)
 
   // Loading state
   if (loading) {
@@ -184,15 +174,10 @@ export function MovieBrowser() {
 
       {/* Now Showing */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl md:text-2xl font-semibold">Now Showing</h2>
-          <Link href="/movies?status=now_showing" className="text-sm text-primary hover:underline">
-            View All ({nowShowing.length})
-          </Link>
-        </div>
-        {nowShowing.length > 0 ? (
+        <h2 className="text-xl md:text-2xl font-semibold">Now Showing</h2>
+        {allMovies.length > 0 ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
-            {nowShowing.map((movie) => (
+            {allMovies.map((movie) => (
               <MovieCard 
                 key={movie.id} 
                 movie={{ 
@@ -208,114 +193,11 @@ export function MovieBrowser() {
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <p>No movies currently showing in {selectedCity}</p>
+            <p>No movies currently showing</p>
           </div>
         )}
       </section>
 
-      {/* Coming Soon */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl md:text-2xl font-semibold">Coming Soon</h2>
-          <Link href="/movies?status=coming_soon" className="text-sm text-primary hover:underline">
-            View All ({comingSoon.length})
-          </Link>
-        </div>
-        {comingSoon.length > 0 ? (
-          <div className="-mx-4 px-4 overflow-x-auto scrollbar-none">
-            <div className="grid grid-flow-col auto-cols-[120px] sm:auto-cols-[140px] md:auto-cols-[180px] gap-3 md:gap-4">
-              {comingSoon.map((movie) => (
-                <MovieCard 
-                  key={`upcoming-${movie.id}`} 
-                  movie={{ 
-                    id: movie.id, 
-                    title: movie.title, 
-                    posterUrl: movie.poster_url || '/placeholder-movie.jpg',
-                    genres: movie.genres,
-                    rating: movie.rating,
-                    duration: movie.duration_minutes
-                  }} 
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No upcoming movies found for {selectedCity}</p>
-          </div>
-        )}
-      </section>
-
-      {/* Trending */}
-      {trending.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-semibold">Trending Now</h2>
-            <Link href="/movies?trending=true" className="text-sm text-primary hover:underline">
-              View All ({trending.length})
-            </Link>
-          </div>
-          <div className="-mx-4 px-4 overflow-x-auto scrollbar-none">
-            <div className="grid grid-flow-col auto-cols-[120px] sm:auto-cols-[140px] md:auto-cols-[180px] gap-3 md:gap-4">
-              {trending.map((movie) => (
-                <MovieCard 
-                  key={`trending-${movie.id}`} 
-                  movie={{ 
-                    id: movie.id, 
-                    title: movie.title, 
-                    posterUrl: movie.poster_url || '/placeholder-movie.jpg',
-                    genres: movie.genres,
-                    rating: movie.rating,
-                    duration: movie.duration_minutes
-                  }} 
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* All Movies */}
-      {allMovies.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-semibold">
-              All Movies in {selectedCity}
-              {selectedGenre !== "All" && ` - ${selectedGenre}`}
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
-            {allMovies.map((movie) => (
-              <MovieCard 
-                key={`all-${movie.id}`} 
-                movie={{ 
-                  id: movie.id, 
-                  title: movie.title, 
-                  posterUrl: movie.poster_url || '/placeholder-movie.jpg',
-                  genres: movie.genres,
-                  rating: movie.rating,
-                  duration: movie.duration_minutes
-                }} 
-              />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Load More / Pagination */}
-      {allMovies.length >= 20 && (
-        <div className="text-center pt-8">
-          <Button variant="outline" size="lg" onClick={() => {
-            // TODO: Implement pagination
-            toast({
-              title: "Coming Soon",
-              description: "Pagination feature will be added soon",
-            })
-          }}>
-            Load More Movies
-          </Button>
-        </div>
-      )}
 
       {/* Empty State */}
       {!loading && allMovies.length === 0 && (

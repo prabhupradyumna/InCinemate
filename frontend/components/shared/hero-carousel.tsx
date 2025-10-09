@@ -39,10 +39,10 @@ export function HeroCarousel({ movies }: HeroCarouselProps) {
     <div className="w-full h-[300px] sm:h-[400px] md:h-[500px]">
       <Swiper
         modules={[Autoplay, Pagination, Navigation, EffectFade]}
-        autoplay={{ delay: 3000, disableOnInteraction: false }}
-        loop
+        autoplay={slides.length > 1 ? { delay: 3000, disableOnInteraction: false } : false}
+        loop={slides.length > 1}
         pagination={{ clickable: true }}
-        navigation={true}
+        navigation={slides.length > 1}
         effect="fade"
         className="w-full h-full"
      >

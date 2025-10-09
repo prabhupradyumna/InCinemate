@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/utils";
 import { CustomerDetailsModal } from "@/components/customer/customer-details-modal";
 import { TermsConditionsPopup } from "@/components/customer/terms-conditions-popup";
 import { CancelTransactionPopup } from "@/components/customer/cancel-transaction-popup";
+import { PaymentGatewayModal } from "@/components/customer/payment-gateway-modal";
 
 interface ShowData {
   movie: {
@@ -93,12 +94,14 @@ export function BookingSummary({
   const [showTermsPopup, setShowTermsPopup] = useState(false);
   const [showCancelPopup, setShowCancelPopup] = useState(false);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showPaymentGatewayModal, setShowPaymentGatewayModal] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
   );
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
+  const [selectedPaymentGateway, setSelectedPaymentGateway] = useState<string>("");
 
   const [customerDetails, setCustomerDetails] = useState({
     fullName: (user as any)?.fullName || (user as any)?.full_name || "",
@@ -198,6 +201,8 @@ export function BookingSummary({
     if (user) {
       // User is logged in, proceed to hold seats
       await holdSeats();
+      // After seats are held, show payment gateway selection
+      setShowPaymentGatewayModal(true);
     } else {
       // User not logged in, show existing customer modal for OTP auth
       setShowCustomerModal(true);
@@ -216,6 +221,8 @@ export function BookingSummary({
     try {
       await refresh();
       await holdSeats();
+      // After seats are held, show payment gateway selection
+      setShowPaymentGatewayModal(true);
     } catch (error) {
       console.error("Failed to refresh auth state:", error);
     }
@@ -223,6 +230,22 @@ export function BookingSummary({
 
   const handleBackFromTerms = () => {
     setShowTermsPopup(false);
+  };
+
+  const handlePaymentGatewaySelect = (gateway: string) => {
+    setSelectedPaymentGateway(gateway);
+  };
+
+  const handleProceedToPayment = () => {
+    if (!selectedPaymentGateway) return;
+    
+    setShowPaymentGatewayModal(false);
+    // Proceed to PhonePe payment
+    handlePhonePePayment();
+  };
+
+  const handleBackFromPaymentGateway = () => {
+    setShowPaymentGatewayModal(false);
   };
 
   const handleCancelTransaction = () => {
@@ -300,7 +323,34 @@ export function BookingSummary({
     }
   };
 
-  const handleCompleteBooking = async () => {
+  const handlePhonePePayment = async () => {
+    if (!bookingDetails) return;
+    setIsProcessing(true);
+    
+    try {
+      const { initiatePayment } = await import("@/lib/api");
+      
+      const response = await initiatePayment({
+        booking_id: bookingDetails.booking_id,
+        amount: bookingDetails.total_price || total
+      });
+
+      if (response.success && response.data.paymentUrl) {
+        // Redirect to PhonePe payment page
+        console.log('Redirecting to PhonePe:', response.data.paymentUrl);
+        window.location.href = response.data.paymentUrl;
+      } else {
+        throw new Error(response.error || 'Payment initiation failed');
+      }
+    } catch (e: any) {
+      setBookingError(
+        e?.response?.data?.error || e?.message || "Payment failed"
+      );
+      setIsProcessing(false);
+    }
+  };
+
+cd.  const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
     setIsProcessing(true);
     try {
@@ -503,81 +553,39 @@ export function BookingSummary({
               </>
             )}
 
-            {/* Show payment form when seats are held */}
+            {/* Show payment processing when seats are held */}
             {bookingDetails && (
               <>
                 <Separator />
 
-                {/* Payment Form */}
+                {/* Payment Processing */}
                 <div className="space-y-4">
                   <h4 className="font-medium flex items-center gap-2 text-sm md:text-base">
                     <CreditCard className="h-4 w-4" />
-                    Payment Details
+                    Payment Processing
                   </h4>
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="nameOnCard">Name on Card</Label>
-                      <Input
-                        id="nameOnCard"
-                        placeholder="John Doe"
-                        value={paymentDetails.nameOnCard}
-                        onChange={(e) =>
-                          setPaymentDetails((prev) => ({
-                            ...prev,
-                            nameOnCard: e.target.value,
-                          }))
-                        }
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <Input
-                        id="cardNumber"
-                        placeholder="1234 5678 9012 3456"
-                        value={paymentDetails.cardNumber}
-                        onChange={(e) =>
-                          setPaymentDetails((prev) => ({
-                            ...prev,
-                            cardNumber: e.target.value,
-                          }))
-                        }
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry</Label>
-                        <Input
-                          id="expiry"
-                          placeholder="MM/YY"
-                          value={paymentDetails.expiry}
-                          onChange={(e) =>
-                            setPaymentDetails((prev) => ({
-                              ...prev,
-                              expiry: e.target.value,
-                            }))
-                          }
-                          className="bg-input border-border"
-                        />
+                  
+                  {isProcessing ? (
+                    <div className="text-center py-8">
+                      <div className="flex items-center justify-center gap-2 mb-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                        <span className="text-sm text-muted-foreground">Processing Payment...</span>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvv">CVV</Label>
-                        <Input
-                          id="cvv"
-                          placeholder="123"
-                          value={paymentDetails.cvv}
-                          onChange={(e) =>
-                            setPaymentDetails((prev) => ({
-                              ...prev,
-                              cvv: e.target.value,
-                            }))
-                          }
-                          className="bg-input border-border"
-                        />
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Please wait while we process your payment through PhonePe
+                      </p>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm rounded-lg p-4 mb-4">
+                        <p className="font-medium mb-1">Seats Reserved Successfully!</p>
+                        <p>Your seats have been held for 10 minutes</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-4">
+                        Payment gateway selection will appear automatically
+                      </p>
+                    </div>
+                  )}
 
                   {/* Security Notice */}
                   <div className="flex items-start gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
@@ -592,24 +600,10 @@ export function BookingSummary({
                 </div>
 
                 <Button
-                  className="w-full bg-red-600 hover:bg-red-700 text-white"
-                  onClick={handleCompleteBooking}
-                  disabled={!isPaymentValid || isProcessing}
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Processing Payment...
-                    </div>
-                  ) : (
-                    `Pay ₹${(bookingDetails?.total_price || total).toFixed(0)}`
-                  )}
-                </Button>
-
-                <Button
                   variant="outline"
                   className="w-full bg-transparent"
                   onClick={handleCancelTransaction}
+                  disabled={isProcessing}
                 >
                   Cancel Transaction
                 </Button>
@@ -620,6 +614,7 @@ export function BookingSummary({
                     variant="outline"
                     className="w-full bg-transparent"
                     onClick={handleCancelTransaction}
+                    disabled={isProcessing}
                   >
                     Back to Seat Selection
                   </Button>
@@ -676,6 +671,20 @@ export function BookingSummary({
         onClose={handleCancelCancel}
         onConfirm={handleConfirmCancel}
         onCancel={handleCancelCancel}
+      />
+
+      {/* Payment Gateway Modal */}
+      <PaymentGatewayModal
+        isOpen={showPaymentGatewayModal}
+        onClose={handleBackFromPaymentGateway}
+        onProceed={handleProceedToPayment}
+        onBack={handleBackFromPaymentGateway}
+        selectedGateway={selectedPaymentGateway}
+        onGatewaySelect={handlePaymentGatewaySelect}
+        totalAmount={bookingDetails?.total_price || total}
+        movieTitle={showData.movie.title}
+        showTime={`${formatDate(showData.showtime.date)} ${showData.showtime.time}`}
+        venue={showData.venue.name}
       />
     </div>
   );

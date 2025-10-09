@@ -35,3 +35,13 @@
 # MODEL_AUTO_SYNC=true
 # MODEL_CACHE=false
 # MODEL_REQUEST_SCOPED=true
+
+# PhonePe Payment Gateway Configuration
+# ====================================
+PHONEPE_CLIENT_ID=TEST-M23FQVLBOWM35_25100
+PHONEPE_CLIENT_SECRET=NjYyNzY1ZmYtNjQwNy00ZTg1LTg4ODktNzRjMTJhMzBhNjRl
+PHONEPE_CLIENT_VERSION=1
+# PHONEPE_REDIRECT_URL=http://localhost:3000/payment-success
+# PHONEPE_CALLBACK_URL=http://localhost:9000/api/payments/phonepe-callback
+# FRONTEND_URL=http://localhost:3000
+# BACKEND_URL=http://localhost:9000

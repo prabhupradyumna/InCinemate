@@ -224,4 +224,13 @@ export async function releaseSeatHold(payload: { booking_id: string }) {
   return http("POST", "/customer/bookings/release-hold", payload);
 }
 
+// Payment Gateway Functions
+export async function initiatePayment(payload: { booking_id: string; amount: number }) {
+  return http("POST", "/payments/initiate", payload);
+}
+
+export async function checkPaymentStatus(merchantOrderId: string) {
+  return http("GET", `/payments/status/${merchantOrderId}`);
+}
+
 export default api;

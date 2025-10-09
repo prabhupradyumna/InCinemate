@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSeatMap } from "@/lib/api";
 import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
+import { MobileLayout } from "@/components/customer/mobile-layout";
 import { BookingSummary } from "@/components/customer/booking-summary";
 import { Separator } from "@/components/ui/separator";
 import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
@@ -224,9 +225,13 @@ export default function BookingPage({
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
+    <MobileLayout showBottomNav={false}>
+      {/* Desktop Header */}
+      <div className="hidden md:block absolute top-0 left-0 right-0 z-50">
+        <Header />
+      </div>
+      
+      <div className="pt-16 md:pt-0">
         {loading ? (
           <div className="min-h-[300px] flex items-center justify-center text-muted-foreground">
             Loading movie...
@@ -282,7 +287,7 @@ export default function BookingPage({
             />
           </>
         )}
-      </main>
-    </div>
+      </div>
+    </MobileLayout>
   );
 }

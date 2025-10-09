@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MobileLayout } from "@/components/customer/mobile-layout";
 import { getCustomerProfile, updateCustomerProfile } from "@/lib/customer";
 
 export default function ProfilePage() {
@@ -59,52 +60,59 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <Card className="max-w-xl mx-auto">
-        <CardHeader>
-          <CardTitle>My Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : (
-            <form onSubmit={onSave} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">Full name</Label>
-                <Input
-                  id="full_name"
-                  value={form.full_name}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, full_name: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, email: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" value={form.phone} disabled readOnly />
-              </div>
-              {error ? <p className="text-sm text-red-500">{error}</p> : null}
-              {success ? (
-                <p className="text-sm text-green-600">{success}</p>
-              ) : null}
-              <Button type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <MobileLayout>
+      <div className="space-y-6">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">My Profile</h1>
+          <p className="text-muted-foreground">Manage your account settings</p>
+        </div>
+
+        <Card className="max-w-xl mx-auto">
+          <CardHeader>
+            <CardTitle>Profile Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : (
+              <form onSubmit={onSave} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full name</Label>
+                  <Input
+                    id="full_name"
+                    value={form.full_name}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, full_name: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, email: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" value={form.phone} disabled readOnly />
+                </div>
+                {error ? <p className="text-sm text-red-500">{error}</p> : null}
+                {success ? (
+                  <p className="text-sm text-green-600">{success}</p>
+                ) : null}
+                <Button type="submit" disabled={saving} className="w-full">
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MobileLayout>
   );
 }

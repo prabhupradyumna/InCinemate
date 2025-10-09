@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MobileLayout } from "@/components/customer/mobile-layout";
 import { getMyBookings } from "@/lib/customer";
 
 export default function OrdersPage() {
@@ -20,46 +21,72 @@ export default function OrdersPage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>My Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-sm text-muted-foreground">Loading...</p>
-          ) : orders.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No orders yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {orders.map((o: any) => (
-                <div
-                  key={o.id}
-                  className="border rounded-md p-3 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {o.Show?.Movie?.title || o.movie?.title || "Movie"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(
-                        o.Show?.show_datetime || o.show_datetime
-                      ).toLocaleString()}
-                    </p>
-                    <p className="text-xs">Status: {o.status}</p>
+    <MobileLayout>
+      <div className="space-y-4">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">My Bookings</h1>
+          <p className="text-muted-foreground">View your movie bookings</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Bookings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            ) : orders.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">No bookings yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  Book your first movie ticket to see it here!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {orders.map((o: any) => (
+                  <div
+                    key={o.id}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground mb-1">
+                          {o.Show?.Movie?.title || o.movie?.title || "Movie"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {new Date(
+                            o.Show?.show_datetime || o.show_datetime
+                          ).toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            o.status === 'confirmed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : o.status === 'cancelled'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {o.status}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            {o.seats?.length || 0} seats
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-foreground">
+                          ₹{o.total_price}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm">Total: ₹{o.total_price}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Seats: {o.seats?.length || "-"}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MobileLayout>
   );
 }

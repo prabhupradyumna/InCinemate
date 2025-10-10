@@ -6,7 +6,8 @@ export function Footer() {
           <div>
             <h4 className="text-foreground font-semibold mb-2">About</h4>
             <p>
-              ScreenLease is a demo movie ticketing interface inspired by modern cinema apps.
+              BooknWatch is a demo movie ticketing interface inspired by modern
+              cinema apps.
             </p>
           </div>
           <div>
@@ -31,10 +32,10 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="pt-6 text-xs">© {new Date().getFullYear()} ScreenLease</div>
+        <div className="pt-6 text-xs">
+          © {new Date().getFullYear()} BooknWatch
+        </div>
       </div>
     </footer>
-  )
+  );
 }
-
-

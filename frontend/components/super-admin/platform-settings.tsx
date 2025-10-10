@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DollarSign, Mail, Shield, Globe } from "lucide-react"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DollarSign, Mail, Shield, Globe } from "lucide-react";
 
 export function PlatformSettings() {
   const [platformSettings, setPlatformSettings] = useState({
-    platformName: "ScreenLease",
+    platformName: "BooknWatch",
     supportEmail: "support@screenlease.com",
     platformFee: 5.0,
     maxVenuesPerAdmin: 3,
     allowNewVenueRegistration: true,
     requireVenueApproval: true,
     maintenanceMode: false,
-  })
+  });
 
   const [emailSettings, setEmailSettings] = useState({
     smtpHost: "smtp.screenlease.com",
@@ -27,7 +27,7 @@ export function PlatformSettings() {
     enableBookingConfirmations: true,
     enableMarketingEmails: false,
     enableSystemNotifications: true,
-  })
+  });
 
   const [securitySettings, setSecuritySettings] = useState({
     requireTwoFactor: false,
@@ -35,26 +35,28 @@ export function PlatformSettings() {
     maxLoginAttempts: 5,
     passwordMinLength: 8,
     requirePasswordComplexity: true,
-  })
+  });
 
   const handleSavePlatformSettings = () => {
-    console.log("Saving platform settings:", platformSettings)
-  }
+    console.log("Saving platform settings:", platformSettings);
+  };
 
   const handleSaveEmailSettings = () => {
-    console.log("Saving email settings:", emailSettings)
-  }
+    console.log("Saving email settings:", emailSettings);
+  };
 
   const handleSaveSecuritySettings = () => {
-    console.log("Saving security settings:", securitySettings)
-  }
+    console.log("Saving security settings:", securitySettings);
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold">Platform Settings</h2>
-        <p className="text-muted-foreground">Configure global platform settings and policies</p>
+        <p className="text-muted-foreground">
+          Configure global platform settings and policies
+        </p>
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
@@ -100,7 +102,12 @@ export function PlatformSettings() {
                   <Input
                     id="platformName"
                     value={platformSettings.platformName}
-                    onChange={(e) => setPlatformSettings((prev) => ({ ...prev, platformName: e.target.value }))}
+                    onChange={(e) =>
+                      setPlatformSettings((prev) => ({
+                        ...prev,
+                        platformName: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -110,7 +117,12 @@ export function PlatformSettings() {
                     id="supportEmail"
                     type="email"
                     value={platformSettings.supportEmail}
-                    onChange={(e) => setPlatformSettings((prev) => ({ ...prev, supportEmail: e.target.value }))}
+                    onChange={(e) =>
+                      setPlatformSettings((prev) => ({
+                        ...prev,
+                        supportEmail: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -121,13 +133,20 @@ export function PlatformSettings() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                     <div className="space-y-1">
-                      <div className="font-medium">Allow New Venue Registration</div>
-                      <div className="text-sm text-muted-foreground">Allow new venues to register on the platform</div>
+                      <div className="font-medium">
+                        Allow New Venue Registration
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Allow new venues to register on the platform
+                      </div>
                     </div>
                     <Switch
                       checked={platformSettings.allowNewVenueRegistration}
                       onCheckedChange={(checked) =>
-                        setPlatformSettings((prev) => ({ ...prev, allowNewVenueRegistration: checked }))
+                        setPlatformSettings((prev) => ({
+                          ...prev,
+                          allowNewVenueRegistration: checked,
+                        }))
                       }
                     />
                   </div>
@@ -142,7 +161,10 @@ export function PlatformSettings() {
                     <Switch
                       checked={platformSettings.requireVenueApproval}
                       onCheckedChange={(checked) =>
-                        setPlatformSettings((prev) => ({ ...prev, requireVenueApproval: checked }))
+                        setPlatformSettings((prev) => ({
+                          ...prev,
+                          requireVenueApproval: checked,
+                        }))
                       }
                     />
                   </div>
@@ -157,14 +179,20 @@ export function PlatformSettings() {
                     <Switch
                       checked={platformSettings.maintenanceMode}
                       onCheckedChange={(checked) =>
-                        setPlatformSettings((prev) => ({ ...prev, maintenanceMode: checked }))
+                        setPlatformSettings((prev) => ({
+                          ...prev,
+                          maintenanceMode: checked,
+                        }))
                       }
                     />
                   </div>
                 </div>
               </div>
 
-              <Button onClick={handleSavePlatformSettings} className="cinema-glow">
+              <Button
+                onClick={handleSavePlatformSettings}
+                className="cinema-glow"
+              >
                 Save General Settings
               </Button>
             </CardContent>
@@ -189,11 +217,16 @@ export function PlatformSettings() {
                     step="0.1"
                     value={platformSettings.platformFee}
                     onChange={(e) =>
-                      setPlatformSettings((prev) => ({ ...prev, platformFee: Number.parseFloat(e.target.value) }))
+                      setPlatformSettings((prev) => ({
+                        ...prev,
+                        platformFee: Number.parseFloat(e.target.value),
+                      }))
                     }
                     className="bg-input border-border"
                   />
-                  <p className="text-xs text-muted-foreground">Percentage fee charged to venues per transaction</p>
+                  <p className="text-xs text-muted-foreground">
+                    Percentage fee charged to venues per transaction
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="maxVenues">Max Venues per Admin</Label>
@@ -202,15 +235,23 @@ export function PlatformSettings() {
                     type="number"
                     value={platformSettings.maxVenuesPerAdmin}
                     onChange={(e) =>
-                      setPlatformSettings((prev) => ({ ...prev, maxVenuesPerAdmin: Number.parseInt(e.target.value) }))
+                      setPlatformSettings((prev) => ({
+                        ...prev,
+                        maxVenuesPerAdmin: Number.parseInt(e.target.value),
+                      }))
                     }
                     className="bg-input border-border"
                   />
-                  <p className="text-xs text-muted-foreground">Maximum venues one admin can manage</p>
+                  <p className="text-xs text-muted-foreground">
+                    Maximum venues one admin can manage
+                  </p>
                 </div>
               </div>
 
-              <Button onClick={handleSavePlatformSettings} className="cinema-glow">
+              <Button
+                onClick={handleSavePlatformSettings}
+                className="cinema-glow"
+              >
                 Save Billing Settings
               </Button>
             </CardContent>
@@ -234,7 +275,12 @@ export function PlatformSettings() {
                     <Input
                       id="smtpHost"
                       value={emailSettings.smtpHost}
-                      onChange={(e) => setEmailSettings((prev) => ({ ...prev, smtpHost: e.target.value }))}
+                      onChange={(e) =>
+                        setEmailSettings((prev) => ({
+                          ...prev,
+                          smtpHost: e.target.value,
+                        }))
+                      }
                       className="bg-input border-border"
                     />
                   </div>
@@ -245,7 +291,10 @@ export function PlatformSettings() {
                       type="number"
                       value={emailSettings.smtpPort}
                       onChange={(e) =>
-                        setEmailSettings((prev) => ({ ...prev, smtpPort: Number.parseInt(e.target.value) }))
+                        setEmailSettings((prev) => ({
+                          ...prev,
+                          smtpPort: Number.parseInt(e.target.value),
+                        }))
                       }
                       className="bg-input border-border"
                     />
@@ -256,7 +305,12 @@ export function PlatformSettings() {
                   <Input
                     id="smtpUsername"
                     value={emailSettings.smtpUsername}
-                    onChange={(e) => setEmailSettings((prev) => ({ ...prev, smtpUsername: e.target.value }))}
+                    onChange={(e) =>
+                      setEmailSettings((prev) => ({
+                        ...prev,
+                        smtpUsername: e.target.value,
+                      }))
+                    }
                     className="bg-input border-border"
                   />
                 </div>
@@ -268,12 +322,17 @@ export function PlatformSettings() {
                   <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                     <div className="space-y-1">
                       <div className="font-medium">Booking Confirmations</div>
-                      <div className="text-sm text-muted-foreground">Send email confirmations for bookings</div>
+                      <div className="text-sm text-muted-foreground">
+                        Send email confirmations for bookings
+                      </div>
                     </div>
                     <Switch
                       checked={emailSettings.enableBookingConfirmations}
                       onCheckedChange={(checked) =>
-                        setEmailSettings((prev) => ({ ...prev, enableBookingConfirmations: checked }))
+                        setEmailSettings((prev) => ({
+                          ...prev,
+                          enableBookingConfirmations: checked,
+                        }))
                       }
                     />
                   </div>
@@ -281,12 +340,17 @@ export function PlatformSettings() {
                   <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                     <div className="space-y-1">
                       <div className="font-medium">Marketing Emails</div>
-                      <div className="text-sm text-muted-foreground">Send promotional and marketing emails</div>
+                      <div className="text-sm text-muted-foreground">
+                        Send promotional and marketing emails
+                      </div>
                     </div>
                     <Switch
                       checked={emailSettings.enableMarketingEmails}
                       onCheckedChange={(checked) =>
-                        setEmailSettings((prev) => ({ ...prev, enableMarketingEmails: checked }))
+                        setEmailSettings((prev) => ({
+                          ...prev,
+                          enableMarketingEmails: checked,
+                        }))
                       }
                     />
                   </div>
@@ -294,12 +358,17 @@ export function PlatformSettings() {
                   <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                     <div className="space-y-1">
                       <div className="font-medium">System Notifications</div>
-                      <div className="text-sm text-muted-foreground">Send system alerts and notifications</div>
+                      <div className="text-sm text-muted-foreground">
+                        Send system alerts and notifications
+                      </div>
                     </div>
                     <Switch
                       checked={emailSettings.enableSystemNotifications}
                       onCheckedChange={(checked) =>
-                        setEmailSettings((prev) => ({ ...prev, enableSystemNotifications: checked }))
+                        setEmailSettings((prev) => ({
+                          ...prev,
+                          enableSystemNotifications: checked,
+                        }))
                       }
                     />
                   </div>
@@ -326,13 +395,20 @@ export function PlatformSettings() {
                 <h4 className="font-medium">Authentication</h4>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                   <div className="space-y-1">
-                    <div className="font-medium">Require Two-Factor Authentication</div>
-                    <div className="text-sm text-muted-foreground">Require 2FA for all admin accounts</div>
+                    <div className="font-medium">
+                      Require Two-Factor Authentication
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Require 2FA for all admin accounts
+                    </div>
                   </div>
                   <Switch
                     checked={securitySettings.requireTwoFactor}
                     onCheckedChange={(checked) =>
-                      setSecuritySettings((prev) => ({ ...prev, requireTwoFactor: checked }))
+                      setSecuritySettings((prev) => ({
+                        ...prev,
+                        requireTwoFactor: checked,
+                      }))
                     }
                   />
                 </div>
@@ -342,13 +418,18 @@ export function PlatformSettings() {
                 <h4 className="font-medium">Session & Password Policies</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="sessionTimeout">Session Timeout (hours)</Label>
+                    <Label htmlFor="sessionTimeout">
+                      Session Timeout (hours)
+                    </Label>
                     <Input
                       id="sessionTimeout"
                       type="number"
                       value={securitySettings.sessionTimeout}
                       onChange={(e) =>
-                        setSecuritySettings((prev) => ({ ...prev, sessionTimeout: Number.parseInt(e.target.value) }))
+                        setSecuritySettings((prev) => ({
+                          ...prev,
+                          sessionTimeout: Number.parseInt(e.target.value),
+                        }))
                       }
                       className="bg-input border-border"
                     />
@@ -360,41 +441,58 @@ export function PlatformSettings() {
                       type="number"
                       value={securitySettings.maxLoginAttempts}
                       onChange={(e) =>
-                        setSecuritySettings((prev) => ({ ...prev, maxLoginAttempts: Number.parseInt(e.target.value) }))
+                        setSecuritySettings((prev) => ({
+                          ...prev,
+                          maxLoginAttempts: Number.parseInt(e.target.value),
+                        }))
                       }
                       className="bg-input border-border"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="passwordMinLength">Minimum Password Length</Label>
+                  <Label htmlFor="passwordMinLength">
+                    Minimum Password Length
+                  </Label>
                   <Input
                     id="passwordMinLength"
                     type="number"
                     value={securitySettings.passwordMinLength}
                     onChange={(e) =>
-                      setSecuritySettings((prev) => ({ ...prev, passwordMinLength: Number.parseInt(e.target.value) }))
+                      setSecuritySettings((prev) => ({
+                        ...prev,
+                        passwordMinLength: Number.parseInt(e.target.value),
+                      }))
                     }
                     className="bg-input border-border"
                   />
                 </div>
                 <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
                   <div className="space-y-1">
-                    <div className="font-medium">Require Password Complexity</div>
+                    <div className="font-medium">
+                      Require Password Complexity
+                    </div>
                     <div className="text-sm text-muted-foreground">
-                      Require uppercase, lowercase, numbers, and special characters
+                      Require uppercase, lowercase, numbers, and special
+                      characters
                     </div>
                   </div>
                   <Switch
                     checked={securitySettings.requirePasswordComplexity}
                     onCheckedChange={(checked) =>
-                      setSecuritySettings((prev) => ({ ...prev, requirePasswordComplexity: checked }))
+                      setSecuritySettings((prev) => ({
+                        ...prev,
+                        requirePasswordComplexity: checked,
+                      }))
                     }
                   />
                 </div>
               </div>
 
-              <Button onClick={handleSaveSecuritySettings} className="cinema-glow">
+              <Button
+                onClick={handleSaveSecuritySettings}
+                className="cinema-glow"
+              >
                 Save Security Settings
               </Button>
             </CardContent>
@@ -402,5 +500,5 @@ export function PlatformSettings() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

@@ -43,9 +43,9 @@ export function attachTenantDb() {
       }
       
       req.models = modelManager.getModels()
-      console.log('[TenantDB] Models retrieved:', Object.keys(req.models));
+      // console.log('[TenantDB] Models retrieved:', Object.keys(req.models));
       
-      console.log('[TenantDB] Middleware completed successfully');
+      // console.log('[TenantDB] Middleware completed successfully');
       next()
     } catch (error) {
       console.error('[TenantDB] Middleware error:', error)

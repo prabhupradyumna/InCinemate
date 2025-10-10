@@ -58,7 +58,7 @@ export default function AppHeader() {
           </div>
 
           <Link href="/" className="lg:hidden">
-            <span className="text-xl font-bold">ScreenLease</span>
+            <span className="text-xl font-bold">BooknWatch</span>
           </Link>
 
           <button

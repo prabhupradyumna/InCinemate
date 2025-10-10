@@ -1,4 +1,4 @@
--- Sample data for ScreenLease platform
+-- Sample data for BooknWatch platform
 
 -- Insert sample users
 INSERT INTO users (id, email, password_hash, role, first_name, last_name, phone) VALUES

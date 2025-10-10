@@ -38,56 +38,86 @@ export function ShowtimeSelector({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Select a showtime</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh]">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl font-bold">
+            Select a showtime
+          </DialogTitle>
+          <DialogDescription className="text-base">
             Choose theatre, auditorium and time to proceed to seat selection.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
+        <div className="space-y-6 max-h-[60vh] overflow-y-auto">
           {grouped.length === 0 && (
-            <div className="text-sm text-muted-foreground">
-              No upcoming shows available.
+            <div className="text-center py-8">
+              <div className="text-muted-foreground text-lg">
+                No upcoming shows available.
+              </div>
             </div>
           )}
 
           {grouped.map((theatre) => (
-            <div key={theatre.id} className="space-y-3">
-              <div className="font-semibold">
-                {theatre.name}
-                {theatre.city ? ` • ${theatre.city}` : ""}
+            <div key={theatre.id} className="space-y-4">
+              {/* Theatre Header */}
+              <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                  <h3 className="font-semibold text-lg text-foreground">
+                    {theatre.name}
+                  </h3>
+                  {theatre.city && (
+                    <span className="text-muted-foreground text-sm">
+                      • {theatre.city}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
+
+              {/* Auditoriums */}
+              <div className="space-y-3 ml-4">
                 {theatre.auditoriums?.map((aud) => (
                   <div
                     key={aud.id}
-                    className="border border-border rounded-md p-3"
+                    className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {aud.name}
+                    {/* Auditorium Header */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full"></div>
+                      <h4 className="font-medium text-foreground">
+                        {aud.name}
+                      </h4>
                     </div>
+
+                    {/* Showtimes */}
                     <div className="flex flex-wrap gap-2">
                       {aud.shows?.map((s) => {
                         const dt = new Date(s.show_datetime);
                         const label = isNaN(dt.getTime())
                           ? s.show_datetime
-                          : dt.toLocaleString();
+                          : dt.toLocaleString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
                         return (
                           <Button
                             key={s.id}
                             variant="outline"
                             size="sm"
                             onClick={() => onSelect(s.id)}
+                            className="h-9 px-4 text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
                           >
                             {label}
                           </Button>
                         );
                       })}
                       {(!aud.shows || aud.shows.length === 0) && (
-                        <div className="text-xs text-muted-foreground">
-                          No showtimes
+                        <div className="text-sm text-muted-foreground italic">
+                          No showtimes available
                         </div>
                       )}
                     </div>
@@ -101,5 +131,3 @@ export function ShowtimeSelector({
     </Dialog>
   );
 }
-
-

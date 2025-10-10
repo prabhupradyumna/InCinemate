@@ -75,7 +75,9 @@ export default function MobileMovieDetailPage({
         <div className="flex items-center justify-center py-12">
           <div className="text-center space-y-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-            <p className="text-muted-foreground text-lg">Loading movie details...</p>
+            <p className="text-muted-foreground text-lg">
+              Loading movie details...
+            </p>
           </div>
         </div>
       </MobileLayout>
@@ -89,7 +91,9 @@ export default function MobileMovieDetailPage({
         <div className="flex items-center justify-center py-12">
           <div className="text-center space-y-4 max-w-md">
             <div className="text-destructive text-6xl">⚠️</div>
-            <h2 className="text-2xl font-bold text-foreground">Movie Not Found</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              Movie Not Found
+            </h2>
             <p className="text-muted-foreground">
               {error || "Unable to load movie details"}
             </p>
@@ -108,13 +112,9 @@ export default function MobileMovieDetailPage({
 
   return (
     <MobileLayout showBottomNav={false}>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20">
         {/* Back Button */}
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-4"
-        >
+        <Button variant="ghost" onClick={() => router.back()} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
@@ -126,7 +126,7 @@ export default function MobileMovieDetailPage({
             alt={movie.title}
             className="w-full rounded-xl shadow-card"
           />
-          
+
           <div className="space-y-4">
             <div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">
@@ -254,6 +254,190 @@ export default function MobileMovieDetailPage({
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+        )}
+
+        {/* Crew Section */}
+        {movie.crewMembers && movie.crewMembers.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+              Crew
+            </h3>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 pb-2">
+                {movie.crewMembers.map((crew: any) => (
+                  <div key={crew.id} className="flex-shrink-0 w-32 sm:w-auto">
+                    <div className="bg-card border border-border rounded-lg p-3 hover:border-primary transition-colors">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-muted mb-3">
+                        {crew.person?.profile_image_url ? (
+                          <Image
+                            src={crew.person.profile_image_url}
+                            alt={crew.person.name}
+                            width={96}
+                            height={96}
+                            className="object-cover w-full h-full"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-2xl font-bold">
+                            {crew.person?.name?.charAt(0) || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-center space-y-1">
+                        <div className="text-xs sm:text-sm font-medium text-foreground truncate">
+                          {crew.person?.name || "Unknown"}
+                        </div>
+                        {crew.role_title && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {crew.role_title}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Production Details */}
+        {(movie.production_houses?.length > 0 ||
+          movie.distributors?.length > 0) && (
+          <section className="space-y-4">
+            <h3 className="text-2xl font-semibold text-foreground">
+              Production Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-muted-foreground">
+              {movie.production_houses?.length > 0 && (
+                <div>
+                  <span className="font-semibold text-foreground">
+                    Production:{" "}
+                  </span>
+                  <span>{movie.production_houses.join(", ")}</span>
+                </div>
+              )}
+              {movie.distributors?.length > 0 && (
+                <div>
+                  <span className="font-semibold text-foreground">
+                    Distribution:{" "}
+                  </span>
+                  <span>{movie.distributors.join(", ")}</span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Important Information */}
+        {movie.things_to_know?.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-2xl font-semibold text-foreground">
+              Important Information
+            </h3>
+            <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+              {movie.things_to_know.map((info: string, idx: number) => (
+                <li key={idx}>{info}</li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Songs Section */}
+        {movie.songs && movie.songs.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+              Songs
+            </h3>
+            <div className="space-y-3">
+              {movie.songs.map((song: any, idx: number) => (
+                <div
+                  key={song.id}
+                  className="bg-card/50 border border-border rounded-lg p-3 sm:p-4"
+                >
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
+                      {idx + 1}
+                    </div>
+                    <div className="flex-grow space-y-2">
+                      <h4 className="text-sm sm:text-base font-semibold text-foreground">
+                        {song.title}
+                      </h4>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {song.singers && (
+                          <span>Singers: {song.singers.join(", ")}</span>
+                        )}
+                        {song.music_director && (
+                          <span>• Music: {song.music_director}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Technical Specifications */}
+        {(movie.aspect_ratio || movie.sound_mix?.length > 0) && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+              Technical Specifications
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
+              {movie.aspect_ratio && (
+                <div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4">
+                  <span className="text-muted-foreground block mb-1">
+                    Aspect Ratio
+                  </span>
+                  <span className="text-foreground font-medium">
+                    {movie.aspect_ratio}
+                  </span>
+                </div>
+              )}
+              {movie.sound_mix && movie.sound_mix.length > 0 && (
+                <div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4">
+                  <span className="text-muted-foreground block mb-1">
+                    Sound Mix
+                  </span>
+                  <span className="text-foreground font-medium">
+                    {movie.sound_mix.join(", ")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* Reviews */}
+        {movie.reviews && movie.reviews.length > 0 && (
+          <section className="space-y-4">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
+              Critic Reviews
+            </h3>
+            <div className="space-y-3 sm:space-y-4">
+              {movie.reviews.map((review: any) => (
+                <div
+                  key={review.id}
+                  className="bg-card/30 border border-border/50 rounded-lg p-4"
+                >
+                  <div className="flex gap-3 sm:gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-muted flex items-center justify-center text-foreground font-semibold">
+                      {review.reviewer_name?.charAt(0) || "R"}
+                    </div>
+                    <div className="flex-grow space-y-2">
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base">
+                        {review.reviewer_name}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                        {review.review_text}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}

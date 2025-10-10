@@ -142,7 +142,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <Film className="h-8 w-8 text-primary mr-2" />
-          <h1 className="text-2xl font-bold text-foreground">ScreenLease</h1>
+          <h1 className="text-2xl font-bold text-foreground">BooknWatch</h1>
         </div>
 
         <Card className="border-border/50">

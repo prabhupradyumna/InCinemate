@@ -13,10 +13,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ScreenLease - Premium Movie Ticketing",
+  title: "BooknWatch - Premium Movie Ticketing",
   description:
-    "Book your movie tickets with ScreenLease - The ultimate cinematic experience",
-  generator: "ScreenLease",
+    "Book your movie tickets with BooknWatch - The ultimate cinematic experience",
+  generator: "BooknWatch",
+  icons: {
+    icon: "/BooknWatch - Icon.png",
+    shortcut: "/BooknWatch - Icon.png",
+    apple: "/BooknWatch - Icon.png",
+  },
 };
 
 export default function RootLayout({

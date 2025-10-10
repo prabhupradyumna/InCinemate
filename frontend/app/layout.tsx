@@ -33,6 +33,11 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         <Analytics />
+        {/* PhonePe Checkout Script */}
+        <script
+          src="https://mercury.phonepe.com/web/bundle/checkout.js"
+          async
+        ></script>
       </body>
     </html>
   );

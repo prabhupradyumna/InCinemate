@@ -22,6 +22,7 @@ api.interceptors.request.use(
       typeof window !== "undefined"
         ? localStorage.getItem("accessToken")
         : null;
+
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
     } else {
@@ -225,7 +226,10 @@ export async function releaseSeatHold(payload: { booking_id: string }) {
 }
 
 // Payment Gateway Functions
-export async function initiatePayment(payload: { booking_id: string; amount: number }) {
+export async function initiatePayment(payload: {
+  booking_id: string;
+  amount: number;
+}) {
   return http("POST", "/payments/initiate", payload);
 }
 

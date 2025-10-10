@@ -10,7 +10,9 @@ class PaymentController {
       clientVersion: '1',
       baseUrl: 'https://api-preprod.phonepe.com/apis/pg-sandbox',
       redirectUrl: 'http://localhost:3000/payment-success',
-      callbackUrl: 'http://localhost:9000/api/payments/phonepe-callback'
+      callbackUrl: 'http://localhost:9000/api/payments/phonepe-callback',
+      saltKey: '099eb0cd-02cf-4e2a-8aca-3e6c6a343418', // PhonePe salt key for checksum
+      saltIndex: 1 // PhonePe salt index
     };
     this.accessToken = null;
     this.tokenExpiry = null;
@@ -66,13 +68,20 @@ class PaymentController {
 
       console.log('[PaymentController] OAuth URL:', `${this.phonePeConfig.baseUrl}/v1/oauth/token`);
       
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(`${this.phonePeConfig.baseUrl}/v1/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: formData
+        body: formData,
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       console.log('[PaymentController] OAuth response status:', response.status);
 
@@ -96,7 +105,67 @@ class PaymentController {
       }
     } catch (error) {
       console.error('Error getting PhonePe access token:', error);
+      if (error.name === 'AbortError') {
+        throw new Error('PhonePe OAuth request timed out');
+      }
       throw error;
+    }
+  }
+
+  // Check payment status
+  static async checkPaymentStatus(req, res) {
+    try {
+      console.log('[PaymentController] checkPaymentStatus called with:', req.params);
+      const { merchantOrderId } = req.params;
+      
+      if (!merchantOrderId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'Merchant order ID is required',
+          message: 'Merchant order ID is required'
+        });
+      }
+      
+      // Get access token
+      console.log('[PaymentController] Getting PhonePe access token for status check...');
+      const controller = new PaymentController();
+      const accessToken = await controller.getAccessToken();
+      console.log('[PaymentController] Access token received:', accessToken ? 'YES' : 'NO');
+      
+      // Call PhonePe Order Status API
+      const statusUrl = `${controller.phonePeConfig.baseUrl}/checkout/v2/order/${merchantOrderId}/status`;
+      console.log('[PaymentController] Calling PhonePe status API:', statusUrl);
+      
+      const response = await fetch(statusUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `O-Bearer ${accessToken}`
+        }
+      });
+      
+      console.log('[PaymentController] PhonePe status API response:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`PhonePe status API request failed: ${response.status}`);
+      }
+      
+      const phonePeResponse = await response.json();
+      console.log('[PaymentController] PhonePe status response:', JSON.stringify(phonePeResponse, null, 2));
+      
+      return res.json({
+        success: true,
+        data: phonePeResponse,
+        message: 'Payment status retrieved successfully'
+      });
+      
+    } catch (err) {
+      console.error(`[PaymentController]-[checkPaymentStatus]: ${err.message}`);
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to check payment status'
+      });
     }
   }
 
@@ -104,9 +173,11 @@ class PaymentController {
   static async initiatePayment(req, res) {
     try {
       console.log('[PaymentController] initiatePayment called with:', req.body);
+      
       const { booking_id, amount } = req.body;
-      const sequelize = req.db;
-      const { Booking, User } = req.models;
+      const sequelize = req.db || null; // Handle missing db for testing
+      const models = req.models || {}; // Handle missing models for testing
+      const { Booking, User } = models;
 
       if (!booking_id || !amount) {
         console.log('[PaymentController] Missing required fields');
@@ -148,7 +219,7 @@ class PaymentController {
       // Prepare PhonePe payment request according to Postman collection
       const paymentRequest = {
         merchantOrderId: merchantOrderId,
-        amount: Math.round(amount * 100), // Convert to paise
+        amount: Math.round(amount), // PhonePe expects amount in rupees (not paise)
         expireAfter: 1200, // 20 minutes expiry
         metaInfo: {
           udf1: `test1`, // HARDCODED FOR TESTING
@@ -176,14 +247,21 @@ class PaymentController {
       console.log('[PaymentController] Calling PhonePe API with URL:', `${controller.phonePeConfig.baseUrl}/checkout/v2/pay`);
       console.log('[PaymentController] Payment request payload:', JSON.stringify(paymentRequest, null, 2));
       
+      // Create abort controller for timeout
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => abortController.abort(), 15000); // 15 second timeout
+
       const response = await fetch(`${controller.phonePeConfig.baseUrl}/checkout/v2/pay`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `O-Bearer ${accessToken}`
         },
-        body: JSON.stringify(paymentRequest)
+        body: JSON.stringify(paymentRequest),
+        signal: abortController.signal
       });
+
+      clearTimeout(timeoutId);
       
       console.log('[PaymentController] PhonePe API response status:', response.status);
 
@@ -215,6 +293,13 @@ class PaymentController {
 
     } catch (err) {
       console.error(`[PaymentController]-[initiatePayment]: ${err.message}`);
+      if (err.name === 'AbortError') {
+        return res.status(HTTP_STATUS.REQUEST_TIMEOUT).json({
+          success: false,
+          error: 'Payment request timed out',
+          message: 'Failed to initiate payment - request timeout'
+        });
+      }
       return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: err.message,

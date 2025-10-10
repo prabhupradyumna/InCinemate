@@ -101,7 +101,8 @@ export function BookingSummary({
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
-  const [selectedPaymentGateway, setSelectedPaymentGateway] = useState<string>("");
+  const [selectedPaymentGateway, setSelectedPaymentGateway] =
+    useState<string>("");
 
   const [customerDetails, setCustomerDetails] = useState({
     fullName: (user as any)?.fullName || (user as any)?.full_name || "",
@@ -238,7 +239,7 @@ export function BookingSummary({
 
   const handleProceedToPayment = () => {
     if (!selectedPaymentGateway) return;
-    
+
     setShowPaymentGatewayModal(false);
     // Proceed to PhonePe payment
     handlePhonePePayment();
@@ -326,23 +327,84 @@ export function BookingSummary({
   const handlePhonePePayment = async () => {
     if (!bookingDetails) return;
     setIsProcessing(true);
-    
+
     try {
       const { initiatePayment } = await import("@/lib/api");
-      
+
       const response = await initiatePayment({
         booking_id: bookingDetails.booking_id,
-        amount: bookingDetails.total_price || total
+        amount: bookingDetails.total_price || total,
       });
 
       if (response.success && response.data.paymentUrl) {
-        // Redirect to PhonePe payment page
-        console.log('Redirecting to PhonePe:', response.data.paymentUrl);
-        window.location.href = response.data.paymentUrl;
+        // Use PhonePe iframe integration
+        console.log("✅ Opening PhonePe in iframe:", response.data.paymentUrl);
+
+        // Check if PhonePe checkout script is loaded
+        if (typeof window.PhonePeCheckout === "undefined") {
+          throw new Error(
+            "PhonePe checkout script not loaded. Please refresh the page and try again."
+          );
+        }
+
+        // Store merchant order ID for callback
+        const merchantOrderId = response.data.merchantOrderId;
+
+        // Define callback function for payment completion
+        const paymentCallback = async (callbackResponse: string) => {
+          console.log("Payment callback received:", callbackResponse);
+
+          if (callbackResponse === "USER_CANCEL") {
+            console.log("Payment cancelled by user");
+            setBookingError("Payment was cancelled. Please try again.");
+            setIsProcessing(false);
+            return;
+          } else if (callbackResponse === "CONCLUDED") {
+            console.log("Payment concluded, checking status...");
+
+            try {
+              // Check payment status using merchant order ID
+              const { checkPaymentStatus } = await import("@/lib/api");
+              const statusResponse = await checkPaymentStatus(merchantOrderId);
+
+              if (
+                statusResponse.success &&
+                statusResponse.data.state === "PAYMENT_SUCCESS"
+              ) {
+                console.log("Payment successful, redirecting to success page");
+                // Redirect to success page with booking details
+                window.location.href = `/payment-success?booking_id=${bookingDetails.booking_id}&merchantOrderId=${merchantOrderId}&payment_success=true`;
+              } else {
+                console.log("Payment failed or pending");
+                setBookingError(
+                  "Payment verification failed. Please contact support."
+                );
+                setIsProcessing(false);
+              }
+            } catch (error) {
+              console.error("Error checking payment status:", error);
+              setBookingError(
+                "Payment verification failed. Please contact support."
+              );
+              setIsProcessing(false);
+            }
+          }
+        };
+
+        // Open PhonePe in iframe mode
+        window.PhonePeCheckout.transact({
+          tokenUrl: response.data.paymentUrl,
+          callback: paymentCallback,
+          type: "IFRAME",
+        });
       } else {
-        throw new Error(response.error || 'Payment initiation failed');
+        throw new Error(response.error || "Payment initiation failed");
       }
     } catch (e: any) {
+      console.error("❌ Payment Error:", e);
+      console.error("❌ Payment Error Response:", e?.response?.data);
+      console.error("❌ Payment Error Message:", e?.message);
+
       setBookingError(
         e?.response?.data?.error || e?.message || "Payment failed"
       );
@@ -563,21 +625,26 @@ export function BookingSummary({
                     <CreditCard className="h-4 w-4" />
                     Payment Processing
                   </h4>
-                  
+
                   {isProcessing ? (
                     <div className="text-center py-8">
                       <div className="flex items-center justify-center gap-2 mb-4">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                        <span className="text-sm text-muted-foreground">Processing Payment...</span>
+                        <span className="text-sm text-muted-foreground">
+                          Processing Payment...
+                        </span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Please wait while we process your payment through PhonePe
+                        Please wait while we process your payment through
+                        PhonePe
                       </p>
                     </div>
                   ) : (
                     <div className="text-center py-8">
                       <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-sm rounded-lg p-4 mb-4">
-                        <p className="font-medium mb-1">Seats Reserved Successfully!</p>
+                        <p className="font-medium mb-1">
+                          Seats Reserved Successfully!
+                        </p>
                         <p>Your seats have been held for 10 minutes</p>
                       </div>
                       <p className="text-xs text-muted-foreground mb-4">

@@ -37,11 +37,12 @@
 # MODEL_REQUEST_SCOPED=true
 
 # PhonePe Payment Gateway Configuration
+#Replace values with sandbox credentials from your PhonePe developer account.
 # ====================================
+PHONEPE_BASE_URL=https://api-preprod.phonepe.com/apis/pg-sandbox
+PHONEPE_MERCHANT_ID=YOUR_MERCHANT_ID
 PHONEPE_CLIENT_ID=TEST-M23FQVLBOWM35_25100
 PHONEPE_CLIENT_SECRET=NjYyNzY1ZmYtNjQwNy00ZTg1LTg4ODktNzRjMTJhMzBhNjRl
 PHONEPE_CLIENT_VERSION=1
-# PHONEPE_REDIRECT_URL=http://localhost:3000/payment-success
-# PHONEPE_CALLBACK_URL=http://localhost:9000/api/payments/phonepe-callback
-# FRONTEND_URL=http://localhost:3000
-# BACKEND_URL=http://localhost:9000
+PHONEPE_REDIRECT_URL=http://localhost:3000/payment-success
+PHONEPE_CALLBACK_URL=http://localhost:4000/api/payments/phonepe-callback

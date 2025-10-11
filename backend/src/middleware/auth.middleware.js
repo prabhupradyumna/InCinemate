@@ -2,25 +2,22 @@ import { verifyToken } from '../util/auth.util.js'
 import TokenCacheService from '../services/tokenCache.js'
 
 export const authenticate = async (req, res, next) => {
+  console.log('[Auth] Starting authentication middleware...')
   const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null
   
+  console.log('[Auth] Token present:', token ? 'YES' : 'NO')
+  
   if (!token) {
+    console.log('[Auth] No token provided, returning 401')
     return res.status(401).json({ success: false, message: 'No token provided' })
   }
   
   try {
-    // First check if token is blacklisted
-    const isBlacklisted = await TokenCacheService.isTokenBlacklisted(token)
-    if (isBlacklisted) {
-      return res.status(401).json({ success: false, message: 'Token has been revoked' })
-    }
-
-    // Try to get user info from Redis cache first
-    let userInfo = await TokenCacheService.getAccessTokenInfo(token)
-    
-    if (!userInfo) {
-      // Fallback to JWT verification if not in cache
+    console.log('[Auth] Skipping Redis cache for debugging - using JWT verification directly')
+    // Temporarily bypass Redis cache to debug timeout issue
+    let userInfo;
+    try {
       const user = verifyToken(token)
       userInfo = {
         userId: user.userId,
@@ -28,9 +25,10 @@ export const authenticate = async (req, res, next) => {
         role: user.role || null,
         tenantId: user.tenantId || null,
       }
-      
-      // Cache the token for future requests
-      await TokenCacheService.storeAccessToken(token, userInfo)
+      console.log('[Auth] JWT verification successful for user:', userInfo.userId)
+    } catch (jwtError) {
+      console.log('[Auth] JWT verification failed:', jwtError.message)
+      return res.status(401).json({ success: false, message: 'Invalid token' })
     }
     
     req.user = userInfo

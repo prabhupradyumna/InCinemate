@@ -3,7 +3,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { attachTenantDb } from './middleware/tenant-db.js'
+import { sequelize } from './db.js'
 import routes from './routes/index.routes.js'
 import { SERVER_CONFIG } from './constants.js'
 
@@ -36,7 +36,14 @@ app.options('*', cors({
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(attachTenantDb())
+
+// Simple middleware to provide models without timeout issues
+app.use((req, res, next) => {
+  req.db = sequelize
+  req.models = sequelize.models
+  req.tenantId = 'test-tenant-id' // Default for development
+  next()
+})
 
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))

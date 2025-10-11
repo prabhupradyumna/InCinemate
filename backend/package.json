@@ -10,6 +10,8 @@
     "seed": "node ./src/scripts/seed.js",
     "seed:permissions": "node ./src/scripts/seed-permissions.js",
     "migrate:add-movie-city": "node ./src/scripts/add-movie-city.js",
+    "migrate:payment": "psql $DATABASE_URL -f ./migrations/2025-01-08_create_payment_table.sql",
+    "setup:payment": "node ./setup-payment-env.js",
     "test:redis": "node ./src/scripts/test-redis.js",
     "test:fallback": "node ./src/scripts/test-fallback.js",
     "test:startup": "node ./src/scripts/test-startup-time.js"

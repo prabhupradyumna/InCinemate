@@ -226,15 +226,20 @@ export async function releaseSeatHold(payload: { booking_id: string }) {
 }
 
 // Payment Gateway Functions
-export async function initiatePayment(payload: {
+// Payment functions removed - using simplified booking flow
+
+// Simplified booking functions (no payment required)
+export async function confirmSimpleBooking(payload: {
   booking_id: string;
-  amount: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string | null;
 }) {
-  return http("POST", "/payments/initiate", payload);
+  return http("POST", "/customer/confirm-simple-booking", payload);
 }
 
-export async function checkPaymentStatus(merchantOrderId: string) {
-  return http("GET", `/payments/status/${merchantOrderId}`);
+export async function getBookingDetails(bookingId: string) {
+  return http("GET", `/customer/booking/${bookingId}`);
 }
 
 export default api;

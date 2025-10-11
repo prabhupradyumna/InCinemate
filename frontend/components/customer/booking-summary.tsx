@@ -7,14 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Clock, MapPin, CreditCard, User, Lock } from "lucide-react";
-import { useAuth } from "@/components/customer/auth-provider";
+import { Calendar, Clock, MapPin, CreditCard, User, Lock, AlertCircle, RefreshCw } from "lucide-react";
+// useAuth removed - using simplified booking flow without authentication
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
-import { CustomerDetailsModal } from "@/components/customer/customer-details-modal";
+// CustomerDetailsModal removed - using simplified booking flow without OTP
 import { TermsConditionsPopup } from "@/components/customer/terms-conditions-popup";
 import { CancelTransactionPopup } from "@/components/customer/cancel-transaction-popup";
-import { PaymentGatewayModal } from "@/components/customer/payment-gateway-modal";
+// Payment-related imports removed - using simplified booking flow
 
 interface ShowData {
   movie: {
@@ -87,35 +87,29 @@ export function BookingSummary({
   onBookingCreated,
   onBookingCancelled,
 }: BookingSummaryProps) {
-  const { user, refresh } = useAuth();
+  // Simplified booking flow - no payment gateway or authentication required
   const router = useRouter();
 
   // New flow states
   const [showTermsPopup, setShowTermsPopup] = useState(false);
   const [showCancelPopup, setShowCancelPopup] = useState(false);
-  const [showCustomerModal, setShowCustomerModal] = useState(false);
-  const [showPaymentGatewayModal, setShowPaymentGatewayModal] = useState(false);
+  // Customer modal removed - using simplified booking flow without OTP
+  // Payment gateway modal removed - using simplified booking flow
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(
     null
   );
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
-  const [selectedPaymentGateway, setSelectedPaymentGateway] =
-    useState<string>("");
+  // Payment gateway selection removed - using simplified booking flow
 
   const [customerDetails, setCustomerDetails] = useState({
-    fullName: (user as any)?.fullName || (user as any)?.full_name || "",
-    email: user?.email || "",
+    fullName: "",
+    email: "",
     phone: "",
   });
 
-  const [paymentDetails, setPaymentDetails] = useState({
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    nameOnCard: "",
-  });
+  // Payment details removed - using simplified booking flow
 
   // Use actual selected seats or create mock based on quantity
   const mockSelectedSeats =
@@ -199,55 +193,24 @@ export function BookingSummary({
   const handleAcceptTerms = async () => {
     setShowTermsPopup(false);
 
-    if (user) {
-      // User is logged in, proceed to hold seats
-      await holdSeats();
-      // After seats are held, show payment gateway selection
-      setShowPaymentGatewayModal(true);
-    } else {
-      // User not logged in, show existing customer modal for OTP auth
-      setShowCustomerModal(true);
+    // Always proceed to hold seats and redirect to simplified booking page
+    // No authentication required for simplified booking flow
+    await holdSeats();
+    // After seats are held, redirect to simplified booking page
+    if (bookingDetails) {
+      router.push(`/booking/simple?booking_id=${bookingDetails.booking_id}`);
     }
   };
 
-  const handleCustomerDetailsSubmit = async (details: {
-    fullName: string;
-    email: string;
-    phone: string;
-  }) => {
-    setCustomerDetails(details);
-    setShowCustomerModal(false);
-
-    // After OTP verification, refresh auth state and hold seats
-    try {
-      await refresh();
-      await holdSeats();
-      // After seats are held, show payment gateway selection
-      setShowPaymentGatewayModal(true);
-    } catch (error) {
-      console.error("Failed to refresh auth state:", error);
-    }
-  };
+  // Customer details submit function removed - using simplified booking flow without OTP
 
   const handleBackFromTerms = () => {
     setShowTermsPopup(false);
   };
 
-  const handlePaymentGatewaySelect = (gateway: string) => {
-    setSelectedPaymentGateway(gateway);
-  };
+  // Payment gateway selection function removed - using simplified booking flow
 
-  const handleProceedToPayment = () => {
-    if (!selectedPaymentGateway) return;
-
-    setShowPaymentGatewayModal(false);
-    // Proceed to PhonePe payment
-    handlePhonePePayment();
-  };
-
-  const handleBackFromPaymentGateway = () => {
-    setShowPaymentGatewayModal(false);
-  };
+  // Payment gateway functions removed - using simplified booking flow
 
   const handleCancelTransaction = () => {
     setShowCancelPopup(true);
@@ -324,103 +287,13 @@ export function BookingSummary({
     }
   };
 
-  const handlePhonePePayment = async () => {
-    if (!bookingDetails) return;
-    setIsProcessing(true);
-
-    try {
-      const { initiatePayment } = await import("@/lib/api");
-
-      const response = await initiatePayment({
-        booking_id: bookingDetails.booking_id,
-        amount: bookingDetails.total_price || total,
-      });
-
-      if (response.success && response.data.paymentUrl) {
-        // Use PhonePe iframe integration
-        console.log("✅ Opening PhonePe in iframe:", response.data.paymentUrl);
-
-        // Check if PhonePe checkout script is loaded
-        if (typeof window.PhonePeCheckout === "undefined") {
-          throw new Error(
-            "PhonePe checkout script not loaded. Please refresh the page and try again."
-          );
-        }
-
-        // Store merchant order ID for callback
-        const merchantOrderId = response.data.merchantOrderId;
-
-        // Define callback function for payment completion
-        const paymentCallback = async (callbackResponse: string) => {
-          console.log("Payment callback received:", callbackResponse);
-
-          if (callbackResponse === "USER_CANCEL") {
-            console.log("Payment cancelled by user");
-            setBookingError("Payment was cancelled. Please try again.");
-            setIsProcessing(false);
-            return;
-          } else if (callbackResponse === "CONCLUDED") {
-            console.log("Payment concluded, checking status...");
-
-            try {
-              // Check payment status using merchant order ID
-              const { checkPaymentStatus } = await import("@/lib/api");
-              const statusResponse = await checkPaymentStatus(merchantOrderId);
-
-              if (
-                statusResponse.success &&
-                statusResponse.data.state === "PAYMENT_SUCCESS"
-              ) {
-                console.log("Payment successful, redirecting to success page");
-                // Redirect to success page with booking details
-                window.location.href = `/payment-success?booking_id=${bookingDetails.booking_id}&merchantOrderId=${merchantOrderId}&payment_success=true`;
-              } else {
-                console.log("Payment failed or pending");
-                setBookingError(
-                  "Payment verification failed. Please contact support."
-                );
-                setIsProcessing(false);
-              }
-            } catch (error) {
-              console.error("Error checking payment status:", error);
-              setBookingError(
-                "Payment verification failed. Please contact support."
-              );
-              setIsProcessing(false);
-            }
-          }
-        };
-
-        // Open PhonePe in iframe mode
-        window.PhonePeCheckout.transact({
-          tokenUrl: response.data.paymentUrl,
-          callback: paymentCallback,
-          type: "IFRAME",
-        });
-      } else {
-        throw new Error(response.error || "Payment initiation failed");
-      }
-    } catch (e: any) {
-      console.error("❌ Payment Error:", e);
-      console.error("❌ Payment Error Response:", e?.response?.data);
-      console.error("❌ Payment Error Message:", e?.message);
-
-      setBookingError(
-        e?.response?.data?.error || e?.message || "Payment failed"
-      );
-      setIsProcessing(false);
-    }
-  };
+  // PhonePe payment function removed - using simplified booking flow
   const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
     setIsProcessing(true);
     try {
       const { confirmBooking } = await import("@/lib/api");
-      await confirmBooking({
-        booking_id: bookingDetails.booking_id,
-        payment_method: "card", // Mock
-        payment_details: paymentDetails, // Mock
-      });
+      // Payment confirmation removed - using simplified booking flow
       router.push(
         `/booking/confirmation?booking_id=${bookingDetails.booking_id}`
       );
@@ -435,64 +308,9 @@ export function BookingSummary({
 
   const isDetailsValid = customerDetails.fullName && !!customerDetails.phone;
 
-  const isPaymentValid =
-    paymentDetails.cardNumber &&
-    paymentDetails.expiry &&
-    paymentDetails.cvv &&
-    paymentDetails.nameOnCard;
+  // Payment validation removed - using simplified booking flow
 
-  // ==============================
-  // Guest OTP Auth (creates user on first login)
-  // ==============================
-  const [otpRequested, setOtpRequested] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
-  const [otpError, setOtpError] = useState<string | null>(null);
-
-  async function handleGuestAuth() {
-    if (user) {
-      // User is already authenticated, proceed to hold seats
-      await holdSeats();
-      return;
-    }
-    try {
-      setOtpError(null);
-      // Require phone for SMS OTP during checkout
-      const channel = "sms" as const;
-      const recipient = customerDetails.phone;
-      if (!recipient) {
-        setOtpError("Please enter your phone number to receive OTP");
-        return;
-      }
-      const { requestCustomerOtp, verifyCustomerOtp } = await import(
-        "@/lib/api"
-      );
-      if (!otpRequested) {
-        await requestCustomerOtp({
-          phone: recipient,
-          channel: channel as any,
-          purpose: "login",
-        });
-        setOtpRequested(true);
-        return;
-      }
-      if (otpRequested && otpCode.trim().length > 0) {
-        const ok = await verifyCustomerOtp({
-          phone: recipient,
-          email: customerDetails.email || undefined,
-          code: otpCode.trim(),
-          channel: channel as any,
-        });
-        // After verify, token is stored and AuthProvider will pick up on next getMe/refresh.
-        await refresh();
-        // After successful OTP verification, hold seats
-        await holdSeats();
-      }
-    } catch (e: any) {
-      setOtpError(
-        e?.response?.data?.error || e?.message || "OTP verification failed"
-      );
-    }
-  }
+  // OTP authentication removed - using simplified booking flow
 
   return (
     <div className="space-y-6">
@@ -653,6 +471,31 @@ export function BookingSummary({
                     </div>
                   )}
 
+                  {/* Simplified booking status */}
+                  {isProcessing && (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-2"></div>
+                      <p className="text-gray-600">Processing booking...</p>
+                    </div>
+                  )}
+
+                  {/* Booking Error Display */}
+                  {bookingError && !isProcessing && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <p className="text-red-800 text-sm">{bookingError}</p>
+                      <Button 
+                        onClick={() => setBookingError(null)}
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* PhonePe Script Error removed - using simplified booking flow */}
+
                   {/* Security Notice */}
                   <div className="flex items-start gap-2 p-3 bg-muted/20 rounded-lg border border-border/30">
                     <Lock className="h-4 w-4 text-green-400 mt-0.5 flex-shrink-0" />
@@ -711,14 +554,7 @@ export function BookingSummary({
         </CardContent>
       </Card>
 
-      {/* Customer Details Modal */}
-      <CustomerDetailsModal
-        isOpen={showCustomerModal}
-        onClose={() => setShowCustomerModal(false)}
-        onContinue={handleCustomerDetailsSubmit}
-        showData={showData}
-        selectedSeats={mockSelectedSeats}
-      />
+      {/* Customer Details Modal removed - using simplified booking flow without OTP */}
 
       {/* Terms & Conditions Popup */}
       <TermsConditionsPopup
@@ -739,19 +575,7 @@ export function BookingSummary({
         onCancel={handleCancelCancel}
       />
 
-      {/* Payment Gateway Modal */}
-      <PaymentGatewayModal
-        isOpen={showPaymentGatewayModal}
-        onClose={handleBackFromPaymentGateway}
-        onProceed={handleProceedToPayment}
-        onBack={handleBackFromPaymentGateway}
-        selectedGateway={selectedPaymentGateway}
-        onGatewaySelect={handlePaymentGatewaySelect}
-        totalAmount={bookingDetails?.total_price || total}
-        movieTitle={showData.movie.title}
-        showTime={`${formatDate(showData.showtime.date)} ${showData.showtime.time}`}
-        venue={showData.venue.name}
-      />
+      {/* Payment Gateway Modal removed - using simplified booking flow */}
     </div>
   );
 }

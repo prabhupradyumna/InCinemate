@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Monitor } from "lucide-react";
+import { Calendar, Clock, MapPin, Monitor, Phone, Mail } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatData {
   row: string;
@@ -74,6 +75,20 @@ export function SeatSelection({
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
 
+  // Safely get user from auth context
+  let user = null;
+  let canSelectSeats = false;
+
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    canSelectSeats =
+      user && (user.role === "admin" || user.role === "super-admin");
+  } catch (error) {
+    // Auth context not available, treat as unauthenticated user
+    console.log("Auth context not available, treating as unauthenticated user");
+  }
+
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
     const seats: SeatData[] = [];
@@ -109,6 +124,9 @@ export function SeatSelection({
   };
 
   const handleSeatClick = (clickedSeat: SeatData) => {
+    // Only allow seat selection for admin and super-admin users
+    if (!canSelectSeats) return;
+
     if (clickedSeat.status === "booked") return;
 
     const seatKey = `${clickedSeat.row}-${clickedSeat.seat}`;
@@ -146,6 +164,14 @@ export function SeatSelection({
       case "selected":
         return `${baseClass} bg-primary border-primary text-primary-foreground cinema-glow cursor-pointer hover:scale-105`;
       case "available":
+        if (!canSelectSeats) {
+          // For non-admin users, show seats as view-only
+          if (seat.type === "premium") {
+            return `${baseClass} bg-accent/10 border-accent/20 text-accent-foreground cursor-default`;
+          }
+          return `${baseClass} bg-secondary/50 border-border/50 text-secondary-foreground cursor-default`;
+        }
+        // Admin users can select seats
         if (seat.type === "premium") {
           return `${baseClass} bg-accent/20 border-accent/40 text-accent-foreground cursor-pointer hover:bg-accent/30 hover:border-accent/60 hover:scale-105`;
         }
@@ -277,8 +303,45 @@ export function SeatSelection({
         </CardContent>
       </Card>
 
-      {/* Selected Seats Summary */}
-      {selectedSeats.length > 0 && (
+      {/* Contact Admin Message for Non-Admin Users */}
+      {!canSelectSeats && (
+        <Card className="bg-card border-border">
+          <CardContent className="p-6">
+            <div className="text-center space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  Seat Reservation Required
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  To book seats for this show, please contact our admin team
+                  directly.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Call Admin
+                </Button>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email Admin
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                <p>
+                  Available seats are shown above. Contact admin with your
+                  preferred seat numbers.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Selected Seats Summary - Only for Admin Users */}
+      {canSelectSeats && selectedSeats.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

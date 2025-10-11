@@ -7,8 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calendar, Clock, MapPin, CreditCard, User, Lock, AlertCircle, RefreshCw } from "lucide-react";
-// useAuth removed - using simplified booking flow without authentication
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  CreditCard,
+  User,
+  Lock,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 // CustomerDetailsModal removed - using simplified booking flow without OTP
@@ -87,8 +96,20 @@ export function BookingSummary({
   onBookingCreated,
   onBookingCancelled,
 }: BookingSummaryProps) {
-  // Simplified booking flow - no payment gateway or authentication required
   const router = useRouter();
+
+  // Get user authentication info
+  let user = null;
+  let isAdmin = false;
+
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    isAdmin = user && (user.role === "admin" || user.role === "super-admin");
+  } catch (error) {
+    // Auth context not available
+    console.log("Auth context not available");
+  }
 
   // New flow states
   const [showTermsPopup, setShowTermsPopup] = useState(false);
@@ -287,6 +308,45 @@ export function BookingSummary({
     }
   };
 
+  // Manual confirmation for admin users
+  const handleManualConfirmation = async () => {
+    if (!bookingDetails) return;
+    setIsProcessing(true);
+    setBookingError(null);
+
+    console.log("🔍 Manual confirmation - bookingDetails:", bookingDetails);
+    console.log(
+      "🔍 Manual confirmation - booking_id being sent:",
+      bookingDetails.booking_id
+    );
+
+    try {
+      const { confirmBookingManually } = await import("@/lib/api");
+      const response = await confirmBookingManually({
+        booking_id: bookingDetails.booking_id,
+        seat_ids: selectedSeats.map((seat) => seat.id),
+      });
+
+      if (response.success) {
+        // Redirect to ticket page with QR code
+        router.push(
+          `/booking/ticket?booking_id=${bookingDetails.booking_id}&reference=${bookingDetails.booking_reference}`
+        );
+      } else {
+        throw new Error(response.error || "Manual confirmation failed");
+      }
+    } catch (e: any) {
+      console.error("❌ Manual Confirmation Error:", e);
+      setBookingError(
+        e?.response?.data?.error ||
+          e?.message ||
+          "Failed to confirm booking manually"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // PhonePe payment function removed - using simplified booking flow
   const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
@@ -471,6 +531,24 @@ export function BookingSummary({
                     </div>
                   )}
 
+                  {/* Manual Confirmation Button for Admin Users */}
+                  {isAdmin && !isProcessing && (
+                    <div className="text-center py-4">
+                      <Button
+                        onClick={handleManualConfirmation}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="lg"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Confirm Booking Manually
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        As an admin, you can confirm this booking without
+                        payment processing
+                      </p>
+                    </div>
+                  )}
+
                   {/* Simplified booking status */}
                   {isProcessing && (
                     <div className="text-center py-4">
@@ -483,10 +561,10 @@ export function BookingSummary({
                   {bookingError && !isProcessing && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <p className="text-red-800 text-sm">{bookingError}</p>
-                      <Button 
+                      <Button
                         onClick={() => setBookingError(null)}
-                        variant="outline" 
-                        size="sm" 
+                        variant="outline"
+                        size="sm"
                         className="mt-2"
                       >
                         Dismiss

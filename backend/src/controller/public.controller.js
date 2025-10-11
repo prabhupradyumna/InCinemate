@@ -396,14 +396,14 @@ export default class PublicController {
         order: [['row', 'ASC'], ['number', 'ASC']]
       })
 
-      // Get booked seats
+      // Get booked seats - only confirmed bookings (paid status)
       const bookedSeats = await BookedSeat.findAll({
         where: {
           booking_id: {
             [Op.in]: sequelize.literal(`(
               SELECT id FROM bookings 
               WHERE show_id = '${show_id}' 
-              AND status IN ('paid', 'pending')
+              AND status = 'paid'
             )`)
           }
         }

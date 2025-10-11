@@ -221,6 +221,13 @@ export async function confirmBooking(payload: {
   return http("POST", "/customer/bookings/confirm", payload);
 }
 
+export async function confirmBookingManually(payload: {
+  booking_id: string;
+  seat_ids: string[];
+}) {
+  return http("POST", "/customer/bookings/confirm-manual", payload);
+}
+
 export async function releaseSeatHold(payload: { booking_id: string }) {
   return http("POST", "/customer/bookings/release-hold", payload);
 }

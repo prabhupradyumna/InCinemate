@@ -394,7 +394,7 @@ export default class CustomerController {
         })
       }
 
-      // Check if seats are already booked
+      // Check if seats are already booked - only confirmed bookings (paid status)
       const existingBookings = await BookedSeat.findAll({
         where: {
           seat_id: { [Op.in]: seat_ids },
@@ -402,7 +402,7 @@ export default class CustomerController {
             [Op.in]: sequelize.literal(`(
               SELECT id FROM bookings 
               WHERE show_id = '${show_id}' 
-              AND status IN ('paid', 'pending')
+              AND status = 'paid'
             )`)
           }
         }
@@ -452,17 +452,8 @@ export default class CustomerController {
         subtotal += price
       }
 
-      // Create booked seat records
-      await Promise.all(
-        seatPricing.map(({ seat_id, price }) =>
-          BookedSeat.create({
-            booking_id: booking.id,
-            seat_id,
-            price_paid: price,
-            seat_category: seats.find(s => s.id === seat_id).category
-          })
-        )
-      )
+      // DON'T create booked seat records yet - only after admin confirmation
+      // This prevents seats from appearing as booked before confirmation
 
       // Update booking with calculated totals
       await booking.update({
@@ -607,7 +598,7 @@ export default class CustomerController {
           })),
           total_price: booking.total_price,
           booking_status: booking.booking_status,
-          created_at: booking.created_at
+          created_at: booking.createdAt
         },
         message: 'Booking confirmed successfully'
       })
@@ -724,6 +715,192 @@ export default class CustomerController {
     }
   }
 
+  // Manual confirmation for admin users - bypasses payment processing
+  static async confirmBookingManually(req, res) {
+    try {
+      const { booking_id } = req.body
+
+      if (!booking_id) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'booking_id is required',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      const sequelize = req.db
+      const Booking = defineBooking(sequelize)
+      const BookedSeat = defineBookedSeat(sequelize)
+      const Seat = defineSeat(sequelize)
+      
+      // Sync models and setup associations
+      await Promise.all([Booking.sync(), BookedSeat.sync(), Seat.sync()])
+      
+      // Setup associations manually for this request
+      Booking.belongsToMany(Seat, { through: BookedSeat, foreignKey: 'booking_id' })
+      Seat.belongsToMany(Booking, { through: BookedSeat, foreignKey: 'seat_id' })
+      BookedSeat.belongsTo(Booking, { foreignKey: 'booking_id' })
+      BookedSeat.belongsTo(Seat, { foreignKey: 'seat_id' })
+
+      // Debug: Check what bookings exist for this ID
+      const allBookings = await Booking.findAll({
+        where: { id: booking_id },
+        attributes: ['id', 'status', 'booking_status', 'booking_reference', 'createdAt']
+      })
+      
+      console.log(`[confirmBookingManually] Found ${allBookings.length} bookings for ID ${booking_id}:`, allBookings)
+
+      const booking = await Booking.findOne({
+        where: { 
+          id: booking_id, 
+          status: 'pending'
+        }
+      })
+
+      if (!booking) {
+        console.log(`[confirmBookingManually] No pending booking found for ID ${booking_id}`)
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Booking not found or already processed',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      // For admin manual confirmation, we need to get the seat information from the booking
+      // Since we no longer create BookedSeat records during holdSeats, we need to get seats differently
+      
+      // Get the show to determine auditorium and pricing
+      const Show = defineShow(sequelize)
+      await Show.sync()
+      
+      const show = await Show.findByPk(booking.show_id)
+      if (!show) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Show not found',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      // Get seat information from the request body or booking metadata
+      // For now, we'll need to get this from the frontend or store it in booking metadata
+      const { seat_ids } = req.body
+      
+      if (!seat_ids || !Array.isArray(seat_ids)) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'seat_ids are required for manual confirmation',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      // Verify seats exist and belong to the correct auditorium
+      const seats = await Seat.findAll({
+        where: {
+          id: { [Op.in]: seat_ids },
+          auditorium_id: show.auditorium_id
+        }
+      })
+
+      if (seats.length !== seat_ids.length) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'Some seats are invalid or not available for this show',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      // Create BookedSeat records now that we're confirming the booking
+      const seatPricing = []
+      let subtotal = 0
+      
+      // Calculate pricing for each seat
+      const resolvedMap = await PricingService.resolvePricesForSeats({
+        sequelize,
+        models: { SeatPricing: defineSeatPricing(sequelize), Seat: defineSeat(sequelize) },
+        seatIds: seat_ids,
+        show,
+        defaultPrice: 250
+      })
+
+      for (const seat of seats) {
+        let price = resolvedMap.get(seat.id)
+        if (price == null) {
+          price = PricingService.resolveFromShowMatrix({ seat, show, defaultPrice: 250 })
+        }
+        seatPricing.push({ seat_id: seat.id, price })
+        subtotal += price
+      }
+
+      // Create booked seat records
+      await Promise.all(
+        seatPricing.map(({ seat_id, price }) =>
+          BookedSeat.create({
+            booking_id: booking.id,
+            seat_id,
+            price_paid: price,
+            seat_category: seats.find(s => s.id === seat_id).category
+          })
+        )
+      )
+
+      const seatIds = seat_ids
+
+      // Generate QR code for ticket
+      const ticketQRCode = PaymentService.generateTicketQRCode(
+        booking.booking_reference,
+        booking.show_id,
+        seatIds
+      )
+
+      // Update booking status to confirmed (bypassing payment)
+      await booking.update({
+        status: 'paid',
+        booking_status: 'CONFIRMED',
+        payment_status: 'SUCCESS',
+        payment_method: 'manual_admin_confirmation',
+        payment_id: `MANUAL_${Date.now()}`,
+        ticket_qr_code: ticketQRCode,
+        payment_completed_at: new Date(),
+        subtotal: subtotal,
+        total_price: subtotal
+      })
+
+      // Try to release seat hold if it exists (don't fail if it doesn't)
+      try {
+        const holdInfo = await SeatHoldService.getHoldInfo(booking_id)
+        if (holdInfo) {
+          await SeatHoldService.releaseSeats(holdInfo.holdId)
+        }
+      } catch (holdError) {
+        console.log('[confirmBookingManually] Seat hold not found or already released:', holdError.message)
+        // Continue with confirmation even if hold is not found
+      }
+
+      // TODO: Send confirmation email with e-ticket
+
+      return res.json({
+        data: {
+          booking_id: booking.id,
+          booking_reference: booking.booking_reference,
+          status: booking.status,
+          booking_status: booking.booking_status,
+          payment_id: booking.payment_id,
+          ticket_qr_code: booking.ticket_qr_code,
+          total_price: booking.total_price
+        },
+        message: 'Booking confirmed manually by admin'
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[confirmBookingManually]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Manual booking confirmation failed'
+      })
+    }
+  }
+
   static async getBookingDetails(req, res) {
     try {
       const { bookingId } = req.params
@@ -819,7 +996,7 @@ export default class CustomerController {
           })),
           total_price: booking.total_price,
           booking_status: booking.booking_status,
-          created_at: booking.created_at
+          created_at: booking.createdAt
         },
         message: 'Booking details retrieved successfully'
       })

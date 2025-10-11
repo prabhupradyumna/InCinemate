@@ -12,6 +12,7 @@ import { SeatQuantitySelector } from "@/components/customer/seat-quantity-select
 import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useAuth } from "@/components/customer/auth-provider";
 
 type PublicMovie = {
   id: string;
@@ -42,10 +43,24 @@ export default function BookingPage({
       price?: number; // Individual seat price
     }>
   >([]);
-  const [showQuantitySelector, setShowQuantitySelector] = useState(true);
+  const [showQuantitySelector, setShowQuantitySelector] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+
+  // Safely get user from auth context
+  let user = null;
+  let canSelectSeats = false;
+
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    canSelectSeats =
+      user && (user.role === "admin" || user.role === "super-admin");
+  } catch (error) {
+    // Auth context not available, treat as unauthenticated user
+    console.log("Auth context not available, treating as unauthenticated user");
+  }
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback((seats: any[]) => {
@@ -223,6 +238,13 @@ export default function BookingPage({
     setShowQuantitySelector(false);
   };
 
+  // Show quantity selector only for admin users
+  useEffect(() => {
+    if (canSelectSeats && !showData) {
+      setShowQuantitySelector(true);
+    }
+  }, [canSelectSeats, showData]);
+
   const handlePayNow = () => {
     if (selectedSeats.length === 0) return;
     setShowBookingFlow(true);
@@ -290,24 +312,30 @@ export default function BookingPage({
                   maxSeats={selectedQuantity}
                 />
               </div>
-              <div className="flex justify-center px-2 sm:px-0">
-                <div className="w-full max-w-md">
-                  <SeatSelectionSummary
-                    showData={showData}
-                    selectedSeats={selectedSeats}
-                    selectedQuantity={selectedQuantity}
-                    onPayNow={handlePayNow}
-                  />
+              {/* Only show booking summary for admin users */}
+              {canSelectSeats && (
+                <div className="flex justify-center px-2 sm:px-0">
+                  <div className="w-full max-w-md">
+                    <SeatSelectionSummary
+                      showData={showData}
+                      selectedSeats={selectedSeats}
+                      selectedQuantity={selectedQuantity}
+                      onPayNow={handlePayNow}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <SeatQuantitySelector
-              isOpen={showQuantitySelector}
-              onClose={() => setShowQuantitySelector(false)}
-              onConfirm={handleQuantityConfirm}
-              categories={seatCategories}
-              selectedQuantity={selectedQuantity}
-            />
+            {/* Only show quantity selector for admin users */}
+            {canSelectSeats && (
+              <SeatQuantitySelector
+                isOpen={showQuantitySelector}
+                onClose={() => setShowQuantitySelector(false)}
+                onConfirm={handleQuantityConfirm}
+                categories={seatCategories}
+                selectedQuantity={selectedQuantity}
+              />
+            )}
           </>
         )}
       </div>

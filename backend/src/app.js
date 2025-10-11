@@ -38,11 +38,25 @@ app.use(express.json())
 app.use(cookieParser())
 
 // Simple middleware to provide models without timeout issues
-app.use((req, res, next) => {
-  req.db = sequelize
-  req.models = sequelize.models
-  req.tenantId = 'test-tenant-id' // Default for development
-  next()
+app.use(async (req, res, next) => {
+  try {
+    req.db = sequelize
+    req.tenantId = 'test-tenant-id' // Default for development
+    
+    // Ensure models are properly initialized with associations
+    if (!sequelize.models.Movie || !sequelize.models.Show) {
+      // Import and initialize ModelManager if models aren't ready
+      const { getModelManager } = await import('./models/index.js')
+      const modelManager = getModelManager()
+      await modelManager.initialize()
+    }
+    
+    req.models = sequelize.models
+    next()
+  } catch (error) {
+    console.error('[App] Model initialization error:', error)
+    next(error)
+  }
 })
 
 // Static file serving for uploads

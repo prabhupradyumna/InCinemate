@@ -744,14 +744,17 @@ export default class PublicController {
         include: [
           {
             model: Movie,
+            as: 'Movie',
             where: movieFilters,
             attributes: ['id', 'title', 'poster_url', 'trailer_url', 'synopsis', 'genres', 'genres', 'duration_minutes', 'rating', 'languages']
           },
           {
             model: Auditorium,
+            as: 'Auditorium',
             attributes: ['id', 'name'],
             include: [{
               model: Theatre,
+              as: 'Theatre',
               where: city ? { city: { [Op.iLike]: `%${city}%` } } : {},
               attributes: ['id', 'name', 'address', 'city']
             }]

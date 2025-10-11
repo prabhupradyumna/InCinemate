@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getSeatMap } from "@/lib/api";
 import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
@@ -9,6 +10,8 @@ import { BookingSummary } from "@/components/customer/booking-summary";
 import { Separator } from "@/components/ui/separator";
 import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
 import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 
 type PublicMovie = {
   id: string;
@@ -26,6 +29,7 @@ export default function BookingPage({
 }: {
   params: { movieId: string };
 }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showData, setShowData] = useState<any>(null);
@@ -230,8 +234,27 @@ export default function BookingPage({
       <div className="hidden md:block absolute top-0 left-0 right-0 z-50">
         <Header />
       </div>
-      
-      <div className="pt-16 md:pt-0">
+
+      <div>
+        {/* Navigation Breadcrumbs */}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-foreground font-medium">
+            {showData?.movie?.title || "Movie"}
+          </span>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-foreground font-medium">Seat Selection</span>
+        </div>
+
         {loading ? (
           <div className="min-h-[300px] flex items-center justify-center text-muted-foreground">
             Loading movie...

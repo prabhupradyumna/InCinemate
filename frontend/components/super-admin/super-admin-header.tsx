@@ -20,7 +20,7 @@ export function SuperAdminHeader() {
                 </span>
               </div>
               <span className="text-2xl font-bold text-foreground">
-                ScreenLease
+                BooknWatch
               </span>
             </div>
             <Badge variant="secondary" className="bg-primary/20 text-primary">

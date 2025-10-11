@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { useAuth } from "@/components/customer/auth-provider";
@@ -50,25 +51,53 @@ export default function AppSidebar() {
           icon: <Users className="h-4 w-4" />,
           name: "User Management",
           subItems: [
-            { name: "Admins", path: "/super-admin?tab=users", icon: <Shield className="h-3 w-3" /> },
-            { name: "Customers", path: "/super-admin?tab=customers", icon: <Users className="h-3 w-3" /> },
+            {
+              name: "Admins",
+              path: "/super-admin?tab=users",
+              icon: <Shield className="h-3 w-3" />,
+            },
+            {
+              name: "Customers",
+              path: "/super-admin?tab=customers",
+              icon: <Users className="h-3 w-3" />,
+            },
           ],
         },
         {
           icon: <Building2 className="h-4 w-4" />,
           name: "Venue Management",
           subItems: [
-            { name: "All Venues", path: "/super-admin?tab=venues", icon: <Building2 className="h-3 w-3" /> },
-            { name: "Auditorium Requests", path: "/super-admin?tab=auditorium-requests", icon: <FileText className="h-3 w-3" /> },
-            { name: "Auditorium Builder", path: "/super-admin?tab=auditorium-builder", icon: <Wrench className="h-3 w-3" /> },
+            {
+              name: "All Venues",
+              path: "/super-admin?tab=venues",
+              icon: <Building2 className="h-3 w-3" />,
+            },
+            {
+              name: "Auditorium Requests",
+              path: "/super-admin?tab=auditorium-requests",
+              icon: <FileText className="h-3 w-3" />,
+            },
+            {
+              name: "Auditorium Builder",
+              path: "/super-admin?tab=auditorium-builder",
+              icon: <Wrench className="h-3 w-3" />,
+            },
           ],
         },
         {
           icon: <Film className="h-4 w-4" />,
           name: "Movie Management",
           subItems: [
-            { name: "All Movies", path: "/super-admin/movies", icon: <Film className="h-3 w-3" /> },
-            { name: "Create Movie", path: "/super-admin/movies/add", icon: <Plus className="h-3 w-3" /> },
+            {
+              name: "All Movies",
+              path: "/super-admin/movies",
+              icon: <Film className="h-3 w-3" />,
+            },
+            {
+              name: "Create Movie",
+              path: "/super-admin/movies/add",
+              icon: <Plus className="h-3 w-3" />,
+            },
           ],
         },
         {
@@ -202,10 +231,20 @@ export default function AppSidebar() {
                 ? "/admin"
                 : "/"
           }
+          className="flex items-center space-x-2 px-4"
         >
-          <span className="px-4 text-xl font-bold">
-            {isExpanded || isHovered || isMobileOpen ? "ScreenLease" : "S"}
-          </span>
+          <Image
+            src="/BooknWatch - Icon.png"
+            alt="BookNWatch Logo"
+            width={24}
+            height={24}
+            className="w-6 h-6"
+          />
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <span className="text-xl font-bold text-foreground">
+              BooknWatch
+            </span>
+          )}
         </Link>
       </div>
       <div className="flex flex-col overflow-y-auto">

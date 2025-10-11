@@ -18,6 +18,7 @@ import {
   Settings,
   Home,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { useAuth } from "@/components/customer/auth-provider";
 import {
   DropdownMenu,
@@ -27,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Sheet,
@@ -46,13 +48,15 @@ export function Header() {
         <div className="flex items-center gap-3 md:gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 shrink-0">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">
-                S
-              </span>
-            </div>
+            <Image
+              src="/BooknWatch - Icon.png"
+              alt="BookNWatch Logo"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
             <span className="text-2xl font-bold text-foreground">
-              ScreenLease
+              BooknWatch
             </span>
           </Link>
 
@@ -61,12 +65,18 @@ export function Header() {
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <Select
-                defaultValue={(typeof window !== 'undefined' && localStorage.getItem('app_city')) || 'Mumbai'}
+                defaultValue={
+                  (typeof window !== "undefined" &&
+                    localStorage.getItem("app_city")) ||
+                  "Mumbai"
+                }
                 onValueChange={(value) => {
                   try {
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('app_city', value)
-                      window.dispatchEvent(new CustomEvent('city-change', { detail: value }))
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("app_city", value);
+                      window.dispatchEvent(
+                        new CustomEvent("city-change", { detail: value })
+                      );
                     }
                   } catch {}
                 }}
@@ -107,6 +117,9 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-2 sm:space-x-4 ml-auto">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -179,6 +192,10 @@ export function Header() {
                   <SheetTitle>Menu</SheetTitle>
                 </SheetHeader>
                 <div className="mt-4 space-y-2">
+                  <div className="flex items-center justify-between px-2 py-1">
+                    <span className="text-sm font-medium">Theme</span>
+                    <ThemeToggle />
+                  </div>
                   <Button
                     variant="ghost"
                     className="w-full justify-start"

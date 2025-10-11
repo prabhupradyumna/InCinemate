@@ -1,20 +1,32 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye, EyeOff, Film } from "lucide-react"
-import Link from "next/link"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye, EyeOff, Film } from "lucide-react";
+import Link from "next/link";
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,40 +36,42 @@ export default function RegisterPage() {
     role: "customer",
     venueName: "",
     venueAddress: "",
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match")
-      setIsLoading(false)
-      return
+      alert("Passwords do not match");
+      setIsLoading(false);
+      return;
     }
 
     // Simulate registration process
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500));
 
     // Redirect to login
-    window.location.href = "/login"
+    window.location.href = "/login";
 
-    setIsLoading(false)
-  }
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
           <Film className="h-8 w-8 text-primary mr-2" />
-          <h1 className="text-2xl font-bold text-foreground">ScreenLease</h1>
+          <h1 className="text-2xl font-bold text-foreground">BooknWatch</h1>
         </div>
 
         <Card className="border-border/50">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-foreground">Create Account</CardTitle>
+            <CardTitle className="text-2xl text-foreground">
+              Create Account
+            </CardTitle>
             <CardDescription className="text-muted-foreground">
-              Join ScreenLease to start managing your cinema experience
+              Join BooknWatch to start managing your cinema experience
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -71,7 +85,12 @@ export default function RegisterPage() {
                     id="firstName"
                     placeholder="John"
                     value={formData.firstName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
                     required
                     className="bg-background border-border/50 text-foreground"
                   />
@@ -84,7 +103,12 @@ export default function RegisterPage() {
                     id="lastName"
                     placeholder="Doe"
                     value={formData.lastName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
                     required
                     className="bg-background border-border/50 text-foreground"
                   />
@@ -100,7 +124,9 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="john@example.com"
                   value={formData.email}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, email: e.target.value }))
+                  }
                   required
                   className="bg-background border-border/50 text-foreground"
                 />
@@ -112,7 +138,9 @@ export default function RegisterPage() {
                 </Label>
                 <Select
                   value={formData.role}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, role: value }))
+                  }
                 >
                   <SelectTrigger className="bg-background border-border/50 text-foreground">
                     <SelectValue placeholder="Select account type" />
@@ -134,7 +162,12 @@ export default function RegisterPage() {
                       id="venueName"
                       placeholder="Cinema Palace"
                       value={formData.venueName}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, venueName: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          venueName: e.target.value,
+                        }))
+                      }
                       required
                       className="bg-background border-border/50 text-foreground"
                     />
@@ -147,7 +180,12 @@ export default function RegisterPage() {
                       id="venueAddress"
                       placeholder="123 Main St, City, State"
                       value={formData.venueAddress}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, venueAddress: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          venueAddress: e.target.value,
+                        }))
+                      }
                       required
                       className="bg-background border-border/50 text-foreground"
                     />
@@ -165,7 +203,12 @@ export default function RegisterPage() {
                     type={showPassword ? "text" : "password"}
                     placeholder="Create a password"
                     value={formData.password}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
                     required
                     className="bg-background border-border/50 text-foreground pr-10"
                   />
@@ -195,7 +238,12 @@ export default function RegisterPage() {
                     type={showConfirmPassword ? "text" : "password"}
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
                     required
                     className="bg-background border-border/50 text-foreground pr-10"
                   />
@@ -236,5 +284,5 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

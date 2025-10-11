@@ -4,16 +4,25 @@ import { Search, MapPin, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import Image from "next/image";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 const CITIES = [
-  "Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", 
-  "Hyderabad", "Pune", "Ahmedabad", "Jaipur", "Lucknow"
+  "Bengaluru",
+  "Mumbai",
+  "Delhi",
+  "Chennai",
+  "Kolkata",
+  "Hyderabad",
+  "Pune",
+  "Ahmedabad",
+  "Jaipur",
+  "Lucknow",
 ];
 
 export function MobileHeader() {
@@ -23,7 +32,7 @@ export function MobileHeader() {
 
   // Load city from localStorage on mount
   useEffect(() => {
-    const savedCity = localStorage.getItem('app_city');
+    const savedCity = localStorage.getItem("app_city");
     if (savedCity && CITIES.includes(savedCity)) {
       setSelectedCity(savedCity);
     }
@@ -38,13 +47,15 @@ export function MobileHeader() {
 
   const handleCityChange = (city: string) => {
     setSelectedCity(city);
-    localStorage.setItem('app_city', city);
-    
+    localStorage.setItem("app_city", city);
+
     // Dispatch custom event to notify other components
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('city-change', { 
-        detail: city 
-      }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("city-change", {
+          detail: city,
+        })
+      );
     }
   };
 
@@ -54,11 +65,15 @@ export function MobileHeader() {
         <div className="flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center shadow-lg">
-              <span className="text-lg font-bold text-white">TN</span>
-            </div>
+            <Image
+              src="/BooknWatch - Icon.png"
+              alt="BookNWatch Logo"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-lg"
+            />
             <h1 className="text-xl font-bold text-foreground hidden sm:block">
-              TICKETNEW
+              BooknWatch
             </h1>
           </div>
 
@@ -78,7 +93,9 @@ export function MobileHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
               <MapPin className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium hidden sm:inline">{selectedCity}</span>
+              <span className="text-sm font-medium hidden sm:inline">
+                {selectedCity}
+              </span>
               <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -86,7 +103,11 @@ export function MobileHeader() {
                 <DropdownMenuItem
                   key={city}
                   onClick={() => handleCityChange(city)}
-                  className={selectedCity === city ? "bg-primary text-primary-foreground" : ""}
+                  className={
+                    selectedCity === city
+                      ? "bg-primary text-primary-foreground"
+                      : ""
+                  }
                 >
                   {city}
                 </DropdownMenuItem>

@@ -1,4 +1,4 @@
--- ScreenLease Database Schema
+-- BooknWatch Database Schema
 -- Multi-tenant movie ticketing platform
 
 -- Users table for authentication and role management

@@ -150,8 +150,22 @@ function MovieListTableContent() {
     if (!imageUrl) return undefined;
     if (imageUrl.startsWith('http')) return imageUrl;
     
-    // Use relative path since Next.js rewrite will handle /uploads
-    return imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+    // For local development, use relative URLs since Next.js rewrite handles /uploads
+    // For production, use environment variable if provided
+    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+    const isLocalDev = process.env.NODE_ENV === 'development';
+    
+    if (isLocalDev) {
+      // In local development, use relative URLs (Next.js rewrite will proxy to backend)
+      return imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+    } else if (baseUrl && baseUrl.trim()) {
+      // In production, use environment variable if provided
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      return `${cleanBaseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
+    } else {
+      // Fallback to relative URLs
+      return imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+    }
   };
 
   // Helper to format platform status nicely

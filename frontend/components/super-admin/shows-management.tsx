@@ -610,8 +610,8 @@ export function ShowsManagement() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>Premium: ₹{show.pricing?.premium || 0}</div>
-                        <div>Regular: ₹{show.pricing?.regular || 0}</div>
+                        <div>Premium: AED {show.pricing?.premium || 0}</div>
+                        <div>Regular: AED {show.pricing?.regular || 0}</div>
                       </div>
                     </TableCell>
                     <TableCell>

@@ -39,8 +39,24 @@ export async function getAllBookings(params?: {
   limit?: number;
   status?: string;
   search?: string;
-}): Promise<PaginatedResponse<any>> {
+}): Promise<any> {
   const res = await api.get('/admin/bookings', { params });
+  return res.data;
+}
+
+// Note: Status update functionality removed for simplicity
+
+export async function getAllBookedSeats(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+}): Promise<any> {
+  const res = await api.get('/admin/booked-seats', { params });
+  return res.data;
+}
+
+export async function deleteBookedSeat(seatId: string): Promise<ApiResponse<any>> {
+  const res = await api.delete(`/admin/booked-seats/${seatId}`);
   return res.data;
 }
 

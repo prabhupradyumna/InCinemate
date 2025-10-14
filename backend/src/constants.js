@@ -114,7 +114,7 @@ export const SERVER_CONFIG = {
   
   // CORS Settings
   CORS: {
-    ORIGINS: (process.env.ORIGIN_URLS || process.env.ORIGIN_URL || 'http://localhost:5173')
+    ORIGINS: (process.env.ORIGIN_URLS || process.env.ORIGIN_URL || 'http://localhost:3000,http://localhost:3001,http://localhost:5173')
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean),

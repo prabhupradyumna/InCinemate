@@ -836,18 +836,18 @@ export function EnhancedShowCreation({
                           <span className="text-muted-foreground">
                             Premium:
                           </span>
-                          <span>₹{formData.simple_pricing.premium}</span>
+                          <span>AED {formData.simple_pricing.premium}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
                             Regular:
                           </span>
-                          <span>₹{formData.simple_pricing.regular}</span>
+                          <span>AED {formData.simple_pricing.regular}</span>
                         </div>
                         {formData.simple_pricing.vip && (
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">VIP:</span>
-                            <span>₹{formData.simple_pricing.vip}</span>
+                            <span>AED {formData.simple_pricing.vip}</span>
                           </div>
                         )}
                       </>

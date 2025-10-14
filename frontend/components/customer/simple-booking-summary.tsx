@@ -55,7 +55,7 @@ interface BookingDetails {
     id: string;
     row: string;
     number: number;
-    category: string;
+    category: "vip" | "diamond" | "platinum" | "gold" | "silver";
     price: number;
   }>;
   subtotal: number;
@@ -90,6 +90,24 @@ export function SimpleBookingSummary({
   // Determine if user is admin/superadmin (direct booking) or public (reservation)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
   const isDirectBooking = isAdminUser;
+
+  // Color mapping for seat types
+  const getSeatTypeColors = (type: string) => {
+    switch (type) {
+      case "vip":
+        return { bg: "bg-purple-200", border: "border-purple-400", text: "text-purple-800" };
+      case "diamond":
+        return { bg: "bg-cyan-200", border: "border-cyan-400", text: "text-cyan-800" };
+      case "platinum":
+        return { bg: "bg-gray-200", border: "border-gray-400", text: "text-gray-800" };
+      case "gold":
+        return { bg: "bg-yellow-200", border: "border-yellow-400", text: "text-yellow-800" };
+      case "silver":
+        return { bg: "bg-slate-200", border: "border-slate-400", text: "text-slate-800" };
+      default:
+        return { bg: "bg-secondary", border: "border-border", text: "text-secondary-foreground" };
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setCustomerDetails(prev => ({
@@ -176,10 +194,10 @@ export function SimpleBookingSummary({
   const isDetailsValid = customerDetails.fullName.trim() && customerDetails.phone.trim();
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
             {isDirectBooking ? (
               <>
                 <CheckCircle className="h-5 w-5 text-green-600" />
@@ -192,64 +210,55 @@ export function SimpleBookingSummary({
               </>
             )}
           </CardTitle>
-          {!isDirectBooking && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium">This is a seat reservation request</p>
-                  <p>Your request will be reviewed by our admin team. You will be contacted for payment and confirmation.</p>
-                </div>
-              </div>
-            </div>
-          )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           {/* Movie Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Movie Details</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">{showData.movie.title}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-500" />
-                  <span>{formatDate(showData.showtime.date)} at {showData.showtime.time}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span>{showData.venue.name} - {showData.screen.name}</span>
-                </div>
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Movie Details</h3>
+            <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <span className="font-semibold text-foreground">{showData.movie.title}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <span className="text-foreground">{formatDate(showData.showtime.date)} at {showData.showtime.time}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <span className="text-foreground">{showData.venue.name} - {showData.screen.name}</span>
               </div>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Selected Seats</h3>
-              <div className="space-y-2">
-                {bookingDetails.seats.map((seat) => (
-                  <div key={seat.id} className="flex justify-between items-center">
-                    <span className="font-medium">
-                      {seat.row}{seat.number} ({seat.category})
-                    </span>
-                    {isDirectBooking && (
-                      <span className="text-green-600 font-semibold">
-                        ₹{seat.price}
-                      </span>
-                    )}
-                  </div>
-                ))}
-                {isDirectBooking && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-between items-center font-semibold text-lg">
-                      <span>Total</span>
-                      <span className="text-green-600">₹{bookingDetails.total_price}</span>
+          {/* Selected Seats */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">Selected Seats</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {bookingDetails.seats.map((seat) => {
+                  const colors = getSeatTypeColors(seat.category);
+                  return (
+                    <div key={seat.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+                      <div className={`w-5 h-5 ${colors.bg} ${colors.border} border rounded-sm flex-shrink-0`}></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground">{seat.row}{seat.number}</div>
+                        <div className="text-xs text-muted-foreground capitalize">{seat.category}</div>
+                      </div>
+                      {isDirectBooking && (
+                        <div className="text-sm font-semibold text-primary">AED {seat.price}</div>
+                      )}
                     </div>
-                  </>
-                )}
+                  );
+                })}
               </div>
+              
+              {isDirectBooking && (
+                <div className="flex justify-between items-center pt-3 border-t border-border">
+                  <span className="text-base font-semibold text-foreground">Total</span>
+                  <span className="text-xl font-bold text-primary">AED {bookingDetails.total_price}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -257,12 +266,12 @@ export function SimpleBookingSummary({
 
           {/* Customer Details Form */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">
+            <h3 className="text-lg font-semibold text-foreground">
               {isDirectBooking ? "Customer Details" : "Contact Information"}
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="flex items-center gap-2">
+                <Label htmlFor="fullName" className="flex items-center gap-2 text-sm font-medium">
                   <User className="h-4 w-4" />
                   Full Name *
                 </Label>
@@ -272,12 +281,12 @@ export function SimpleBookingSummary({
                   placeholder="Enter your full name"
                   value={customerDetails.fullName}
                   onChange={(e) => handleInputChange("fullName", e.target.value)}
-                  className="w-full"
+                  className="w-full h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-2">
+                <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
                   <Phone className="h-4 w-4" />
                   Phone Number *
                 </Label>
@@ -287,12 +296,12 @@ export function SimpleBookingSummary({
                   placeholder="Enter your phone number"
                   value={customerDetails.phone}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
-                  className="w-full"
+                  className="w-full h-11"
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
                   <Mail className="h-4 w-4" />
                   Email Address (Optional)
                 </Label>
@@ -302,7 +311,7 @@ export function SimpleBookingSummary({
                   placeholder="Enter your email address"
                   value={customerDetails.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="w-full"
+                  className="w-full h-11"
                 />
               </div>
             </div>
@@ -335,12 +344,12 @@ export function SimpleBookingSummary({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-center gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-4">
             {!isDirectBooking && !isSubmitted && (
               <Button
                 onClick={handleCompleteBooking}
                 disabled={!isDetailsValid || isProcessing}
-                className="px-8"
+                className="w-full sm:w-auto px-8 py-3 text-base font-semibold"
               >
                 {isProcessing ? "Submitting..." : "Submit Reservation Request"}
               </Button>
@@ -348,7 +357,7 @@ export function SimpleBookingSummary({
             <Button
               onClick={() => router.push("/")}
               variant="outline"
-              className="px-8"
+              className="w-full sm:w-auto px-8 py-3 text-base font-semibold"
             >
               Back to Home
             </Button>

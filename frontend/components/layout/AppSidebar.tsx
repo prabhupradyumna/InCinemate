@@ -22,6 +22,7 @@ import {
   Film,
   Plus,
   Calendar,
+  Square,
 } from "lucide-react";
 
 type NavItem = {
@@ -120,20 +121,24 @@ export default function AppSidebar() {
     if (user?.role === "admin") {
       return [
         {
-          icon: <Grid2x2 className="h-4 w-4" />,
-          name: "Dashboard",
-          path: "/admin",
+          icon: <Settings className="h-4 w-4" />,
+          name: "Bookings",
+          path: "/admin?tab=bookings",
         },
         {
-          icon: <Settings className="h-4 w-4" />,
-          name: "Venue Settings",
-          path: "/admin",
+          icon: <Square className="h-4 w-4" />,
+          name: "Booked Seats",
+          path: "/admin?tab=booked-seats",
         },
         {
           icon: <LogOut className="h-4 w-4" />,
           name: "Log out",
           onClick: logout,
         },
+        { icon: <Home className="h-4 w-4" />,
+          name: "Home",
+          path: "/",
+        }
       ];
     }
     return [{ icon: <Home className="h-4 w-4" />, name: "Home", path: "/" }];

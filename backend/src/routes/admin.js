@@ -47,8 +47,23 @@ router.get('/shows',
 
 // Get all bookings for management
 router.get('/bookings', 
-  requirePermission('Manage Bookings'),
   AdminController.getAllBookings
+)
+
+// Note: Status update functionality removed for simplicity
+
+// ==============================
+// BOOKED SEATS MANAGEMENT ROUTES
+// ==============================
+
+// Get all booked seats for management
+router.get('/booked-seats', 
+  AdminController.getAllBookedSeats
+)
+
+// Delete/release a booked seat
+router.delete('/booked-seats/:seatId', 
+  AdminController.deleteBookedSeat
 )
 
 // ==============================

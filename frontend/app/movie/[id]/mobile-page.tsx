@@ -163,13 +163,6 @@ export default function MobileMovieDetailPage({
                 <Badge>{movie.languages[0]}</Badge>
               )}
             </div>
-
-            {movie.synopsis && (
-              <p className="text-muted-foreground leading-relaxed">
-                {movie.synopsis}
-              </p>
-            )}
-
             {movie.cast && movie.cast.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Cast</h3>

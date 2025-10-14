@@ -939,8 +939,8 @@ export function AuditoriumConfigurator({
                       {p.number} ({p.category})
                     </span>
                     <span>
-                      ₹{p.base_price ?? "-"}
-                      {p.show_price ? ` (show ₹${p.show_price})` : ""}
+                      AED {p.base_price ?? "-"}
+                      {p.show_price ? ` (show AED ${p.show_price})` : ""}
                     </span>
                   </div>
                 ))}
@@ -1061,7 +1061,7 @@ function SeatPriceHint({
         Row {row}
         {number}
       </span>
-      <span>₹{match.show_price ?? match.base_price ?? "-"}</span>
+      <span>AED {match.show_price ?? match.base_price ?? "-"}</span>
       {match.show_price != null && (
         <span className="text-xs text-muted-foreground">(show override)</span>
       )}

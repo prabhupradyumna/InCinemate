@@ -7,7 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+<<<<<<< HEAD
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  CreditCard,
+  User,
+  Lock,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+=======
 import { Calendar, Clock, MapPin, CreditCard, User, Lock, AlertCircle, RefreshCw, Home } from "lucide-react";
+>>>>>>> 1760ee160e639d2410161f60a5cd66d506365019
 import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -63,7 +76,7 @@ interface BookingSummaryProps {
     id: string;
     row: string;
     seat: number;
-    type: "vip" | "diamond" | "platinum" | "gold" | "silver" | "premium" | "regular";
+    type: "vip" | "diamond" | "platinum" | "gold" | "silver";
     price?: number; // Individual seat price
   }>;
   selectedQuantity?: number;
@@ -90,12 +103,72 @@ export function BookingSummary({
   onBookingCreated,
   onBookingCancelled,
 }: BookingSummaryProps) {
-  // Simplified booking flow - no payment gateway or authentication required
   const router = useRouter();
   const { user } = useAuth();
   
   // Determine if user is admin/superadmin
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
+
+  // Color mapping for seat categories (same as other components)
+  const getSeatCategoryColors = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "vip":
+        return {
+          bg: "bg-purple-200",
+          border: "border-purple-400",
+          text: "text-purple-800",
+          legend: "bg-purple-200 border-purple-400"
+        };
+      case "diamond":
+        return {
+          bg: "bg-cyan-200",
+          border: "border-cyan-400",
+          text: "text-cyan-800",
+          legend: "bg-cyan-200 border-cyan-400"
+        };
+      case "platinum":
+        return {
+          bg: "bg-gray-200",
+          border: "border-gray-400",
+          text: "text-gray-800",
+          legend: "bg-gray-200 border-gray-400"
+        };
+      case "gold":
+        return {
+          bg: "bg-yellow-200",
+          border: "border-yellow-400",
+          text: "text-yellow-800",
+          legend: "bg-yellow-200 border-yellow-400"
+        };
+      case "silver":
+        return {
+          bg: "bg-slate-200",
+          border: "border-slate-400",
+          text: "text-slate-800",
+          legend: "bg-slate-200 border-slate-400"
+        };
+      default:
+        return {
+          bg: "bg-secondary",
+          border: "border-border",
+          text: "text-muted-foreground",
+          legend: "bg-secondary border-border"
+        };
+    }
+  };
+
+  // Get user authentication info
+  let user = null;
+  let isAdmin = false;
+
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    isAdmin = user && (user.role === "admin" || user.role === "super-admin");
+  } catch (error) {
+    // Auth context not available
+    console.log("Auth context not available");
+  }
 
   // New flow states
   const [showTermsPopup, setShowTermsPopup] = useState(false);
@@ -132,7 +205,7 @@ export function BookingSummary({
       : Array.from({ length: selectedQuantity }, (_, i) => ({
           row: "A",
           seat: i + 1,
-          type: "premium" as const,
+          type: "vip" as const,
         }));
 
   const subtotal = mockSelectedSeats.reduce((total, seat) => {
@@ -301,6 +374,45 @@ export function BookingSummary({
     }
   };
 
+  // Manual confirmation for admin users
+  const handleManualConfirmation = async () => {
+    if (!bookingDetails) return;
+    setIsProcessing(true);
+    setBookingError(null);
+
+    console.log("🔍 Manual confirmation - bookingDetails:", bookingDetails);
+    console.log(
+      "🔍 Manual confirmation - booking_id being sent:",
+      bookingDetails.booking_id
+    );
+
+    try {
+      const { confirmBookingManually } = await import("@/lib/api");
+      const response = await confirmBookingManually({
+        booking_id: bookingDetails.booking_id,
+        seat_ids: selectedSeats.map((seat) => seat.id),
+      });
+
+      if (response.success) {
+        // Redirect to ticket page with QR code
+        router.push(
+          `/booking/ticket?booking_id=${bookingDetails.booking_id}&reference=${bookingDetails.booking_reference}`
+        );
+      } else {
+        throw new Error(response.error || "Manual confirmation failed");
+      }
+    } catch (e: any) {
+      console.error("❌ Manual Confirmation Error:", e);
+      setBookingError(
+        e?.response?.data?.error ||
+          e?.message ||
+          "Failed to confirm booking manually"
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   // PhonePe payment function removed - using simplified booking flow
   const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
@@ -367,7 +479,7 @@ export function BookingSummary({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
-                <span>{formatDate(showData.showtime.date)}</span>
+                <span>{new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-3 w-3" />
@@ -388,15 +500,19 @@ export function BookingSummary({
                 {mockSelectedSeats.map((seat, index) => (
                   <div
                     key={index}
-                    className="flex justify-between text-xs md:text-sm"
+                    className="flex justify-between items-center text-xs md:text-sm"
                   >
-                    <span>
-                      {seat.row}
-                      {seat.seat} ({seat.type})
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {seat.row}{seat.seat}
+                      </span>
+                      <div className={`px-2 py-1 rounded-md text-xs font-medium ${getSeatCategoryColors(seat.type).bg} ${getSeatCategoryColors(seat.type).text} ${getSeatCategoryColors(seat.type).border} border`}>
+                        {seat.type}
+                      </div>
+                    </div>
                     {isAdminUser && (
                       <span>
-                        ₹
+                        AED 
                         {(
                           (seat as any).price ||
                           showData.showtime.pricing[seat.type as keyof typeof showData.showtime.pricing]
@@ -416,7 +532,7 @@ export function BookingSummary({
             <div className="space-y-2">
               <div className="flex justify-between text-xs md:text-sm">
                 <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+                <span>AED {subtotal.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold text-sm md:text-base">
@@ -424,7 +540,7 @@ export function BookingSummary({
                 <span className="text-primary">
                   {isHoldingSeats
                     ? "Calculating..."
-                    : `₹${(bookingDetails?.total_price || total).toFixed(2)}`}
+                    : `AED ${(bookingDetails?.total_price || total).toFixed(2)}`}
                 </span>
               </div>
             </div>
@@ -443,7 +559,7 @@ export function BookingSummary({
                   {isHoldingSeats
                     ? "Processing..."
                     : isAdminUser 
-                      ? `Pay ₹${total.toFixed(0)}`
+                      ? `Pay AED ${total.toFixed(0)}`
                       : "Reserve Seats"}
                 </Button>
                 {onBack && (
@@ -489,10 +605,28 @@ export function BookingSummary({
                         <p className="font-medium mb-1">
                           Seats Reserved Successfully!
                         </p>
-                        <p>Your seats have been held for 10 minutes</p>
+                        <p>Your seats have been locked for Public Viewers   </p>
                       </div>
                       <p className="text-xs text-muted-foreground mb-4">
                         Payment gateway selection will appear automatically
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Manual Confirmation Button for Admin Users */}
+                  {isAdmin && !isProcessing && (
+                    <div className="text-center py-4">
+                      <Button
+                        onClick={handleManualConfirmation}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        size="lg"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Confirm Booking Manually
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        As an admin, you can confirm this booking without
+                        payment processing
                       </p>
                     </div>
                   )}
@@ -509,10 +643,10 @@ export function BookingSummary({
                   {bookingError && !isProcessing && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                       <p className="text-red-800 text-sm">{bookingError}</p>
-                      <Button 
+                      <Button
                         onClick={() => setBookingError(null)}
-                        variant="outline" 
-                        size="sm" 
+                        variant="outline"
+                        size="sm"
                         className="mt-2"
                       >
                         Dismiss
@@ -612,7 +746,7 @@ export function BookingSummary({
         onClose={handleBackFromTerms}
         onAccept={handleAcceptTerms}
         movieTitle={showData.movie.title}
-        showTime={`${formatDate(showData.showtime.date)} ${showData.showtime.time}`}
+        showTime={`${new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${showData.showtime.time}`}
         venue={showData.venue.name}
         totalAmount={total}
       />

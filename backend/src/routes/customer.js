@@ -40,6 +40,9 @@ router.post('/bookings/hold-seats', CustomerController.holdSeats)
 // Confirm booking with payment
 router.post('/bookings/confirm', CustomerController.confirmBooking)
 
+// Manual confirmation for admin users (bypasses payment)
+router.post('/bookings/confirm-manual', authorizeRoles('admin', 'super_admin'), CustomerController.confirmBookingManually)
+
 // Routes moved to public section above
 
 // Release seat hold manually

@@ -7,6 +7,7 @@ import { SimpleBookingSummary } from "@/components/customer/simple-booking-summa
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+
 interface ShowData {
   movie: {
     id: string;
@@ -65,7 +66,6 @@ export default function SimpleBookingPage() {
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const bookingId = searchParams.get("booking_id");
 
   useEffect(() => {
@@ -115,20 +115,9 @@ export default function SimpleBookingPage() {
         }
       };
 
-      const mockBookingDetails: BookingDetails = {
-        booking_id: bookingId,
-        booking_reference: "BK001",
-        seats: [
-          { id: "1", row: "A", number: 5, category: "VIP", price: 250 },
-          { id: "2", row: "A", number: 6, category: "VIP", price: 250 }
-        ],
-        subtotal: 500,
-        total_price: 500,
-        hold_expires_at: new Date(Date.now() + 3600000).toISOString()
-      };
-
+      
       setShowData(mockShowData);
-      setBookingDetails(mockBookingDetails);
+
     } catch (err: any) {
       console.error("Error fetching booking details:", err);
       setError(err.message || "Failed to fetch booking details");
@@ -137,7 +126,7 @@ export default function SimpleBookingPage() {
     }
   };
 
-
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -149,7 +138,7 @@ export default function SimpleBookingPage() {
     );
   }
 
-  if (error || !showData || !bookingDetails) {
+  if (error || !showData) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md mx-auto">
@@ -175,7 +164,7 @@ export default function SimpleBookingPage() {
   return (
     <SimpleBookingSummary
       showData={showData}
-      bookingDetails={bookingDetails}
+      bookingDetails ={{}}
       onBookingComplete={(bookingId) => {
         console.log("Booking completed:", bookingId);
       }}

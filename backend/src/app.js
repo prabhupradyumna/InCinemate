@@ -37,6 +37,14 @@ app.options('*', cors({
 app.use(express.json())
 app.use(cookieParser())
 
+// Debug middleware to log incoming requests (only for auth endpoints)
+app.use((req, res, next) => {
+  if (req.url.includes('/auth/')) {
+    console.log(`📥 Auth Request: ${req.method} ${req.url}`)
+  }
+  next()
+})
+
 // Simple middleware to provide models without timeout issues
 app.use(async (req, res, next) => {
   try {

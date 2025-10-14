@@ -34,28 +34,28 @@ export default function PaymentSuccessPage() {
       return;
     }
 
-    checkPaymentStatus();
+    // checkPaymentStatus();
   }, [merchantOrderId]);
 
-  const checkPaymentStatus = async () => {
-    if (!merchantOrderId) return;
+  // const checkPaymentStatus = async () => {
+  //   if (!merchantOrderId) return;
     
-    try {
-      const { checkPaymentStatus } = await import("@/lib/api");
+  //   try {
+  //     // const { checkPaymentStatus } = await import("@/lib/api");
       
-      const response = await checkPaymentStatus(merchantOrderId);
+  //     const response = await checkPaymentStatus(merchantOrderId);
 
-      if (response.success) {
-        setPaymentStatus(response.data);
-      } else {
-        setError(response.error || 'Failed to check payment status');
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to check payment status');
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (response.success) {
+  //       setPaymentStatus(response.data);
+  //     } else {
+  //       setError(response.error || 'Failed to check payment status');
+  //     }
+  //   } catch (err: any) {
+  //     setError(err.message || 'Failed to check payment status');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -152,7 +152,7 @@ export default function PaymentSuccessPage() {
           <CardTitle className="flex items-center justify-between">
             <span>Payment Status</span>
             <Badge variant="outline" className="text-xs">
-              ₹{paymentStatus.amount.toFixed(0)}
+              AED {paymentStatus.amount.toFixed(0)}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -189,7 +189,7 @@ export default function PaymentSuccessPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
-                <span className="font-semibold">₹{paymentStatus.amount.toFixed(0)}</span>
+                <span className="font-semibold">AED {paymentStatus.amount.toFixed(0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment Status:</span>

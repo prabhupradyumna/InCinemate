@@ -127,14 +127,10 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "CONFIRMED":
-        return "default";
       case "PENDING":
         return "secondary";
       case "CANCELLED":
         return "destructive";
-      case "COMPLETED":
-        return "outline";
       default:
         return "secondary";
     }
@@ -245,9 +241,7 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -301,7 +295,7 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    ₹{booking.total_price}
+                    AED {booking.total_price}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(booking.booking_status)}>
@@ -387,12 +381,12 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
                                 {selectedBooking.seats.map((seat, index) => (
                                   <div key={index} className="flex justify-between items-center text-sm">
                                     <span>{seat.row}{seat.number} ({seat.category})</span>
-                                    <span className="font-medium">₹{seat.price}</span>
+                                    <span className="font-medium">AED {seat.price}</span>
                                   </div>
                                 ))}
                                 <div className="border-t pt-2 flex justify-between items-center font-semibold">
                                   <span>Total:</span>
-                                  <span>₹{selectedBooking.total_price}</span>
+                                  <span>AED {selectedBooking.total_price}</span>
                                 </div>
                               </div>
                             </div>

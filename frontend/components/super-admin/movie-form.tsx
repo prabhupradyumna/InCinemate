@@ -183,8 +183,36 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     if (!url) return "";
     if (url.startsWith("data:")) return url; // already a data URL preview
     if (url.startsWith("http")) return url; // absolute URL
-    // For relative paths, use them as-is since Next.js rewrite will handle /uploads
-    return url.startsWith('/') ? url : `/${url}`;
+    
+    // For local development, use relative URLs since Next.js rewrite handles /uploads
+    // For production, use environment variable if provided
+    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+    const isLocalDev = process.env.NODE_ENV === 'development';
+    
+    console.log('🖼️ normalizeImageUrl debug:', {
+      originalUrl: url,
+      baseUrl: baseUrl,
+      nodeEnv: process.env.NODE_ENV,
+      isLocalDev: isLocalDev
+    });
+    
+    if (isLocalDev) {
+      // In local development, use relative URLs (Next.js rewrite will proxy to backend)
+      const finalUrl = url.startsWith('/') ? url : `/${url}`;
+      console.log('🖼️ Local dev relative URL:', finalUrl);
+      return finalUrl;
+    } else if (baseUrl && baseUrl.trim()) {
+      // In production, use environment variable if provided
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      const finalUrl = `${cleanBaseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+      console.log('🖼️ Production URL:', finalUrl);
+      return finalUrl;
+    } else {
+      // Fallback to relative URLs
+      const finalUrl = url.startsWith('/') ? url : `/${url}`;
+      console.log('🖼️ Fallback relative URL:', finalUrl);
+      return finalUrl;
+    }
   };
 
   // Cast & Crew Management State
@@ -591,10 +619,40 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       if (response.ok) {
   console.log(`✅ ${type} upload successful:`, result);
         
-        // Use relative URL since Next.js rewrite will handle /uploads
+        // Construct full URL for the backend image
+        const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+        const isLocalDev = process.env.NODE_ENV === 'development';
+        
+        console.log('📤 uploadFile debug:', {
+          resultUrl: result.url,
+          baseUrl: baseUrl,
+          nodeEnv: process.env.NODE_ENV,
+          isLocalDev: isLocalDev
+        });
+        
         const fullImageUrl = result.url.startsWith('http') 
           ? result.url 
-          : result.url.startsWith('/') ? result.url : `/${result.url}`;
+          : isLocalDev
+            ? (() => {
+                // In local development, use relative URLs (Next.js rewrite will proxy to backend)
+                const finalUrl = result.url.startsWith('/') ? result.url : `/${result.url}`;
+                console.log('📤 Local dev relative upload URL:', finalUrl);
+                return finalUrl;
+              })()
+            : baseUrl && baseUrl.trim()
+              ? (() => {
+                  // In production, use environment variable if provided
+                  const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+                  const finalUrl = `${cleanBaseUrl}${result.url.startsWith('/') ? result.url : `/${result.url}`}`;
+                  console.log('📤 Production upload URL:', finalUrl);
+                  return finalUrl;
+                })()
+              : (() => {
+                  // Fallback to relative URLs
+                  const finalUrl = result.url.startsWith('/') ? result.url : `/${result.url}`;
+                  console.log('📤 Fallback relative upload URL:', finalUrl);
+                  return finalUrl;
+                })();
         
   console.log(`🖼️ Full ${type} image URL:`, fullImageUrl);
         return fullImageUrl;

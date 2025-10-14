@@ -45,7 +45,7 @@ export default function BookingPage({
       price?: number; // Individual seat price
     }>
   >([]);
-  const [showQuantitySelector, setShowQuantitySelector] = useState(true);
+  const [showQuantitySelector, setShowQuantitySelector] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
@@ -54,6 +54,20 @@ export default function BookingPage({
   // Determine if user is admin/superadmin (direct booking) or public (reservation)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
   const isDirectBooking = isAdminUser;
+
+  // Safely get user from auth context
+  let user = null;
+  let canSelectSeats = false;
+
+  try {
+    const authContext = useAuth();
+    user = authContext.user;
+    canSelectSeats =
+      user && (user.role === "admin" || user.role === "super-admin");
+  } catch (error) {
+    // Auth context not available, treat as unauthenticated user
+    console.log("Auth context not available, treating as unauthenticated user");
+  }
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback((seats: any[]) => {
@@ -83,10 +97,6 @@ export default function BookingPage({
 
         // Transform API shape to SeatSelection expected shape
         // Prefer seat_map; if empty, attempt to build from seats_flat
-        const mapType = (cat: any): "premium" | "regular" => {
-          const c = String(cat || "").toLowerCase();
-          return c === "regular" ? "regular" : "premium";
-        };
 
         const seatIdMap: Record<string, string> = {};
         let rows = Object.entries(apiData.seat_map || {}).map(
@@ -97,7 +107,7 @@ export default function BookingPage({
             return {
               row,
               seats: (seats || []).map((s: any) => s.number),
-              type: mapType(seats && seats[0]?.category),
+              type: normalizeCategory(seats && seats[0]?.category),
             };
           }
         );
@@ -114,7 +124,7 @@ export default function BookingPage({
             return {
               row,
               seats: (seats || []).map((s: any) => s.number),
-              type: mapType(seats && seats[0]?.category),
+              type: normalizeCategory(seats && seats[0]?.category),
             };
           });
         }
@@ -158,7 +168,9 @@ export default function BookingPage({
                   minute: "2-digit",
                 })
               : "",
-            pricing: show.pricing || { premium: 0, regular: 0 },
+            pricing:
+              show.pricing ||
+              { vip: 0, diamond: 0, platinum: 0, gold: 0, silver: 0 },
           },
           bookedSeats,
           seatIdMap,
@@ -177,6 +189,20 @@ export default function BookingPage({
     loadSeatMap();
   }, [params.movieId]);
 
+  // Helper function to normalize seat categories
+  const normalizeCategory = (
+    cat: any
+  ): "vip" | "diamond" | "platinum" | "gold" | "silver" => {
+    const c = String(cat || "").toLowerCase();
+    if (c.includes("vip")) return "vip";
+    if (c.includes("diamond")) return "diamond";
+    if (c.includes("platinum")) return "platinum";
+    if (c.includes("gold")) return "gold";
+    if (c.includes("silver")) return "silver";
+    // Fallback: treat unknown as gold
+    return "gold";
+  };
+
   // Seat categories with pricing and availability from backend data
   const seatCategories = useMemo(() => {
     if (!showData) return [];
@@ -188,17 +214,20 @@ export default function BookingPage({
     const categoryMap = new Map();
 
     seatsFlat.forEach((seat: any) => {
-      const category = seat.category?.toUpperCase() || "REGULAR";
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, {
-          name: category,
-          price: pricing[seat.category] || pricing[`row_${seat.row}`] || 250,
+      // Normalize category to our new seat types
+      const normalizedCategory = normalizeCategory(seat.category);
+      const categoryKey = normalizedCategory.toUpperCase();
+      
+      if (!categoryMap.has(categoryKey)) {
+        categoryMap.set(categoryKey, {
+          name: normalizedCategory,
+          price: pricing[normalizedCategory] || pricing[seat.category] || pricing[`row_${seat.row}`] || 250,
           totalSeats: 0,
           availableSeats: 0,
         });
       }
 
-      const cat = categoryMap.get(category);
+      const cat = categoryMap.get(categoryKey);
       cat.totalSeats++;
       if (seat.is_available) {
         cat.availableSeats++;
@@ -231,6 +260,7 @@ export default function BookingPage({
     setShowQuantitySelector(false);
   };
 
+
   const handlePayNow = async () => {
     if (selectedSeats.length === 0) return;
 
@@ -242,7 +272,16 @@ export default function BookingPage({
       try {
         const isPremiumType = (t: any) =>
           t === 'vip' || t === 'diamond' || t === 'platinum';
-        const mapCategory = (t: any) => (isPremiumType(t) ? 'Premium' : 'Regular');
+        const mapCategory = (t: any) => {
+          // Map to our new seat types
+          if (t === 'vip') return 'vip';
+          if (t === 'diamond') return 'diamond';
+          if (t === 'platinum') return 'platinum';
+          if (t === 'gold') return 'gold';
+          if (t === 'silver') return 'silver';
+          // Fallback for unknown types
+          return isPremiumType(t) ? 'vip' : 'gold';
+        };
         // Create a simple booking data structure for public users
         const bookingData = {
           booking_id: `temp_${Date.now()}`, // Temporary ID
@@ -341,16 +380,19 @@ export default function BookingPage({
                   maxSeats={selectedQuantity}
                 />
               </div>
-              <div className="flex justify-center px-2 sm:px-0">
-                <div className="w-full max-w-md">
-                  <SeatSelectionSummary
-                    showData={showData}
-                    selectedSeats={selectedSeats}
-                    selectedQuantity={selectedQuantity}
-                    onPayNow={handlePayNow}
-                  />
+              {/* Only show booking summary for admin users */}
+              {canSelectSeats && (
+                <div className="flex justify-center px-2 sm:px-0">
+                  <div className="w-full max-w-md">
+                    <SeatSelectionSummary
+                      showData={showData}
+                      selectedSeats={selectedSeats}
+                      selectedQuantity={selectedQuantity}
+                      onPayNow={handlePayNow}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
             <SeatQuantitySelector
               isOpen={showQuantitySelector}

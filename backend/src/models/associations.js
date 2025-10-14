@@ -88,18 +88,18 @@ export function setupAssociations(sequelize) {
   Tenant.hasMany(Movie, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
   Movie.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
 
-  // Show associations (defined in Show model)
-  // Movie.hasMany(Show, { foreignKey: 'movie_id' })
-  // Show.belongsTo(Movie, { foreignKey: 'movie_id', as: 'Movie' })
+  // Show associations
+  Movie.hasMany(Show, { foreignKey: 'movie_id', as: 'shows' })
+  Show.belongsTo(Movie, { foreignKey: 'movie_id', as: 'Movie' })
 
-  // Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
-  // Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
+  Tenant.hasMany(Show, { foreignKey: 'tenant_id', sourceKey: 'tenant_id' })
+  Show.belongsTo(Tenant, { foreignKey: 'tenant_id', targetKey: 'tenant_id' })
 
-  // Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
-  // Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id', as: 'Auditorium' })
+  Auditorium.hasMany(Show, { foreignKey: 'auditorium_id' })
+  Show.belongsTo(Auditorium, { foreignKey: 'auditorium_id', as: 'Auditorium' })
 
-  // User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
-  // Show.belongsTo(User, { foreignKey: 'created_by', as: 'CreatedBy' })
+  User.hasMany(Show, { foreignKey: 'created_by', as: 'createdShows' })
+  Show.belongsTo(User, { foreignKey: 'created_by', as: 'CreatedBy' })
 
   // Booking associations (updated)
   User.hasMany(Booking, { foreignKey: 'customer_id', as: 'customerBookings' })

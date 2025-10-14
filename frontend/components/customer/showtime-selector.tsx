@@ -90,7 +90,7 @@ export function ShowtimeSelector({
                     </div>
 
                     {/* Showtimes */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {aud.shows?.map((s) => {
                         const dt = new Date(s.show_datetime);
                         const label = isNaN(dt.getTime())
@@ -109,9 +109,12 @@ export function ShowtimeSelector({
                             variant="outline"
                             size="sm"
                             onClick={() => onSelect(s.id)}
-                            className="h-9 px-4 text-sm font-medium hover:bg-primary hover:text-primary-foreground transition-colors"
+                            className="h-10 px-6 py-2 text-sm font-medium border-2 border-primary/20 bg-primary/5 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer rounded-lg"
                           >
-                            {label}
+                            <div className="flex flex-col items-center">
+                              <span className="font-semibold">{label}</span>
+                              <span className="text-xs opacity-75 mt-0.5">Tap to select</span>
+                            </div>
                           </Button>
                         );
                       })}

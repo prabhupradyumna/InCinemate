@@ -139,19 +139,11 @@ export function Header() {
                   <DropdownMenuItem onSelect={() => router.push("/profile")}>
                     Profile
                   </DropdownMenuItem>
-                  {user.role === "admin" && (
+                  {(user.role === "admin" || user.role === "super-admin") && (
                     <DropdownMenuItem asChild>
-                      <Link href="/admin">
+                      <Link href={user.role === "admin" ? "/admin" : "/super-admin"}>
                         <Settings className="mr-2 h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  {user.role === "super-admin" && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/super-admin">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Super Admin
+                        Admin
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -195,22 +187,13 @@ export function Header() {
                       >
                         Profile
                       </Button>
-                      {user.role === "admin" && (
+                      {(user.role === "admin" || user.role === "super-admin") && (
                         <Button
                           variant="ghost"
                           className="w-full justify-start"
-                          onClick={() => router.push("/admin")}
+                          onClick={() => router.push(user.role === "admin" ? "/admin" : "/super-admin")}
                         >
-                          <Settings className="mr-2 h-4 w-4" /> Admin Dashboard
-                        </Button>
-                      )}
-                      {user.role === "super-admin" && (
-                        <Button
-                          variant="ghost"
-                          className="w-full justify-start"
-                          onClick={() => router.push("/super-admin")}
-                        >
-                          <Settings className="mr-2 h-4 w-4" /> Super Admin
+                          <Settings className="mr-2 h-4 w-4" /> Admin
                         </Button>
                       )}
                       <Button

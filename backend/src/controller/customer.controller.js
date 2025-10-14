@@ -417,7 +417,26 @@ export default class CustomerController {
       }
 
       // Create temporary booking with pending status
-      const bookingReference = `BK${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+      let bookingReference
+      let isUnique = false
+      let attempts = 0
+      
+      while (!isUnique && attempts < 10) {
+        bookingReference = Math.random().toString(36).substr(2, 5).toUpperCase()
+        const existingBooking = await Booking.findOne({ where: { booking_reference: bookingReference } })
+        if (!existingBooking) {
+          isUnique = true
+        }
+        attempts++
+      }
+      
+      if (!isUnique) {
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to generate unique booking reference',
+          message: 'Please try again'
+        })
+      }
       
       const booking = await Booking.create({
         show_id,
@@ -586,7 +605,26 @@ export default class CustomerController {
       const totalPrice = subtotal
 
       // Create booking with "pending" status for admin approval
-      const bookingReference = `REF${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+      let bookingReference
+      let isUnique = false
+      let attempts = 0
+      
+      while (!isUnique && attempts < 10) {
+        bookingReference = Math.random().toString(36).substr(2, 5).toUpperCase()
+        const existingBooking = await Booking.findOne({ where: { booking_reference: bookingReference } })
+        if (!existingBooking) {
+          isUnique = true
+        }
+        attempts++
+      }
+      
+      if (!isUnique) {
+        return res.status(500).json({
+          success: false,
+          error: 'Unable to generate unique booking reference',
+          message: 'Please try again'
+        })
+      }
       
       // Prepare seat details for storage
       const requestedSeatsData = seats.map(seat => ({

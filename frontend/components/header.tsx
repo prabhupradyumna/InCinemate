@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -41,6 +42,16 @@ import {
 export function Header() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  const [selectedCity, setSelectedCity] = useState("Dubai");
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const savedCity = localStorage.getItem("app_city");
+    if (savedCity) {
+      setSelectedCity(savedCity);
+    }
+  }, []);
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-[2000]">
@@ -64,46 +75,27 @@ export function Header() {
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <Select
-                defaultValue={
-                  (typeof window !== "undefined" &&
-                    localStorage.getItem("app_city")) ||
-                  "Mumbai"
-                }
-                onValueChange={(value) => {
-                  try {
-                    if (typeof window !== "undefined") {
+              {isClient && (
+                <Select
+                  value={selectedCity}
+                  onValueChange={(value) => {
+                    setSelectedCity(value);
+                    try {
                       localStorage.setItem("app_city", value);
                       window.dispatchEvent(
                         new CustomEvent("city-change", { detail: value })
                       );
-                    }
-                  } catch {}
-                }}
-              >
-                <SelectTrigger size="sm" className="w-[160px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bengaluru">Bengaluru</SelectItem>
-                  <SelectItem value="Mumbai">Mumbai</SelectItem>
-                  <SelectItem value="Delhi / NCR">Delhi / NCR</SelectItem>
-                  <SelectItem value="Chennai">Chennai</SelectItem>
-                  <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-                  <SelectItem value="Kolkata">Kolkata</SelectItem>
-                  <SelectItem value="Pune">Pune</SelectItem>
-                  <SelectItem value="Ahmedabad">Ahmedabad</SelectItem>
-                  <SelectItem value="Kochi">Kochi</SelectItem>
-                  <SelectItem value="Jaipur">Jaipur</SelectItem>
-                  <SelectItem value="Chandigarh">Chandigarh</SelectItem>
-                  <SelectItem value="Lucknow">Lucknow</SelectItem>
-                  <SelectItem value="Nagpur">Nagpur</SelectItem>
-                  <SelectItem value="Indore">Indore</SelectItem>
-                  <SelectItem value="Bhopal">Bhopal</SelectItem>
-                  <SelectItem value="Visakhapatnam">Visakhapatnam</SelectItem>
-                  <SelectItem value="Surat">Surat</SelectItem>
-                </SelectContent>
-              </Select>
+                    } catch {}
+                  }}
+                >
+                  <SelectTrigger size="sm" className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dubai">Dubai</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="relative flex-1 min-w-0">
@@ -144,9 +136,6 @@ export function Header() {
                     </p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => router.push("/orders")}>
-                    My Orders
-                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => router.push("/profile")}>
                     Profile
                   </DropdownMenuItem>
@@ -173,13 +162,7 @@ export function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
-              <Link href="/login">
-                <Button className="hidden sm:flex bg-primary hover:bg-primary/90">
-                  Sign In
-                </Button>
-              </Link>
-            )}
+            ) : null}
 
             <Sheet>
               <SheetTrigger asChild>
@@ -205,13 +188,6 @@ export function Header() {
                   </Button>
                   {user ? (
                     <>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start"
-                        onClick={() => router.push("/orders")}
-                      >
-                        My Orders
-                      </Button>
                       <Button
                         variant="ghost"
                         className="w-full justify-start"

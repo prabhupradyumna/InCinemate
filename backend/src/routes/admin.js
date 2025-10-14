@@ -42,6 +42,31 @@ router.get('/shows',
 )
 
 // ==============================
+// BOOKING MANAGEMENT ROUTES
+// ==============================
+
+// Get all bookings for management
+router.get('/bookings', 
+  AdminController.getAllBookings
+)
+
+// Note: Status update functionality removed for simplicity
+
+// ==============================
+// BOOKED SEATS MANAGEMENT ROUTES
+// ==============================
+
+// Get all booked seats for management
+router.get('/booked-seats', 
+  AdminController.getAllBookedSeats
+)
+
+// Delete/release a booked seat
+router.delete('/booked-seats/:seatId', 
+  AdminController.deleteBookedSeat
+)
+
+// ==============================
 // COUPON MANAGEMENT ROUTES
 // ==============================
 

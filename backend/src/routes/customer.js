@@ -6,6 +6,7 @@ const router = Router()
 
 // Public routes (no authentication required)
 router.post('/confirm-simple-booking', CustomerController.confirmSimpleBooking)
+router.post('/create-seat-reservation', CustomerController.createSeatReservation)
 router.get('/booking/:bookingId', CustomerController.getBookingDetails)
 
 // All other customer routes require authentication and customer role

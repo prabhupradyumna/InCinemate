@@ -295,7 +295,7 @@ export function PricingBuilder({
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">₹</span>
+                    <span className="text-sm text-muted-foreground">AED </span>
                     <Input
                       type="number"
                       min="0"
@@ -338,7 +338,7 @@ export function PricingBuilder({
                         {category}:
                       </span>
                       <span>
-                        ₹{price} × {seatCount}
+                        AED {price} × {seatCount}
                       </span>
                     </div>
                   );
@@ -347,7 +347,7 @@ export function PricingBuilder({
                   <div className="flex justify-between font-medium">
                     <span>Total Revenue:</span>
                     <span>
-                      ₹
+                      AED 
                       {seatCategories.reduce((sum, category) => {
                         const price =
                           simplePricing[category.toLowerCase()] || 0;
@@ -399,7 +399,7 @@ export function PricingBuilder({
                   <Badge variant="secondary">{selectedSeats.size}</Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label className="text-sm">Price (₹):</Label>
+                  <Label className="text-sm">Price (AED ):</Label>
                   <Input
                     type="number"
                     min="0"
@@ -508,7 +508,7 @@ export function PricingBuilder({
                                     ${price > 0 ? "opacity-100" : "opacity-60"}
                                     hover:scale-105
                                   `}
-                                  title={`${seat.category} - Row ${seat.row}, Seat ${seat.number}${price > 0 ? ` - ₹${price}` : ""}`}
+                                  title={`${seat.category} - Row ${seat.row}, Seat ${seat.number}${price > 0 ? ` - AED ${price}` : ""}`}
                                 >
                                   {seat.number}
                                 </button>
@@ -543,13 +543,13 @@ export function PricingBuilder({
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded">
                   <div className="text-2xl font-bold text-purple-600">
-                    ₹{summary.totalRevenue}
+                    AED {summary.totalRevenue}
                   </div>
                   <div className="text-muted-foreground">Total Revenue</div>
                 </div>
                 <div className="text-center p-3 bg-muted/50 rounded">
                   <div className="text-2xl font-bold text-orange-600">
-                    ₹{Math.round(summary.averagePrice)}
+                    AED {Math.round(summary.averagePrice)}
                   </div>
                   <div className="text-muted-foreground">Avg Price</div>
                 </div>

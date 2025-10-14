@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS booked_seats (
     booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
     seat_row VARCHAR(5) NOT NULL,
     seat_number INTEGER NOT NULL,
-    seat_type VARCHAR(20) DEFAULT 'regular',
+    seat_type VARCHAR(20) DEFAULT 'silver',
     price DECIMAL(10,2) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

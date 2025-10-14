@@ -25,20 +25,6 @@ api.interceptors.request.use(
 
     if (token) {
       (config.headers as any).Authorization = `Bearer ${token}`;
-    } else {
-      console.warn("❌ API Interceptor - No token found in localStorage");
-      if (typeof window !== "undefined") {
-        try {
-          console.log(
-            "🔍 API Interceptor - All localStorage keys:",
-            Object.keys(localStorage || {})
-          );
-        } catch {
-          console.log("🔍 API Interceptor - Unable to read localStorage keys");
-        }
-      } else {
-        console.log("🔍 API Interceptor - Running on server (no localStorage)");
-      }
     }
 
     // Add request timestamp for debugging
@@ -57,15 +43,6 @@ let pendingResolvers: Array<() => void> = [];
 
 api.interceptors.response.use(
   (response: AxiosResponse) => {
-    // Log response time for debugging
-    const requestTimestamp = (response.config as any).requestTimestamp;
-    if (requestTimestamp) {
-      const responseTime = Date.now() - requestTimestamp;
-      console.log(
-        `API Response time: ${responseTime}ms for ${response.config.method?.toUpperCase()} ${response.config.url}`
-      );
-    }
-
     return response;
   },
   async (error: AxiosError) => {
@@ -125,11 +102,17 @@ export async function http(
   path: string,
   body?: any
 ) {
-  const resp = await api.request({ method, url: path, data: body });
-  return resp.data;
+  try {
+    const resp = await api.request({ method, url: path, data: body });
+    return resp.data;
+  } catch (error) {
+    console.error(`❌ HTTP Error: ${method} ${path}`, error);
+    throw error;
+  }
 }
 
 export async function loginAdmin(payload: { email: string; password: string }) {
+  console.log("Admin login payload:", payload);
   const res = await http("POST", "/auth/admin/login", payload);
   const token = (res as any)?.data?.accessToken;
   if (token && typeof window !== "undefined")
@@ -141,6 +124,7 @@ export async function loginSuperAdmin(payload: {
   email: string;
   password: string;
 }) {
+  console.log("Super Admin login payload:", payload);
   const res = await http("POST", "/auth/super-admin/login", payload);
   const token = (res as any)?.data?.accessToken;
   if (token && typeof window !== "undefined")
@@ -168,35 +152,38 @@ export async function refreshToken(): Promise<boolean> {
       (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
       return true;
     }
-  } catch {}
+  } catch (error) {
+    console.log("Refresh token failed:", error);
+    // Don't log this as an error since it's expected when no refresh token exists
+  }
   return false;
 }
 
-export async function requestCustomerOtp(payload: {
-  email?: string;
-  phone?: string;
-  channel?: "email" | "sms";
-  purpose?: "login" | "register" | "reset";
-}) {
-  return http("POST", "/auth/customer/request-otp", payload);
-}
+// export async function requestCustomerOtp(payload: {
+//   email?: string;
+//   phone?: string;
+//   channel?: "email" | "sms";
+//   purpose?: "login" | "register" | "reset";
+// }) {
+//   return http("POST", "/auth/customer/request-otp", payload);
+// }
 
-export async function verifyCustomerOtp(payload: {
-  email?: string;
-  phone?: string;
-  code: string;
-  channel?: "email" | "sms";
-}) {
-  const res = await http("POST", "/auth/customer/verify-otp", payload);
-  const token = (res as any)?.data?.accessToken;
-  if (token && typeof window !== "undefined") {
-    localStorage.setItem("accessToken", token);
-    (api.defaults.headers as any).common =
-      (api.defaults.headers as any).common || {};
-    (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
-  }
-  return res as any;
-}
+// export async function verifyCustomerOtp(payload: {
+//   email?: string;
+//   phone?: string;
+//   code: string;
+//   channel?: "email" | "sms";
+// }) {
+//   const res = await http("POST", "/auth/customer/verify-otp", payload);
+//   const token = (res as any)?.data?.accessToken;
+//   if (token && typeof window !== "undefined") {
+//     localStorage.setItem("accessToken", token);
+//     (api.defaults.headers as any).common =
+//       (api.defaults.headers as any).common || {};
+//     (api.defaults.headers as any).common["Authorization"] = `Bearer ${token}`;
+//   }
+//   return res as any;
+// }
 
 // ==============================
 // BOOKING APIS
@@ -213,6 +200,12 @@ export async function holdSeats(payload: {
   return http("POST", "/customer/bookings/hold-seats", payload);
 }
 
+export async function releaseSeatHold(payload: {
+  booking_id: string;
+}) {
+  return http("POST", "/customer/bookings/release-hold", payload);
+}
+
 export async function confirmBooking(payload: {
   booking_id: string;
   payment_method: string;
@@ -221,9 +214,6 @@ export async function confirmBooking(payload: {
   return http("POST", "/customer/bookings/confirm", payload);
 }
 
-export async function releaseSeatHold(payload: { booking_id: string }) {
-  return http("POST", "/customer/bookings/release-hold", payload);
-}
 
 // Payment Gateway Functions
 // Payment functions removed - using simplified booking flow
@@ -236,6 +226,25 @@ export async function confirmSimpleBooking(payload: {
   customer_email?: string | null;
 }) {
   return http("POST", "/customer/confirm-simple-booking", payload);
+}
+
+export async function createSeatReservation(payload: {
+  booking_id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string | null;
+}) {
+  return http("POST", "/customer/create-seat-reservation", payload);
+}
+
+export async function createPublicSeatReservation(payload: {
+  show_id: string;
+  seat_ids: string[];
+  customer_name: string;
+  customer_phone: string;
+  customer_email?: string | null;
+}) {
+  return http("POST", "/public/create-seat-reservation", payload);
 }
 
 export async function getBookingDetails(bookingId: string) {

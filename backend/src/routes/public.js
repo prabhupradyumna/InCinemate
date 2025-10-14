@@ -39,4 +39,7 @@ router.get('/shows/:show_id/seats', PublicController.getSeatMap)
 // Create guest booking (no authentication required)
 router.post('/bookings', PublicController.createGuestBooking)
 
+// Create seat reservation (no authentication required)
+router.post('/create-seat-reservation', PublicController.createSeatReservation)
+
 export default router

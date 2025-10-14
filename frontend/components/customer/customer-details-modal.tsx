@@ -160,7 +160,7 @@ export function CustomerDetailsModal({
                       {seat.seat} ({seat.type})
                     </span>
                     <span>
-                      ₹{showData.showtime.pricing[seat.type].toFixed(0)}
+                      AED {showData.showtime.pricing[seat.type].toFixed(0)}
                     </span>
                   </div>
                 ))}
@@ -172,16 +172,16 @@ export function CustomerDetailsModal({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(0)}</span>
+                <span>AED {subtotal.toFixed(0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Convenience Fee</span>
-                <span>₹{convenienceFee.toFixed(0)}</span>
+                <span>AED {convenienceFee.toFixed(0)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold">
                 <span>Total</span>
-                <span className="text-blue-600">₹{total.toFixed(0)}</span>
+                <span className="text-blue-600">AED {total.toFixed(0)}</span>
               </div>
             </div>
           </div>

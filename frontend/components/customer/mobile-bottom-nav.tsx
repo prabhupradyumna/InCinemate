@@ -2,17 +2,38 @@
 
 import { Film, Ticket, User, Play } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { useAuth } from "@/components/customer/auth-provider";
 
 export function MobileBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
+  const { user } = useAuth();
 
-  const tabs = [
-    { id: "movies", label: "Movies", icon: Film, path: "/" },
-    { id: "bookings", label: "Bookings", icon: Ticket, path: "/orders" },
-    { id: "profile", label: "Profile", icon: User, path: "/profile" },
-    { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" }
-  ];
+  // Define tabs based on user role and login status
+  const getTabs = () => {
+    if (!user) {
+      // Non-login viewers: only Movies and Trailers
+      return [
+        { id: "movies", label: "Movies", icon: Film, path: "/" },
+        { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" }
+      ];
+    } else if (user.role === "admin" || user.role === "super-admin") {
+      // Admin/Super-admin: Movies, Trailers, and Profile
+      return [
+        { id: "movies", label: "Movies", icon: Film, path: "/" },
+        { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" },
+        { id: "profile", label: "Profile", icon: User, path: "/profile" }
+      ];
+    } else {
+      // Regular customers: Movies and Trailers only
+      return [
+        { id: "movies", label: "Movies", icon: Film, path: "/" },
+        { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" }
+      ];
+    }
+  };
+
+  const tabs = getTabs();
 
   const isActive = (path: string) => {
     if (path === "/") {

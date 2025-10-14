@@ -555,4 +555,282 @@ export default class AdminController {
       })
     }
   }
+
+  // ==============================
+  // BOOKING MANAGEMENT
+  // ==============================
+
+  static async getAllBookings(req, res) {
+    try {
+      const { status, search, page = 1, limit = 50 } = req.query
+      
+      // Use centralized models with pre-configured associations
+      const { Booking, Show, Movie, Auditorium, Theatre, BookedSeat, Seat } = req.models
+
+      // Build where clause - admin can see all bookings (same as superadmin)
+      let whereClause = {}
+
+      // Add status filter
+      if (status && status !== 'all') {
+        whereClause.status = status
+      }
+
+      // Add search filter
+      if (search) {
+        whereClause[Op.or] = [
+          { booking_reference: { [Op.iLike]: `%${search}%` } },
+          { customer_name: { [Op.iLike]: `%${search}%` } },
+          { customer_phone: { [Op.iLike]: `%${search}%` } },
+          { customer_email: { [Op.iLike]: `%${search}%` } }
+        ]
+      }
+
+      // Calculate pagination
+      const offset = (parseInt(page) - 1) * parseInt(limit)
+
+      // Get bookings with related data
+      const { count, rows: bookings } = await Booking.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Show,
+            as: 'Show',
+            include: [
+              {
+                model: Movie,
+                as: 'Movie'
+              },
+              {
+                model: Auditorium,
+                as: 'Auditorium',
+                include: [
+                  {
+                    model: Theatre,
+                    as: 'Theatre'
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: parseInt(limit),
+        offset: offset
+      })
+
+      // Get seat details for each booking
+      const bookingsWithSeats = await Promise.all(
+        bookings.map(async (booking) => {
+          let seats = []
+          
+          // For public reservations (pending status), use requested_seats from booking
+          if (booking.status === 'pending' && booking.requested_seats) {
+            seats = booking.requested_seats.map(seat => ({
+              row: seat.row || 'Unknown',
+              number: seat.number || 0,
+              category: seat.category || 'Unknown',
+              price: seat.price || 0
+            }))
+          } else {
+            // For confirmed bookings, get seats from BookedSeat table
+            const bookedSeats = await BookedSeat.findAll({
+              where: { booking_id: booking.id },
+              include: [
+                {
+                  model: Seat
+                }
+              ]
+            })
+            
+            seats = bookedSeats.map(bs => ({
+              row: bs.Seat?.row || 'Unknown',
+              number: bs.Seat?.number || 0,
+              category: bs.Seat?.category || 'Unknown',
+              price: bs.price_paid || 0
+            }))
+          }
+
+          return {
+            id: booking.id,
+            booking_reference: booking.booking_reference,
+            customer_name: booking.customer_name,
+            customer_phone: booking.customer_phone,
+            customer_email: booking.customer_email,
+            movie_title: booking.Show?.Movie?.title || 'Unknown Movie',
+            show_date: booking.Show?.show_datetime ? booking.Show.show_datetime.toISOString().split('T')[0] : 'Unknown Date',
+            show_time: booking.Show?.show_datetime ? booking.Show.show_datetime.toTimeString().split(' ')[0].substring(0, 5) : 'Unknown Time',
+            venue_name: booking.Show?.Auditorium?.Theatre?.name || 'Unknown Venue',
+            screen_name: booking.Show?.Auditorium?.name || 'Unknown Screen',
+            seats: seats,
+            total_price: booking.total_price || 0,
+            booking_status: booking.status || 'unknown',
+            created_at: booking.createdAt
+          }
+        })
+      )
+
+      return res.json({
+        success: true,
+        data: {
+          bookings: bookingsWithSeats,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit))
+          }
+        },
+        message: 'Bookings retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[AdminController]-[getAllBookings]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve bookings'
+      })
+    }
+  }
+
+  // Note: Status update functionality removed for simplicity
+
+  // BOOKED SEATS MANAGEMENT
+
+  // Get all booked seats for management
+  static async getAllBookedSeats(req, res) {
+    try {
+      const { BookedSeat, Booking, Show, Movie, Auditorium, Theatre, Seat } = req.models
+      const { page = 1, limit = 50, search } = req.query
+
+      // Build where clause for search
+      let whereClause = {}
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { '$Booking.booking_reference$': { [Op.iLike]: `%${search}%` } },
+            { '$Booking.customer_name$': { [Op.iLike]: `%${search}%` } },
+            { '$Booking.customer_phone$': { [Op.iLike]: `%${search}%` } },
+            { '$Movie.title$': { [Op.iLike]: `%${search}%` } }
+          ]
+        }
+      }
+
+      // Get booked seats with related data
+      const { count, rows: bookedSeats } = await BookedSeat.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Booking,
+            attributes: ['id', 'booking_reference', 'customer_name', 'customer_phone', 'customer_email', 'status', 'createdAt'],
+            include: [
+              {
+                model: Show,
+                attributes: ['id', 'show_datetime'],
+                include: [
+                  {
+                    model: Movie,
+                    as: 'Movie',
+                    attributes: ['id', 'title']
+                  },
+                  {
+                    model: Auditorium,
+                    as: 'Auditorium',
+                    attributes: ['id', 'name'],
+                    include: [
+                      {
+                        model: Theatre,
+                        as: 'Theatre',
+                        attributes: ['id', 'name']
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            model: Seat,
+            attributes: ['id', 'row', 'number', 'category']
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: parseInt(limit),
+        offset: (parseInt(page) - 1) * parseInt(limit)
+      })
+
+      // Format the response
+      const formattedBookedSeats = bookedSeats.map(bookedSeat => ({
+        id: bookedSeat.id,
+        booking_reference: bookedSeat.Booking?.booking_reference || 'N/A',
+        customer_name: bookedSeat.Booking?.customer_name || 'N/A',
+        customer_phone: bookedSeat.Booking?.customer_phone || 'N/A',
+        customer_email: bookedSeat.Booking?.customer_email || null,
+        movie_title: bookedSeat.Booking?.Show?.Movie?.title || 'Unknown Movie',
+        show_date: bookedSeat.Booking?.Show?.show_datetime ? bookedSeat.Booking.Show.show_datetime.toISOString().split('T')[0] : 'Unknown Date',
+        show_time: bookedSeat.Booking?.Show?.show_datetime ? bookedSeat.Booking.Show.show_datetime.toTimeString().split(' ')[0].substring(0, 5) : 'Unknown Time',
+        venue_name: bookedSeat.Booking?.Show?.Auditorium?.Theatre?.name || 'Unknown Venue',
+        screen_name: bookedSeat.Booking?.Show?.Auditorium?.name || 'Unknown Screen',
+        seat_row: bookedSeat.Seat?.row || 'N/A',
+        seat_number: bookedSeat.Seat?.number || 'N/A',
+        seat_category: bookedSeat.Seat?.category || 'N/A',
+        booking_status: bookedSeat.Booking?.status || 'unknown',
+        created_at: bookedSeat.createdAt
+      }))
+
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        data: {
+          booked_seats: formattedBookedSeats,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit))
+          }
+        },
+        message: 'Booked seats retrieved successfully'
+      })
+
+    } catch (err) {
+      console.error(`[AdminController]-[getAllBookedSeats]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve booked seats'
+      })
+    }
+  }
+
+  // Delete/release a booked seat
+  static async deleteBookedSeat(req, res) {
+    try {
+      const { seatId } = req.params
+      const { BookedSeat } = req.models
+
+      // Find the booked seat
+      const bookedSeat = await BookedSeat.findByPk(seatId)
+      if (!bookedSeat) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          message: 'Booked seat not found'
+        })
+      }
+
+      // Delete the booked seat
+      await bookedSeat.destroy()
+
+      return res.status(HTTP_STATUS.OK).json({
+        success: true,
+        message: 'Booked seat released successfully'
+      })
+
+    } catch (err) {
+      console.error(`[AdminController]-[deleteBookedSeat]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to release booked seat'
+      })
+    }
+  }
 }

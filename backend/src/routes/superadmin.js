@@ -38,6 +38,13 @@ router.get('/admins/:id/permissions', SuperadminController.getAdminPermissions)
 router.put('/admins/:id/permissions', SuperadminController.updateAdminPermissions)
 
 // ==============================
+// BOOKING MANAGEMENT ROUTES
+// ==============================
+
+// Get all bookings for management (superadmin can see all tenants)
+router.get('/bookings', SuperadminController.getAllBookings)
+
+// ==============================
 // THEATRE MANAGEMENT ROUTES
 // ==============================
 

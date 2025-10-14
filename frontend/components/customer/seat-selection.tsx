@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Monitor, Phone, Mail } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { Calendar, Clock, MapPin, Monitor } from "lucide-react";
 import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatData {
   row: string;
   seat: number;
-  type: "premium" | "regular";
+  type: "vip" | "diamond" | "platinum" | "gold" | "silver";
   status: "available" | "selected" | "booked";
   price?: number; // Individual seat price
   id?: string; // Seat ID for backend operations
@@ -36,7 +35,7 @@ interface ShowData {
       rows: Array<{
         row: string;
         seats: number[];
-        type: "premium" | "regular";
+        type: "vip" | "diamond" | "platinum" | "gold" | "silver";
       }>;
     };
   };
@@ -44,8 +43,11 @@ interface ShowData {
     date: string;
     time: string;
     pricing: {
-      premium: number;
-      regular: number;
+      vip: number;
+      diamond: number;
+      platinum: number;
+      gold: number;
+      silver: number;
     };
   };
   bookedSeats: Array<{
@@ -74,6 +76,10 @@ export function SeatSelection({
   maxSeats,
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
+  const { user } = useAuth();
+  
+  // Determine if user is admin/superadmin (can see pricing)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
   // Safely get user from auth context
   let user = null;
@@ -154,28 +160,72 @@ export function SeatSelection({
     onSelectionChange?.(selectedSeats);
   }, [selectedSeats, onSelectionChange]);
 
+  // Color mapping for seat types
+  const getSeatTypeColors = (type: string) => {
+    switch (type) {
+      case "vip":
+        return {
+          bg: "bg-purple-200",
+          border: "border-purple-400",
+          text: "text-purple-800",
+          hover: "hover:bg-purple-300 hover:border-purple-500",
+          legend: "bg-purple-200 border-purple-400"
+        };
+      case "diamond":
+        return {
+          bg: "bg-cyan-200",
+          border: "border-cyan-400",
+          text: "text-cyan-800",
+          hover: "hover:bg-cyan-300 hover:border-cyan-500",
+          legend: "bg-cyan-200 border-cyan-400"
+        };
+      case "platinum":
+        return {
+          bg: "bg-gray-200",
+          border: "border-gray-400",
+          text: "text-gray-800",
+          hover: "hover:bg-gray-300 hover:border-gray-500",
+          legend: "bg-gray-200 border-gray-400"
+        };
+      case "gold":
+        return {
+          bg: "bg-yellow-200",
+          border: "border-yellow-400",
+          text: "text-yellow-800",
+          hover: "hover:bg-yellow-300 hover:border-yellow-500",
+          legend: "bg-yellow-200 border-yellow-400"
+        };
+      case "silver":
+        return {
+          bg: "bg-slate-200",
+          border: "border-slate-400",
+          text: "text-slate-800",
+          hover: "hover:bg-slate-300 hover:border-slate-500",
+          legend: "bg-slate-200 border-slate-400"
+        };
+      default:
+        return {
+          bg: "bg-secondary",
+          border: "border-border",
+          text: "text-secondary-foreground",
+          hover: "hover:bg-secondary/80 hover:border-border/80",
+          legend: "bg-secondary border-border"
+        };
+    }
+  };
+
   const getSeatButtonClass = (seat: SeatData) => {
     const baseClass =
-      "w-8 h-8 text-xs font-medium rounded-md transition-all duration-200 border-2";
+      "text-sm sm:text-base font-semibold rounded-lg transition-all duration-200 border-2 shadow-sm";
 
     switch (seat.status) {
       case "booked":
-        return `${baseClass} bg-destructive/20 border-destructive/40 text-destructive cursor-not-allowed`;
+        return `${baseClass} bg-destructive/20 border-destructive/40 text-destructive cursor-not-allowed opacity-60`;
       case "selected":
-        return `${baseClass} bg-primary border-primary text-primary-foreground cinema-glow cursor-pointer hover:scale-105`;
+        return `${baseClass} bg-primary border-primary text-primary-foreground shadow-lg scale-105 cursor-pointer hover:scale-110 active:scale-95`;
       case "available":
-        if (!canSelectSeats) {
-          // For non-admin users, show seats as view-only
-          if (seat.type === "premium") {
-            return `${baseClass} bg-accent/10 border-accent/20 text-accent-foreground cursor-default`;
-          }
-          return `${baseClass} bg-secondary/50 border-border/50 text-secondary-foreground cursor-default`;
-        }
-        // Admin users can select seats
-        if (seat.type === "premium") {
-          return `${baseClass} bg-accent/20 border-accent/40 text-accent-foreground cursor-pointer hover:bg-accent/30 hover:border-accent/60 hover:scale-105`;
-        }
-        return `${baseClass} bg-secondary border-border text-secondary-foreground cursor-pointer hover:bg-secondary/80 hover:border-border/80 hover:scale-105`;
+        const colors = getSeatTypeColors(seat.type);
+        return `${baseClass} ${colors.bg} ${colors.border} ${colors.text} cursor-pointer ${colors.hover} hover:shadow-md active:scale-95`;
       default:
         return baseClass;
     }
@@ -192,27 +242,29 @@ export function SeatSelection({
     <div className="space-y-6">
       {/* Movie Info */}
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-12 h-16 sm:w-16 sm:h-24 bg-muted rounded-lg flex items-center justify-center">
-              <Monitor className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-4">
+            <div className="w-16 h-20 sm:w-20 sm:h-28 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+              <Monitor className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
             </div>
-            <div className="space-y-2">
-              <h2 className="text-xl sm:text-2xl font-bold">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">
                 {showData.movie.title}
               </h2>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{showData.venue.name}</span>
+              <div className="space-y-1 mt-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{showData.venue.name}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(showData.showtime.date)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  <span>{showData.showtime.time}</span>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <span>{new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    <span>{showData.showtime.time}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -238,16 +290,16 @@ export function SeatSelection({
           </div>
 
           {/* Seat Grid */}
-          <div className="space-y-2 sm:space-y-3 overflow-x-auto">
-            {showData.screen.seatMap.rows.map((rowData) => (
+          <div className="space-y-3 sm:space-y-4 overflow-x-auto px-2">
+            {showData.screen.seatMap.rows.slice().reverse().map((rowData) => (
               <div
                 key={rowData.row}
-                className="flex items-center justify-center gap-1 sm:gap-2 min-w-max"
+                className="flex items-center justify-center gap-2 sm:gap-3 min-w-max"
               >
-                <div className="w-6 sm:w-8 text-center font-medium text-muted-foreground text-xs sm:text-sm">
+                <div className="w-8 sm:w-10 text-center font-medium text-muted-foreground text-sm sm:text-base">
                   {rowData.row}
                 </div>
-                <div className="flex gap-0.5 sm:gap-1">
+                <div className="flex gap-1 sm:gap-1.5">
                   {rowData.seats.map((seatNumber) => {
                     const seat = seatData.find(
                       (s) => s.row === rowData.row && s.seat === seatNumber
@@ -257,7 +309,7 @@ export function SeatSelection({
                         key={`${rowData.row}-${seatNumber}`}
                         variant="ghost"
                         size="sm"
-                        className={`${getSeatButtonClass(seat)} w-6 h-6 sm:w-8 sm:h-8 p-0 text-xs sm:text-sm touch-manipulation`}
+                        className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold touch-manipulation active:scale-95`}
                         onClick={() => handleSeatClick(seat)}
                         disabled={seat.status === "booked"}
                       >
@@ -266,38 +318,51 @@ export function SeatSelection({
                     );
                   })}
                 </div>
-                <div className="w-6 sm:w-8 text-center font-medium text-muted-foreground text-xs sm:text-sm">
+                <div className="w-8 sm:w-10 text-center font-medium text-muted-foreground text-sm sm:text-base">
                   {rowData.row}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 pt-4 sm:pt-6 border-t border-border">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-secondary border-2 border-border rounded-md"></div>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                Available
-              </span>
+          {/* Seat Type Legend */}
+          <div className="space-y-4 pt-4 sm:pt-6 border-t border-border">
+            <h4 className="text-base font-semibold text-center text-foreground">Seat Types & Pricing</h4>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {["vip", "diamond", "platinum", "gold", "silver"].map((type) => {
+                const colors = getSeatTypeColors(type);
+                const price = showData.showtime.pricing[type as keyof typeof showData.showtime.pricing] || 0;
+                const typeCount = seatData.filter(seat => seat.type === type && seat.status === "available").length;
+                
+                return (
+                  <div key={type} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bg} ${colors.border} border-2 rounded-md flex-shrink-0`}></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm sm:text-base font-semibold capitalize text-foreground">{type}</div>
+                      {isAdminUser && (
+                        <div className="text-sm font-medium text-primary">AED {price}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground">{typeCount} available</div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-accent/20 border-2 border-accent/40 rounded-md"></div>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                Premium
-              </span>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-primary border-2 border-primary rounded-md"></div>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                Selected
-              </span>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-3 h-3 sm:w-4 sm:h-4 bg-destructive/20 border-2 border-destructive/40 rounded-md"></div>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                Booked
-              </span>
+            
+            {/* Status Legend */}
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 pt-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-primary border-2 border-primary rounded-md"></div>
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Selected
+                </span>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-destructive/20 border-2 border-destructive/40 rounded-md"></div>
+                <span className="text-xs sm:text-sm text-muted-foreground">
+                  Booked
+                </span>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -343,25 +408,75 @@ export function SeatSelection({
       {/* Selected Seats Summary - Only for Admin Users */}
       {canSelectSeats && selectedSeats.length > 0 && (
         <Card className="bg-card border-border">
-          <CardContent className="p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1">
-                <p className="font-medium text-sm sm:text-base">
-                  Selected Seats:
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {selectedSeats
-                    .map((seat) => `${seat.row}${seat.seat}`)
-                    .join(", ")}
-                </p>
+          <CardContent className="p-4 sm:p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-foreground">Selected Seats</h3>
+                <div className="text-right">
+                  {isAdminUser && (
+                    <p className="text-xl sm:text-2xl font-bold text-primary">
+                      AED {totalPrice.toFixed(0)}
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
               </div>
-              <div className="text-left sm:text-right">
-                <p className="text-xl sm:text-2xl font-bold text-primary">
-                  ₹{totalPrice.toFixed(2)}
-                </p>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {selectedSeats.length} seat(s)
-                </p>
+              
+              {/* Selected Seats List */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {selectedSeats.map((seat, index) => {
+                    const colors = getSeatTypeColors(seat.type);
+                    const seatPrice = seat.price || showData.showtime.pricing[seat.type];
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                        <div className={`w-4 h-4 ${colors.bg} ${colors.border} border rounded-sm flex-shrink-0`}></div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-foreground">{seat.row}{seat.seat}</div>
+                          <div className="text-xs text-muted-foreground capitalize">{seat.type}</div>
+                        </div>
+                        {isAdminUser && (
+                          <div className="text-xs font-medium text-primary">AED {seatPrice}</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Seat Types Summary */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <p className="text-sm font-medium text-muted-foreground">Summary by Type:</p>
+                <div className="flex flex-wrap gap-2">
+                  {["vip", "diamond", "platinum", "gold", "silver"].map((type) => {
+                    const seatsOfType = selectedSeats.filter(seat => seat.type === type);
+                    if (seatsOfType.length === 0) return null;
+                    
+                    const colors = getSeatTypeColors(type);
+                    const typePrice = seatsOfType.reduce((sum, seat) => {
+                      const seatPrice = seat.price || showData.showtime.pricing[seat.type];
+                      return sum + seatPrice;
+                    }, 0);
+                    
+                    return (
+                      <div key={type} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50">
+                        <div className={`w-4 h-4 ${colors.bg} ${colors.border} border rounded-sm`}></div>
+                        <span className="text-sm font-medium capitalize">{type}</span>
+                        <span className="text-sm text-muted-foreground">
+                          ({seatsOfType.length})
+                        </span>
+                        {isAdminUser && (
+                          <span className="text-sm font-medium text-primary">
+                            AED {typePrice.toFixed(0)}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </CardContent>

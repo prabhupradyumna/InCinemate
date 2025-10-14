@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+<<<<<<< HEAD
 import {
   Calendar,
   Clock,
@@ -17,6 +18,9 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
+=======
+import { Calendar, Clock, MapPin, CreditCard, User, Lock, AlertCircle, RefreshCw, Home } from "lucide-react";
+>>>>>>> 1760ee160e639d2410161f60a5cd66d506365019
 import { useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -44,7 +48,7 @@ interface ShowData {
       rows: Array<{
         row: string;
         seats: number[];
-        type: "premium" | "regular";
+        type: "vip" | "diamond" | "platinum" | "gold" | "silver";
       }>;
     };
   };
@@ -52,8 +56,11 @@ interface ShowData {
     date: string;
     time: string;
     pricing: {
-      premium: number;
-      regular: number;
+      vip: number;
+      diamond: number;
+      platinum: number;
+      gold: number;
+      silver: number;
     };
   };
   bookedSeats: Array<{
@@ -69,7 +76,7 @@ interface BookingSummaryProps {
     id: string;
     row: string;
     seat: number;
-    type: "premium" | "regular";
+    type: "vip" | "diamond" | "platinum" | "gold" | "silver";
     price?: number; // Individual seat price
   }>;
   selectedQuantity?: number;
@@ -97,6 +104,58 @@ export function BookingSummary({
   onBookingCancelled,
 }: BookingSummaryProps) {
   const router = useRouter();
+  const { user } = useAuth();
+  
+  // Determine if user is admin/superadmin
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
+
+  // Color mapping for seat categories (same as other components)
+  const getSeatCategoryColors = (category: string) => {
+    switch (category.toLowerCase()) {
+      case "vip":
+        return {
+          bg: "bg-purple-200",
+          border: "border-purple-400",
+          text: "text-purple-800",
+          legend: "bg-purple-200 border-purple-400"
+        };
+      case "diamond":
+        return {
+          bg: "bg-cyan-200",
+          border: "border-cyan-400",
+          text: "text-cyan-800",
+          legend: "bg-cyan-200 border-cyan-400"
+        };
+      case "platinum":
+        return {
+          bg: "bg-gray-200",
+          border: "border-gray-400",
+          text: "text-gray-800",
+          legend: "bg-gray-200 border-gray-400"
+        };
+      case "gold":
+        return {
+          bg: "bg-yellow-200",
+          border: "border-yellow-400",
+          text: "text-yellow-800",
+          legend: "bg-yellow-200 border-yellow-400"
+        };
+      case "silver":
+        return {
+          bg: "bg-slate-200",
+          border: "border-slate-400",
+          text: "text-slate-800",
+          legend: "bg-slate-200 border-slate-400"
+        };
+      default:
+        return {
+          bg: "bg-secondary",
+          border: "border-border",
+          text: "text-muted-foreground",
+          legend: "bg-secondary border-border"
+        };
+    }
+  };
 
   // Get user authentication info
   let user = null;
@@ -122,7 +181,14 @@ export function BookingSummary({
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHoldingSeats, setIsHoldingSeats] = useState(false);
+  const [isBookingComplete, setIsBookingComplete] = useState(false);
   // Payment gateway selection removed - using simplified booking flow
+
+  // Debug logging
+  console.log('[BookingSummary] User:', user);
+  console.log('[BookingSummary] isAdminUser:', isAdminUser);
+  console.log('[BookingSummary] isBookingComplete:', isBookingComplete);
+  console.log('[BookingSummary] bookingDetails:', bookingDetails);
 
   const [customerDetails, setCustomerDetails] = useState({
     fullName: "",
@@ -139,13 +205,13 @@ export function BookingSummary({
       : Array.from({ length: selectedQuantity }, (_, i) => ({
           row: "A",
           seat: i + 1,
-          type: "premium" as const,
+          type: "vip" as const,
         }));
 
   const subtotal = mockSelectedSeats.reduce((total, seat) => {
     // Use individual seat price if available, fallback to category pricing
     const seatPrice =
-      (seat as any).price || showData.showtime.pricing[seat.type];
+      (seat as any).price || showData.showtime.pricing[seat.type as keyof typeof showData.showtime.pricing];
     return total + seatPrice;
   }, 0);
 
@@ -354,14 +420,20 @@ export function BookingSummary({
     try {
       const { confirmBooking } = await import("@/lib/api");
       // Payment confirmation removed - using simplified booking flow
-      router.push(
-        `/booking/confirmation?booking_id=${bookingDetails.booking_id}`
-      );
+      
+      // For admin users, show success state instead of redirecting
+      if (isAdminUser) {
+        setIsBookingComplete(true);
+        setIsProcessing(false);
+      } else {
+        router.push(
+          `/booking/confirmation?booking_id=${bookingDetails.booking_id}`
+        );
+      }
     } catch (e: any) {
       setBookingError(
         e?.response?.data?.error || e?.message || "Failed to confirm booking"
       );
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -407,7 +479,7 @@ export function BookingSummary({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="h-3 w-3" />
-                <span>{formatDate(showData.showtime.date)}</span>
+                <span>{new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-3 w-3" />
@@ -428,19 +500,25 @@ export function BookingSummary({
                 {mockSelectedSeats.map((seat, index) => (
                   <div
                     key={index}
-                    className="flex justify-between text-xs md:text-sm"
+                    className="flex justify-between items-center text-xs md:text-sm"
                   >
-                    <span>
-                      {seat.row}
-                      {seat.seat} ({seat.type})
-                    </span>
-                    <span>
-                      ₹
-                      {(
-                        (seat as any).price ||
-                        showData.showtime.pricing[seat.type]
-                      ).toFixed(2)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span>
+                        {seat.row}{seat.seat}
+                      </span>
+                      <div className={`px-2 py-1 rounded-md text-xs font-medium ${getSeatCategoryColors(seat.type).bg} ${getSeatCategoryColors(seat.type).text} ${getSeatCategoryColors(seat.type).border} border`}>
+                        {seat.type}
+                      </div>
+                    </div>
+                    {isAdminUser && (
+                      <span>
+                        AED 
+                        {(
+                          (seat as any).price ||
+                          showData.showtime.pricing[seat.type as keyof typeof showData.showtime.pricing]
+                        ).toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -449,22 +527,24 @@ export function BookingSummary({
 
           <Separator />
 
-          {/* Price Breakdown */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs md:text-sm">
-              <span>Subtotal</span>
-              <span>₹{subtotal.toFixed(2)}</span>
+          {/* Price Breakdown - Only show for admin users */}
+          {isAdminUser && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs md:text-sm">
+                <span>Subtotal</span>
+                <span>AED {subtotal.toFixed(2)}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-semibold text-sm md:text-base">
+                <span>Total</span>
+                <span className="text-primary">
+                  {isHoldingSeats
+                    ? "Calculating..."
+                    : `AED ${(bookingDetails?.total_price || total).toFixed(2)}`}
+                </span>
+              </div>
             </div>
-            <Separator />
-            <div className="flex justify-between font-semibold text-sm md:text-base">
-              <span>Total</span>
-              <span className="text-primary">
-                {isHoldingSeats
-                  ? "Calculating..."
-                  : `₹${(bookingDetails?.total_price || total).toFixed(2)}`}
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="space-y-2 pt-4">
@@ -478,7 +558,9 @@ export function BookingSummary({
                 >
                   {isHoldingSeats
                     ? "Processing..."
-                    : `Pay ₹${total.toFixed(0)}`}
+                    : isAdminUser 
+                      ? `Pay AED ${total.toFixed(0)}`
+                      : "Reserve Seats"}
                 </Button>
                 {onBack && (
                   <Button
@@ -523,7 +605,7 @@ export function BookingSummary({
                         <p className="font-medium mb-1">
                           Seats Reserved Successfully!
                         </p>
-                        <p>Your seats have been held for 10 minutes</p>
+                        <p>Your seats have been locked for Public Viewers   </p>
                       </div>
                       <p className="text-xs text-muted-foreground mb-4">
                         Payment gateway selection will appear automatically
@@ -586,25 +668,49 @@ export function BookingSummary({
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  className="w-full bg-transparent"
-                  onClick={handleCancelTransaction}
-                  disabled={isProcessing}
-                >
-                  Cancel Transaction
-                </Button>
+                {/* Show different buttons based on booking completion and user type */}
+                {console.log('[BookingSummary] Button condition:', { isBookingComplete, isAdminUser, condition: isBookingComplete && isAdminUser })}
+                {bookingDetails && isAdminUser ? (
+                  <div className="space-y-3">
+                    <Button
+                      onClick={() => router.push("/")}
+                      className="w-full"
+                    >
+                      <Home className="h-4 w-4 mr-2" />
+                      Go to Home
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full bg-transparent"
+                      onClick={handleCancelTransaction}
+                      disabled={isProcessing}
+                    >
+                      Cancel Transaction
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      className="w-full bg-transparent"
+                      onClick={handleCancelTransaction}
+                      disabled={isProcessing}
+                    >
+                      Cancel Transaction
+                    </Button>
 
-                {/* Back button for payment step - shows cancel popup */}
-                {onBack && (
-                  <Button
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={handleCancelTransaction}
-                    disabled={isProcessing}
-                  >
-                    Back to Seat Selection
-                  </Button>
+                    {/* Back button for payment step - shows cancel popup */}
+                    {onBack && (
+                      <Button
+                        variant="outline"
+                        className="w-full bg-transparent"
+                        onClick={handleCancelTransaction}
+                        disabled={isProcessing}
+                      >
+                        Back to Seat Selection
+                      </Button>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -640,7 +746,7 @@ export function BookingSummary({
         onClose={handleBackFromTerms}
         onAccept={handleAcceptTerms}
         movieTitle={showData.movie.title}
-        showTime={`${formatDate(showData.showtime.date)} ${showData.showtime.time}`}
+        showTime={`${new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${showData.showtime.time}`}
         venue={showData.venue.name}
         totalAmount={total}
       />

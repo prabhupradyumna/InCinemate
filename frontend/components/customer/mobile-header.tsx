@@ -13,16 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const CITIES = [
-  "Bengaluru",
-  "Mumbai",
-  "Delhi",
-  "Chennai",
-  "Kolkata",
-  "Hyderabad",
-  "Pune",
-  "Ahmedabad",
-  "Jaipur",
-  "Lucknow",
+  "Dubai",
 ];
 
 export function MobileHeader() {

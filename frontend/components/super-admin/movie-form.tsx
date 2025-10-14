@@ -112,6 +112,30 @@ const movieFormSchema = z.object({
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_trending: z.boolean().default(false),
+  
+  // News & Reviews
+  news_reviews: z.array(z.object({
+    title: z.string().optional(),
+    youtube_url: z.string().url().optional().or(z.literal("")),
+    source: z.string().optional(),
+    published_date: z.string().optional(),
+  })).optional(),
+  
+  // Movie Songs
+  movie_songs: z.array(z.object({
+    name: z.string().optional(),
+    youtube_url: z.string().url().optional().or(z.literal("")),
+    duration: z.string().optional(),
+  })).optional(),
+  
+  // Gallery Images
+  gallery_images: z.array(z.object({
+    name: z.string().optional(),
+    image_url: z.string().optional(),
+    type: z.enum(["poster", "still", "behind_scenes"]).optional(),
+    display_order: z.number().optional(),
+    image_file: z.instanceof(File).optional(),
+  })).optional(),
 });
 
 type MovieFormValues = z.infer<typeof movieFormSchema>;
@@ -159,10 +183,36 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     if (!url) return "";
     if (url.startsWith("data:")) return url; // already a data URL preview
     if (url.startsWith("http")) return url; // absolute URL
-    // Build server origin (without /api) for static /uploads
-    const raw = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000').trim();
-    const origin = raw.replace(/\/+$/, '').replace(/\/?api$/, '');
-    return `${origin}${url.startsWith('/') ? url : `/${url}`}`;
+    
+    // For local development, use relative URLs since Next.js rewrite handles /uploads
+    // For production, use environment variable if provided
+    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+    const isLocalDev = process.env.NODE_ENV === 'development';
+    
+    console.log('🖼️ normalizeImageUrl debug:', {
+      originalUrl: url,
+      baseUrl: baseUrl,
+      nodeEnv: process.env.NODE_ENV,
+      isLocalDev: isLocalDev
+    });
+    
+    if (isLocalDev) {
+      // In local development, use relative URLs (Next.js rewrite will proxy to backend)
+      const finalUrl = url.startsWith('/') ? url : `/${url}`;
+      console.log('🖼️ Local dev relative URL:', finalUrl);
+      return finalUrl;
+    } else if (baseUrl && baseUrl.trim()) {
+      // In production, use environment variable if provided
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+      const finalUrl = `${cleanBaseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+      console.log('🖼️ Production URL:', finalUrl);
+      return finalUrl;
+    } else {
+      // Fallback to relative URLs
+      const finalUrl = url.startsWith('/') ? url : `/${url}`;
+      console.log('🖼️ Fallback relative URL:', finalUrl);
+      return finalUrl;
+    }
   };
 
   // Cast & Crew Management State
@@ -197,6 +247,30 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
   const [editingCrew, setEditingCrew] = useState<any>(null);
   const [removedCastIds, setRemovedCastIds] = useState<string[]>([]);
   const [removedCrewIds, setRemovedCrewIds] = useState<string[]>([]);
+
+  // News & Reviews state
+  const [newsReviews, setNewsReviews] = useState<Array<{
+    title: string;
+    youtube_url: string;
+    source: string;
+    published_date: string;
+  }>>([]);
+
+  // Movie Songs state
+  const [movieSongs, setMovieSongs] = useState<Array<{
+    name: string;
+    youtube_url: string;
+    duration: string;
+  }>>([]);
+
+  // Gallery Images state
+  const [galleryImages, setGalleryImages] = useState<Array<{
+    name: string;
+    image_url: string;
+    type: "poster" | "still" | "behind_scenes";
+    display_order: number;
+    image_file?: File | null;
+  }>>([]);
 
   // Duration state (hours and minutes)
   const [durationHours, setDurationHours] = useState(0);
@@ -242,6 +316,9 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       is_active: true,
       is_featured: false,
       is_trending: false,
+      news_reviews: [],
+      movie_songs: [],
+      gallery_images: [],
     },
   });
 
@@ -374,6 +451,9 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
           is_active: movie.is_active ?? true,
           is_featured: movie.is_featured ?? false,
           is_trending: movie.is_trending ?? false,
+          news_reviews: Array.isArray((movie as any).news_reviews) ? (movie as any).news_reviews : [],
+          movie_songs: Array.isArray((movie as any).movie_songs) ? (movie as any).movie_songs : [],
+          gallery_images: Array.isArray((movie as any).gallery_images) ? (movie as any).gallery_images : [],
         };
         
         console.log('🔄 Form data being set:', formData);
@@ -442,6 +522,11 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         } else {
           setBackdropPreview("");
         }
+
+        // Initialize new sections
+        setNewsReviews(Array.isArray((movie as any).news_reviews) ? (movie as any).news_reviews : []);
+        setMovieSongs(Array.isArray((movie as any).movie_songs) ? (movie as any).movie_songs : []);
+        setGalleryImages(Array.isArray((movie as any).gallery_images) ? (movie as any).gallery_images : []);
         
         console.log('✅ Form populated successfully');
       } catch (error) {
@@ -512,7 +597,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     }
   };
 
-  const uploadFile = async (file: File, type: 'poster' | 'backdrop' | 'profile'): Promise<string | null> => {
+  const uploadFile = async (file: File, type: 'poster' | 'backdrop' | 'profile' | 'gallery'): Promise<string | null> => {
     try {
       console.log(`📤 Uploading ${type} file:`, file.name, file.size, 'bytes');
       
@@ -535,12 +620,39 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
   console.log(`✅ ${type} upload successful:`, result);
         
         // Construct full URL for the backend image
-        // Use server origin (without /api) for static assets
-        const raw = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000').trim();
-        const origin = raw.replace(/\/+$/, '').replace(/\/?api$/, '');
+        const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL;
+        const isLocalDev = process.env.NODE_ENV === 'development';
+        
+        console.log('📤 uploadFile debug:', {
+          resultUrl: result.url,
+          baseUrl: baseUrl,
+          nodeEnv: process.env.NODE_ENV,
+          isLocalDev: isLocalDev
+        });
+        
         const fullImageUrl = result.url.startsWith('http') 
           ? result.url 
-          : `${origin}${result.url.startsWith('/') ? result.url : `/${result.url}`}`;
+          : isLocalDev
+            ? (() => {
+                // In local development, use relative URLs (Next.js rewrite will proxy to backend)
+                const finalUrl = result.url.startsWith('/') ? result.url : `/${result.url}`;
+                console.log('📤 Local dev relative upload URL:', finalUrl);
+                return finalUrl;
+              })()
+            : baseUrl && baseUrl.trim()
+              ? (() => {
+                  // In production, use environment variable if provided
+                  const cleanBaseUrl = baseUrl.replace(/\/+$/, ''); // Remove trailing slashes
+                  const finalUrl = `${cleanBaseUrl}${result.url.startsWith('/') ? result.url : `/${result.url}`}`;
+                  console.log('📤 Production upload URL:', finalUrl);
+                  return finalUrl;
+                })()
+              : (() => {
+                  // Fallback to relative URLs
+                  const finalUrl = result.url.startsWith('/') ? result.url : `/${result.url}`;
+                  console.log('📤 Fallback relative upload URL:', finalUrl);
+                  return finalUrl;
+                })();
         
   console.log(`🖼️ Full ${type} image URL:`, fullImageUrl);
         return fullImageUrl;
@@ -775,14 +887,36 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
         }
       }
 
+      // Upload gallery images
+      const processedGalleryImages = await Promise.all(
+        galleryImages.map(async (image) => {
+          let imageUrl = image.image_url;
+          if (image.image_file) {
+            const uploadedUrl = await uploadFile(image.image_file, 'gallery');
+            if (uploadedUrl) {
+              imageUrl = uploadedUrl;
+            }
+          }
+          return {
+            name: image.name,
+            image_url: imageUrl,
+            type: image.type,
+            display_order: image.display_order
+          };
+        })
+      );
+
       // Prepare payload for API
       let payload: CreateMoviePayload = {
         ...values,
         city: values.city,
         poster_url: posterUrl,
         backdrop_url: backdropUrl,
-        tenant_id: values.tenant_id  // Explicitly ensure tenant_id is included
-      };
+        tenant_id: values.tenant_id,  // Explicitly ensure tenant_id is included
+        news_reviews: newsReviews,
+        movie_songs: movieSongs,
+        gallery_images: processedGalleryImages
+      } as CreateMoviePayload;
 
       console.log('🎬 Movie payload with tenant_id:', {
         tenant_id: values.tenant_id,
@@ -1005,7 +1139,7 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-6 w-full h-auto">
+          <TabsList className="grid grid-cols-9 w-full h-auto">
             <TabsTrigger value="basic" className="text-sm">
               <div className="flex items-center gap-2">
                 <Info className="h-4 w-4" />
@@ -1040,6 +1174,24 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
               <div className="flex items-center gap-2">
                 <Megaphone className="h-4 w-4" />
                 Marketing
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="newsreviews" className="text-sm">
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                News/Reviews
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="songs" className="text-sm">
+              <div className="flex items-center gap-2">
+                <Mic className="h-4 w-4" />
+                Songs
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="gallery" className="text-sm">
+              <div className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Gallery
               </div>
             </TabsTrigger>
           </TabsList>
@@ -1439,6 +1591,384 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* News & Reviews Tab */}
+          <TabsContent value="newsreviews" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>News & Reviews</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setNewsReviews([...newsReviews, {
+                        title: "",
+                        youtube_url: "",
+                        source: "",
+                        published_date: ""
+                      }]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add News/Review
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {newsReviews.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No news or reviews added yet</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        setNewsReviews([{
+                          title: "",
+                          youtube_url: "",
+                          source: "",
+                          published_date: ""
+                        }]);
+                      }}
+                    >
+                      Add First News/Review
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {newsReviews.map((item, index) => (
+                      <Card key={index} className="border-2 border-dashed">
+                        <CardContent className="pt-6 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">News/Review #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updated = newsReviews.filter((_, i) => i !== index);
+                                setNewsReviews(updated);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Title</Label>
+                              <Input
+                                value={item.title}
+                                onChange={(e) => {
+                                  const updated = [...newsReviews];
+                                  updated[index].title = e.target.value;
+                                  setNewsReviews(updated);
+                                }}
+                                placeholder="Review or news title"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Source/Channel</Label>
+                              <Input
+                                value={item.source}
+                                onChange={(e) => {
+                                  const updated = [...newsReviews];
+                                  updated[index].source = e.target.value;
+                                  setNewsReviews(updated);
+                                }}
+                                placeholder="Channel or source name"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>YouTube URL</Label>
+                            <Input
+                              value={item.youtube_url}
+                              onChange={(e) => {
+                                const updated = [...newsReviews];
+                                updated[index].youtube_url = e.target.value;
+                                setNewsReviews(updated);
+                              }}
+                              placeholder="https://youtube.com/watch?v=..."
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Published Date</Label>
+                            <Input
+                              type="date"
+                              value={item.published_date}
+                              onChange={(e) => {
+                                const updated = [...newsReviews];
+                                updated[index].published_date = e.target.value;
+                                setNewsReviews(updated);
+                              }}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Movie Songs Tab */}
+          <TabsContent value="songs" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Movie Songs</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setMovieSongs([...movieSongs, {
+                        name: "",
+                        youtube_url: "",
+                        duration: ""
+                      }]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Song
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {movieSongs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Mic className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No songs added yet</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        setMovieSongs([{
+                          name: "",
+                          youtube_url: "",
+                          duration: ""
+                        }]);
+                      }}
+                    >
+                      Add First Song
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {movieSongs.map((song, index) => (
+                      <Card key={index} className="border-2 border-dashed">
+                        <CardContent className="pt-6 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Song #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updated = movieSongs.filter((_, i) => i !== index);
+                                setMovieSongs(updated);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Song Name</Label>
+                              <Input
+                                value={song.name}
+                                onChange={(e) => {
+                                  const updated = [...movieSongs];
+                                  updated[index].name = e.target.value;
+                                  setMovieSongs(updated);
+                                }}
+                                placeholder="Song title"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Duration</Label>
+                              <Input
+                                value={song.duration}
+                                onChange={(e) => {
+                                  const updated = [...movieSongs];
+                                  updated[index].duration = e.target.value;
+                                  setMovieSongs(updated);
+                                }}
+                                placeholder="3:45"
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>YouTube URL</Label>
+                            <Input
+                              value={song.youtube_url}
+                              onChange={(e) => {
+                                const updated = [...movieSongs];
+                                updated[index].youtube_url = e.target.value;
+                                setMovieSongs(updated);
+                              }}
+                              placeholder="https://youtube.com/watch?v=..."
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Gallery Tab */}
+          <TabsContent value="gallery" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Gallery & Posters</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGalleryImages([...galleryImages, {
+                        name: "",
+                        image_url: "",
+                        type: "poster" as const,
+                        display_order: galleryImages.length + 1,
+                        image_file: null
+                      }]);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Image
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {galleryImages.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Camera className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No gallery images added yet</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        setGalleryImages([{
+                          name: "",
+                          image_url: "",
+                          type: "poster" as const,
+                          display_order: 1,
+                          image_file: null
+                        }]);
+                      }}
+                    >
+                      Add First Image
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {galleryImages.map((image, index) => (
+                      <Card key={index} className="border-2 border-dashed">
+                        <CardContent className="pt-6 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">Image #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const updated = galleryImages.filter((_, i) => i !== index);
+                                setGalleryImages(updated);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Image Name</Label>
+                              <Input
+                                value={image.name}
+                                onChange={(e) => {
+                                  const updated = [...galleryImages];
+                                  updated[index].name = e.target.value;
+                                  setGalleryImages(updated);
+                                }}
+                                placeholder="Image name or description"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Type</Label>
+                              <Select
+                                value={image.type}
+                                onValueChange={(value: "poster" | "still" | "behind_scenes") => {
+                                  const updated = [...galleryImages];
+                                  updated[index].type = value;
+                                  setGalleryImages(updated);
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="poster">Poster</SelectItem>
+                                  <SelectItem value="still">Movie Still</SelectItem>
+                                  <SelectItem value="behind_scenes">Behind the Scenes</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Upload Image</Label>
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const updated = [...galleryImages];
+                                      updated[index].image_file = file;
+                                      setGalleryImages(updated);
+                                    }
+                                  }}
+                                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+                                />
+                              </div>
+                              {image.image_url && (
+                                <div className="relative">
+                                  <Image
+                                    src={normalizeImageUrl(image.image_url)}
+                                    alt="Gallery preview"
+                                    width={80}
+                                    height={120}
+                                    className="rounded object-cover border"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Recommended: JPG/PNG format, max 5MB
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

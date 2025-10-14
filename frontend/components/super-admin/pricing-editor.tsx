@@ -52,9 +52,11 @@ export function PricingEditor({
   const [categoryPricing, setCategoryPricing] = useState<
     Record<string, number>
   >({
-    premium: 300,
-    regular: 200,
-    vip: 500,
+    vip: 1000,
+    diamond: 800,
+    platinum: 600,
+    gold: 400,
+    silver: 250,
   });
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -100,9 +102,9 @@ export function PricingEditor({
           );
         } else {
           // Fallback to category pricing
-          const category = seat.category?.toLowerCase() || "regular";
+          const category = seat.category?.toLowerCase() || "silver";
           initialPricing[seat.id] =
-            categoryPricing[category] || categoryPricing.regular;
+            categoryPricing[category] || categoryPricing.silver;
           console.log(
             `Seat ${seat.row}${seat.number}: Using category price ${initialPricing[seat.id]} (${category})`
           );
@@ -115,9 +117,9 @@ export function PricingEditor({
       console.log("PricingEditor: No pricing data, using category defaults");
       const initialPricing: Record<string, number> = {};
       auditoriumSeats.forEach((seat) => {
-        const category = seat.category?.toLowerCase() || "regular";
+        const category = seat.category?.toLowerCase() || "silver";
         initialPricing[seat.id] =
-          categoryPricing[category] || categoryPricing.regular;
+          categoryPricing[category] || categoryPricing.silver;
       });
       setSeatPricing(initialPricing);
     }
@@ -239,9 +241,9 @@ export function PricingEditor({
   const handleReset = () => {
     const resetPricing: Record<string, number> = {};
     auditoriumSeats.forEach((seat) => {
-      const category = seat.category?.toLowerCase() || "regular";
+      const category = seat.category?.toLowerCase() || "silver";
       resetPricing[seat.id] =
-        categoryPricing[category] || categoryPricing.regular;
+        categoryPricing[category] || categoryPricing.silver;
     });
     setSeatPricing(resetPricing);
   };
@@ -291,12 +293,16 @@ export function PricingEditor({
 
   const getCategoryColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case "premium":
-        return "bg-blue-500 hover:bg-blue-600 border-blue-600";
       case "vip":
+        return "bg-yellow-500 hover:bg-yellow-600 border-yellow-600";
+      case "diamond":
         return "bg-purple-500 hover:bg-purple-600 border-purple-600";
-      case "regular":
-        return "bg-green-500 hover:bg-green-600 border-green-600";
+      case "platinum":
+        return "bg-gray-400 hover:bg-gray-500 border-gray-500";
+      case "gold":
+        return "bg-yellow-400 hover:bg-yellow-500 border-yellow-500";
+      case "silver":
+        return "bg-gray-500 hover:bg-gray-600 border-gray-600";
       default:
         return "bg-gray-500 hover:bg-gray-600 border-gray-600";
     }
@@ -304,12 +310,16 @@ export function PricingEditor({
 
   const getCategoryTextColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case "premium":
-        return "text-blue-800";
       case "vip":
+        return "text-yellow-900";
+      case "diamond":
         return "text-purple-800";
-      case "regular":
-        return "text-green-800";
+      case "platinum":
+        return "text-gray-800";
+      case "gold":
+        return "text-yellow-800";
+      case "silver":
+        return "text-gray-800";
       default:
         return "text-gray-800";
     }
@@ -444,7 +454,7 @@ export function PricingEditor({
                   {category} Seats
                 </Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">₹</span>
+                  <span className="text-sm text-muted-foreground">AED </span>
                   <Input
                     id={`category-${category}`}
                     type="number"
@@ -525,13 +535,13 @@ export function PricingEditor({
                           }
                           text-white hover:scale-105
                         `}
-                        title={`Seat ${seat.number} - ${seat.category || "Regular"} - ₹${seatPricing[seat.id] || 0}`}
+                        title={`Seat ${seat.number} - ${seat.category || "Regular"} - AED ${seatPricing[seat.id] || 0}`}
                       >
                         {seat.number}
                       </button>
                       {showPrices && (
                         <div className="text-xs text-muted-foreground mt-1 font-medium">
-                          ₹{seatPricing[seat.id] || 0}
+                          AED {seatPricing[seat.id] || 0}
                         </div>
                       )}
                     </div>
@@ -611,13 +621,13 @@ export function PricingEditor({
                   </Badge>
                 </div>
                 <div>
-                  <strong>Current Price:</strong> ₹
+                  <strong>Current Price:</strong> AED 
                   {seatPricing[selectedSeat.id] || 0}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="seat-price">New Price (₹)</Label>
+                <Label htmlFor="seat-price">New Price (AED )</Label>
                 <Input
                   id="seat-price"
                   type="number"
@@ -669,7 +679,7 @@ export function PricingEditor({
             <div className="space-y-2">
               <Label htmlFor="bulk-price">Price for All Selected Seats</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">₹</span>
+                <span className="text-sm text-muted-foreground">AED </span>
                 <Input
                   id="bulk-price"
                   type="number"

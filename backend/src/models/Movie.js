@@ -192,6 +192,28 @@ export function defineMovie(sequelize) {
         allowNull: true,
         comment: 'Number of songs in movie'
       },
+      movie_songs: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Array of movie song objects with YouTube links: [{name: "Song Name", youtube_url: "https://youtube.com/watch?v=...", duration: "3:45"}]'
+      },
+      
+      // News & Reviews
+      news_reviews: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Array of news/review objects with YouTube links: [{title: "Review Title", youtube_url: "https://youtube.com/watch?v=...", source: "Channel Name", published_date: "2024-01-15"}]'
+      },
+      
+      // Gallery & Posters
+      gallery_images: {
+        type: DataTypes.JSONB,
+        allowNull: true,
+        defaultValue: [],
+        comment: 'Array of gallery image objects: [{name: "Image Name", image_url: "/uploads/gallery/image.jpg", type: "poster|still|behind_scenes", display_order: 1}]'
+      },
       
       // Booking & Availability
       platform_status: {

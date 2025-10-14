@@ -90,7 +90,7 @@ export function formatCurrency(amount: number, currency: string = 'INR'): string
 }
 
 export function formatPrice(amount: number): string {
-  return `₹${amount.toLocaleString('en-IN')}`
+  return `AED ${amount.toLocaleString('en-IN')}`
 }
 
 // ==============================

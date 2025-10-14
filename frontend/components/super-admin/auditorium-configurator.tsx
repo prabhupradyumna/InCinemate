@@ -44,7 +44,7 @@ import {
 interface SeatMapRow {
   row: string;
   seats: number[];
-  type: "premium" | "regular" | "vip";
+  type: "vip" | "diamond" | "platinum" | "gold" | "silver";
   x_position?: number;
   y_position?: number;
 }
@@ -56,7 +56,7 @@ interface AuditoriumConfiguratorProps {
   initialSeats?: Array<{
     row: string;
     number: number;
-    category: "vip" | "premium" | "regular";
+    category: "vip" | "diamond" | "platinum" | "gold" | "silver";
   }>;
   justSaved?: boolean;
   isEditing?: boolean;
@@ -74,12 +74,12 @@ export function AuditoriumConfigurator({
   const [seatMap, setSeatMap] = useState<SeatMapRow[]>([]);
   const [newRowLetter, setNewRowLetter] = useState("");
   const [newRowSeats, setNewRowSeats] = useState("");
-  const [newRowType, setNewRowType] = useState<"premium" | "regular" | "vip">(
-    "regular"
+  const [newRowType, setNewRowType] = useState<"vip" | "diamond" | "platinum" | "gold" | "silver">(
+    "silver"
   );
   const [selectedSeatType, setSelectedSeatType] = useState<
-    "premium" | "regular" | "vip"
-  >("regular");
+    "vip" | "diamond" | "platinum" | "gold" | "silver"
+  >("silver");
   const [isBlueprintVisible, setIsBlueprintVisible] = useState(true);
   const [blueprintScale, setBlueprintScale] = useState(1);
   const [blueprintPosition, setBlueprintPosition] = useState({ x: 0, y: 0 });
@@ -112,7 +112,7 @@ export function AuditoriumConfigurator({
     if (Array.isArray(initialSeats) && initialSeats.length > 0) {
       const grouped: Record<
         string,
-        { type: "vip" | "premium" | "regular"; seats: number[] }
+        { type: "vip" | "diamond" | "platinum" | "gold" | "silver"; seats: number[] }
       > = {};
       for (const s of initialSeats) {
         const key = s.row;
@@ -132,8 +132,10 @@ export function AuditoriumConfigurator({
     if (initialSeats === undefined && seatMap.length === 0) {
       setSeatMap([
         { row: "A", seats: [1, 2, 3, 4, 5], type: "vip" },
-        { row: "B", seats: [1, 2, 3, 4, 5, 6], type: "premium" },
-        { row: "C", seats: [1, 2, 3, 4, 5, 6, 7], type: "regular" },
+        { row: "B", seats: [1, 2, 3, 4, 5, 6], type: "diamond" },
+        { row: "C", seats: [1, 2, 3, 4, 5, 6, 7], type: "platinum" },
+        { row: "D", seats: [1, 2, 3, 4, 5, 6, 7, 8], type: "gold" },
+        { row: "E", seats: [1, 2, 3, 4, 5, 6, 7, 8, 9], type: "silver" },
       ]);
     }
   }, [initialSeats]);
@@ -162,15 +164,19 @@ export function AuditoriumConfigurator({
     }
   }, [request, isEditing]);
 
-  const getSeatButtonClass = (type: "premium" | "regular" | "vip") => {
+  const getSeatButtonClass = (type: "vip" | "diamond" | "platinum" | "gold" | "silver") => {
     const baseClass =
       "w-6 h-6 text-xs font-medium rounded-sm border-2 transition-all cursor-pointer hover:scale-110";
     switch (type) {
       case "vip":
         return `${baseClass} bg-gradient-to-br from-yellow-400 to-yellow-600 border-yellow-500 text-yellow-900 shadow-lg`;
-      case "premium":
-        return `${baseClass} bg-gradient-to-br from-blue-400 to-blue-600 border-blue-500 text-white shadow-md`;
-      case "regular":
+      case "diamond":
+        return `${baseClass} bg-gradient-to-br from-purple-400 to-purple-600 border-purple-500 text-white shadow-lg`;
+      case "platinum":
+        return `${baseClass} bg-gradient-to-br from-gray-300 to-gray-500 border-gray-400 text-gray-900 shadow-md`;
+      case "gold":
+        return `${baseClass} bg-gradient-to-br from-yellow-300 to-yellow-500 border-yellow-400 text-yellow-900 shadow-md`;
+      case "silver":
         return `${baseClass} bg-gradient-to-br from-gray-400 to-gray-600 border-gray-500 text-white`;
       default:
         return `${baseClass} bg-secondary border-border text-secondary-foreground`;
@@ -208,7 +214,7 @@ export function AuditoriumConfigurator({
     setSeatMap((prev) => [...prev, newRow]);
     setNewRowLetter("");
     setNewRowSeats("");
-    setNewRowType("regular");
+    setNewRowType("silver");
 
     toast({
       title: "Success",
@@ -228,7 +234,7 @@ export function AuditoriumConfigurator({
 
   const updateRowType = (
     rowIndex: number,
-    type: "premium" | "regular" | "vip"
+    type: "vip" | "diamond" | "platinum" | "gold" | "silver"
   ) => {
     setSeatMap((prev) =>
       prev.map((row, index) => (index === rowIndex ? { ...row, type } : row))
@@ -298,11 +304,17 @@ export function AuditoriumConfigurator({
           vip: seatMap
             .filter((row) => row.type === "vip")
             .reduce((sum, row) => sum + row.seats.length, 0),
-          premium: seatMap
-            .filter((row) => row.type === "premium")
+          diamond: seatMap
+            .filter((row) => row.type === "diamond")
             .reduce((sum, row) => sum + row.seats.length, 0),
-          regular: seatMap
-            .filter((row) => row.type === "regular")
+          platinum: seatMap
+            .filter((row) => row.type === "platinum")
+            .reduce((sum, row) => sum + row.seats.length, 0),
+          gold: seatMap
+            .filter((row) => row.type === "gold")
+            .reduce((sum, row) => sum + row.seats.length, 0),
+          silver: seatMap
+            .filter((row) => row.type === "silver")
             .reduce((sum, row) => sum + row.seats.length, 0),
         },
       },
@@ -356,17 +368,23 @@ export function AuditoriumConfigurator({
   const vipSeats = seatMap
     .filter((row) => row.type === "vip")
     .reduce((total, row) => total + row.seats.length, 0);
-  const premiumSeats = seatMap
-    .filter((row) => row.type === "premium")
+  const diamondSeats = seatMap
+    .filter((row) => row.type === "diamond")
     .reduce((total, row) => total + row.seats.length, 0);
-  const regularSeats = seatMap
-    .filter((row) => row.type === "regular")
+  const platinumSeats = seatMap
+    .filter((row) => row.type === "platinum")
+    .reduce((total, row) => total + row.seats.length, 0);
+  const goldSeats = seatMap
+    .filter((row) => row.type === "gold")
+    .reduce((total, row) => total + row.seats.length, 0);
+  const silverSeats = seatMap
+    .filter((row) => row.type === "silver")
     .reduce((total, row) => total + row.seats.length, 0);
 
   return (
     <div className="space-y-6">
       {/* Configuration Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-6 gap-4">
         <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-primary">{totalSeats}</div>
@@ -381,18 +399,34 @@ export function AuditoriumConfigurator({
         </Card>
         <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {premiumSeats}
+            <div className="text-2xl font-bold text-purple-600">
+              {diamondSeats}
             </div>
-            <p className="text-sm text-muted-foreground">Premium Seats</p>
+            <p className="text-sm text-muted-foreground">Diamond Seats</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-secondary/50 border-border">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-gray-400">
+              {platinumSeats}
+            </div>
+            <p className="text-sm text-muted-foreground">Platinum Seats</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-secondary/50 border-border">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-500">
+              {goldSeats}
+            </div>
+            <p className="text-sm text-muted-foreground">Gold Seats</p>
           </CardContent>
         </Card>
         <Card className="bg-secondary/50 border-border">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-gray-600">
-              {regularSeats}
+              {silverSeats}
             </div>
-            <p className="text-sm text-muted-foreground">Regular Seats</p>
+            <p className="text-sm text-muted-foreground">Silver Seats</p>
           </CardContent>
         </Card>
       </div>
@@ -492,7 +526,7 @@ export function AuditoriumConfigurator({
               <Label>Paint Tool:</Label>
               <Select
                 value={selectedSeatType}
-                onValueChange={(value: "premium" | "regular" | "vip") =>
+                onValueChange={(value: "vip" | "diamond" | "platinum" | "gold" | "silver") =>
                   setSelectedSeatType(value)
                 }
               >
@@ -500,9 +534,11 @@ export function AuditoriumConfigurator({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="regular">Regular</SelectItem>
-                  <SelectItem value="premium">Premium</SelectItem>
                   <SelectItem value="vip">VIP</SelectItem>
+                  <SelectItem value="diamond">Diamond</SelectItem>
+                  <SelectItem value="platinum">Platinum</SelectItem>
+                  <SelectItem value="gold">Gold</SelectItem>
+                  <SelectItem value="silver">Silver</SelectItem>
                 </SelectContent>
               </Select>
               {isEditing && (
@@ -526,13 +562,19 @@ export function AuditoriumConfigurator({
               )}
               <div className="flex gap-2">
                 <div
-                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("regular").split(" ").slice(2, 4).join(" ")}`}
-                ></div>
-                <div
-                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("premium").split(" ").slice(2, 4).join(" ")}`}
-                ></div>
-                <div
                   className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("vip").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("diamond").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("platinum").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("gold").split(" ").slice(2, 4).join(" ")}`}
+                ></div>
+                <div
+                  className={`w-4 h-4 rounded border-2 ${getSeatButtonClass("silver").split(" ").slice(2, 4).join(" ")}`}
                 ></div>
               </div>
             </div>
@@ -547,9 +589,13 @@ export function AuditoriumConfigurator({
                         variant={
                           rowData.type === "vip"
                             ? "default"
-                            : rowData.type === "premium"
+                            : rowData.type === "diamond"
                               ? "secondary"
-                              : "outline"
+                              : rowData.type === "platinum"
+                                ? "outline"
+                                : rowData.type === "gold"
+                                  ? "default"
+                                  : "outline"
                         }
                       >
                         Row {rowData.row} - {rowData.type}
@@ -561,7 +607,7 @@ export function AuditoriumConfigurator({
                     <div className="flex items-center gap-2">
                       <Select
                         value={rowData.type}
-                        onValueChange={(value: "premium" | "regular" | "vip") =>
+                        onValueChange={(value: "vip" | "diamond" | "platinum" | "gold" | "silver") =>
                           updateRowType(rowIndex, value)
                         }
                       >
@@ -569,9 +615,11 @@ export function AuditoriumConfigurator({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="regular">Regular</SelectItem>
-                          <SelectItem value="premium">Premium</SelectItem>
                           <SelectItem value="vip">VIP</SelectItem>
+                          <SelectItem value="diamond">Diamond</SelectItem>
+                          <SelectItem value="platinum">Platinum</SelectItem>
+                          <SelectItem value="gold">Gold</SelectItem>
+                          <SelectItem value="silver">Silver</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
@@ -667,7 +715,7 @@ export function AuditoriumConfigurator({
                     <Label htmlFor="rowType">Seat Type</Label>
                     <Select
                       value={newRowType}
-                      onValueChange={(value: "premium" | "regular" | "vip") =>
+                      onValueChange={(value: "vip" | "diamond" | "platinum" | "gold" | "silver") =>
                         setNewRowType(value)
                       }
                     >
@@ -675,9 +723,11 @@ export function AuditoriumConfigurator({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="regular">Regular</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
                         <SelectItem value="vip">VIP</SelectItem>
+                        <SelectItem value="diamond">Diamond</SelectItem>
+                        <SelectItem value="platinum">Platinum</SelectItem>
+                        <SelectItem value="gold">Gold</SelectItem>
+                        <SelectItem value="silver">Silver</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -806,7 +856,7 @@ export function AuditoriumConfigurator({
               <div>
                 <Label>Categories</Label>
                 <Input
-                  placeholder="vip,premium,regular"
+                  placeholder="vip,diamond,platinum,gold,silver"
                   value={bulkCategories.join(",")}
                   onChange={(e) =>
                     setBulkCategories(
@@ -889,8 +939,8 @@ export function AuditoriumConfigurator({
                       {p.number} ({p.category})
                     </span>
                     <span>
-                      ₹{p.base_price ?? "-"}
-                      {p.show_price ? ` (show ₹${p.show_price})` : ""}
+                      AED {p.base_price ?? "-"}
+                      {p.show_price ? ` (show AED ${p.show_price})` : ""}
                     </span>
                   </div>
                 ))}
@@ -967,7 +1017,7 @@ export function AuditoriumConfigurator({
                   total_seats: 0,
                   configuration: {
                     rows: 0,
-                    seat_categories: { vip: 0, premium: 0, regular: 0 },
+                    seat_categories: { vip: 0, diamond: 0, platinum: 0, gold: 0, silver: 0 },
                   },
                 });
               }}
@@ -1011,7 +1061,7 @@ function SeatPriceHint({
         Row {row}
         {number}
       </span>
-      <span>₹{match.show_price ?? match.base_price ?? "-"}</span>
+      <span>AED {match.show_price ?? match.base_price ?? "-"}</span>
       {match.show_price != null && (
         <span className="text-xs text-muted-foreground">(show override)</span>
       )}

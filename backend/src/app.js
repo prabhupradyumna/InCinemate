@@ -37,21 +37,30 @@ app.options('*', cors({
 app.use(express.json())
 app.use(cookieParser())
 
+// Debug middleware to log incoming requests (only for auth endpoints)
+app.use((req, res, next) => {
+  if (req.url.includes('/auth/')) {
+    console.log(`📥 Auth Request: ${req.method} ${req.url}`)
+  }
+  next()
+})
+
 // Simple middleware to provide models without timeout issues
 app.use(async (req, res, next) => {
   try {
     req.db = sequelize
-    req.tenantId = 'test-tenant-id' // Default for development
     
-    // Ensure models are properly initialized with associations
-    if (!sequelize.models.Movie || !sequelize.models.Show) {
-      // Import and initialize ModelManager if models aren't ready
-      const { getModelManager } = await import('./models/index.js')
-      const modelManager = getModelManager()
-      await modelManager.initialize()
-    }
+    // Always ensure models are properly initialized with associations
+    const { getModelManager } = await import('./models/index.js')
+    const modelManager = getModelManager(sequelize)
+    const models = await modelManager.initialize()
     
-    req.models = sequelize.models
+    // Resolve tenant ID using the tenant resolver
+    const { createTenantResolver } = await import('./tenant-resolver.js')
+    const tenantResolver = createTenantResolver({ strategy: 'host' })
+    req.tenantId = await tenantResolver(req)
+    
+    req.models = models
     next()
   } catch (error) {
     console.error('[App] Model initialization error:', error)

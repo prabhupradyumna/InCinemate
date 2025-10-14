@@ -82,57 +82,29 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
     fetchBookings();
   }, []);
 
+  useEffect(() => {
+    fetchBookings();
+  }, [searchTerm, statusFilter]);
+
   const fetchBookings = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // For now, we'll use a mock API call since we need to create the backend endpoint
-      // const { getAllBookings } = await import("@/lib/superadmin");
-      // const response = await getAllBookings();
+      // Import the appropriate API based on user role
+      const { getAllBookings } = await import("@/lib/superadmin");
+      const response = await getAllBookings({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchTerm || undefined,
+        page: 1,
+        limit: 100
+      });
       
-      // Mock data for demonstration
-      const mockBookings: Booking[] = [
-        {
-          id: "1",
-          booking_reference: "BK001",
-          customer_name: "John Doe",
-          customer_phone: "9876543210",
-          customer_email: "john@example.com",
-          movie_title: "School Leader",
-          show_date: "2025-01-15",
-          show_time: "14:30",
-          venue_name: "Bharath Cinemas",
-          screen_name: "Audi-01",
-          seats: [
-            { row: "A", number: 5, category: "Premium", price: 250 },
-            { row: "A", number: 6, category: "Premium", price: 250 },
-          ],
-          total_price: 500,
-          booking_status: "CONFIRMED",
-          created_at: "2025-01-15T10:30:00Z",
-        },
-        {
-          id: "2",
-          booking_reference: "BK002",
-          customer_name: "Jane Smith",
-          customer_phone: "9876543211",
-          customer_email: "jane@example.com",
-          movie_title: "School Leader",
-          show_date: "2025-01-15",
-          show_time: "18:00",
-          venue_name: "Bharath Cinemas",
-          screen_name: "Audi-01",
-          seats: [
-            { row: "B", number: 3, category: "Regular", price: 200 },
-          ],
-          total_price: 200,
-          booking_status: "PENDING",
-          created_at: "2025-01-15T11:45:00Z",
-        },
-      ];
-      
-      setBookings(mockBookings);
+      if (response.success) {
+        setBookings(response.data.bookings);
+      } else {
+        throw new Error(response.error || "Failed to fetch bookings");
+      }
     } catch (err: any) {
       console.error("Error fetching bookings:", err);
       setError(err.message || "Failed to fetch bookings");
@@ -155,14 +127,10 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case "CONFIRMED":
-        return "default";
       case "PENDING":
         return "secondary";
       case "CANCELLED":
         return "destructive";
-      case "COMPLETED":
-        return "outline";
       default:
         return "secondary";
     }
@@ -273,9 +241,7 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="PENDING">Pending</SelectItem>
-                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
                 <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -329,7 +295,7 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">
-                    ₹{booking.total_price}
+                    AED {booking.total_price}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(booking.booking_status)}>
@@ -415,12 +381,12 @@ export function BookingsManagement({ className }: BookingsManagementProps) {
                                 {selectedBooking.seats.map((seat, index) => (
                                   <div key={index} className="flex justify-between items-center text-sm">
                                     <span>{seat.row}{seat.number} ({seat.category})</span>
-                                    <span className="font-medium">₹{seat.price}</span>
+                                    <span className="font-medium">AED {seat.price}</span>
                                   </div>
                                 ))}
                                 <div className="border-t pt-2 flex justify-between items-center font-semibold">
                                   <span>Total:</span>
-                                  <span>₹{selectedBooking.total_price}</span>
+                                  <span>AED {selectedBooking.total_price}</span>
                                 </div>
                               </div>
                             </div>

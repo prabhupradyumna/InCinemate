@@ -49,7 +49,7 @@ const platformStats = {
     },
     {
       type: "high_revenue",
-      message: "Downtown Cinema exceeded ₹1000 daily revenue",
+      message: "Downtown Cinema exceeded AED 1000 daily revenue",
       time: "4 hours ago",
     },
     {
@@ -107,7 +107,7 @@ export function SuperAdminDashboard() {
       },
       {
         type: "high_revenue",
-        message: "Downtown Cinema exceeded ₹1000 daily revenue",
+        message: "Downtown Cinema exceeded AED 1000 daily revenue",
         time: "4 hours ago",
       },
       {
@@ -135,7 +135,7 @@ export function SuperAdminDashboard() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-10 bg-secondary">
+        <TabsList className="grid w-full grid-cols-9 bg-secondary">
           <TabsTrigger
             value="overview"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -238,7 +238,7 @@ export function SuperAdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-primary">
-                  ₹{platformStats.totalRevenue.toLocaleString()}
+                  AED {platformStats.totalRevenue.toLocaleString()}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   <TrendingUp className="inline h-3 w-3 mr-1" />+
@@ -316,7 +316,7 @@ export function SuperAdminDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-sm text-primary">
-                          ₹{venue.revenue.toLocaleString()}
+                          AED {venue.revenue.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground">Revenue</p>
                       </div>

@@ -16,6 +16,11 @@ import {
   ArrowLeft,
   Loader2,
   Play,
+  Mic,
+  FileText,
+  Camera,
+  ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import { getMovieDetails } from "@/lib/public";
 
@@ -158,13 +163,6 @@ export default function MobileMovieDetailPage({
                 <Badge>{movie.languages[0]}</Badge>
               )}
             </div>
-
-            {movie.synopsis && (
-              <p className="text-muted-foreground leading-relaxed">
-                {movie.synopsis}
-              </p>
-            )}
-
             {movie.cast && movie.cast.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">Cast</h3>
@@ -302,6 +300,174 @@ export default function MobileMovieDetailPage({
           </section>
         )}
 
+        {/* News & Reviews Section */}
+        {movie.news_reviews && movie.news_reviews.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl sm:text-2xl font-semibold text-foreground flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                News & Reviews
+              </h3>
+              <Link href={`/movie/${params.id}/news-reviews`}>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  View All
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {movie.news_reviews.slice(0, 2).map((item: any, index: number) => (
+                <div key={index} className="bg-card border border-border rounded-lg p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-semibold text-foreground text-sm line-clamp-2">
+                        {item.title || `Review ${index + 1}`}
+                      </h4>
+                      {item.youtube_url && (
+                        <a
+                          href={item.youtube_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 ml-2"
+                        >
+                          <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </a>
+                      )}
+                    </div>
+                    {item.source && (
+                      <p className="text-xs text-muted-foreground">
+                        Source: {item.source}
+                      </p>
+                    )}
+                    {item.published_date && (
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(item.published_date).toLocaleDateString()}
+                      </p>
+                    )}
+                    {item.youtube_url && (
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src={item.youtube_url.replace('watch?v=', 'embed/')}
+                          title={item.title || `Review ${index + 1}`}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Movie Songs Section */}
+        {movie.movie_songs && movie.movie_songs.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl sm:text-2xl font-semibold text-foreground flex items-center gap-2">
+                <Mic className="h-5 w-5" />
+                Movie Songs
+              </h3>
+              <Link href={`/movie/${params.id}/songs`}>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  View All
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {movie.movie_songs.slice(0, 2).map((song: any, index: number) => (
+                <div key={index} className="bg-card border border-border rounded-lg p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <h4 className="font-semibold text-foreground text-sm line-clamp-2">
+                        {song.name || `Song ${index + 1}`}
+                      </h4>
+                      {song.youtube_url && (
+                        <a
+                          href={song.youtube_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0 ml-2"
+                        >
+                          <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </a>
+                      )}
+                    </div>
+                    {song.duration && (
+                      <p className="text-xs text-muted-foreground">
+                        Duration: {song.duration}
+                      </p>
+                    )}
+                    {song.youtube_url && (
+                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                        <iframe
+                          src={song.youtube_url.replace('watch?v=', 'embed/')}
+                          title={song.name || `Song ${index + 1}`}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Gallery Section */}
+        {movie.gallery_images && movie.gallery_images.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl sm:text-2xl font-semibold text-foreground flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Gallery
+              </h3>
+              <Link href={`/movie/${params.id}/gallery`}>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  View All
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {movie.gallery_images.slice(0, 4).map((image: any, index: number) => (
+                <div key={index} className="group relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                  {image.image_url ? (
+                    <Image
+                      src={image.image_url}
+                      alt={image.name || `Gallery image ${index + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300" />
+                  {image.name && (
+                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <p className="text-white text-xs font-medium truncate">
+                        {image.name}
+                      </p>
+                      {image.type && (
+                        <p className="text-white/70 text-xs capitalize">
+                          {image.type.replace('_', ' ')}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Production Details */}
         {(movie.production_houses?.length > 0 ||
           movie.distributors?.length > 0) && (
@@ -376,37 +542,6 @@ export default function MobileMovieDetailPage({
                   </div>
                 </div>
               ))}
-            </div>
-          </section>
-        )}
-
-        {/* Technical Specifications */}
-        {(movie.aspect_ratio || movie.sound_mix?.length > 0) && (
-          <section className="space-y-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-foreground">
-              Technical Specifications
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
-              {movie.aspect_ratio && (
-                <div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4">
-                  <span className="text-muted-foreground block mb-1">
-                    Aspect Ratio
-                  </span>
-                  <span className="text-foreground font-medium">
-                    {movie.aspect_ratio}
-                  </span>
-                </div>
-              )}
-              {movie.sound_mix && movie.sound_mix.length > 0 && (
-                <div className="bg-card/50 border border-border rounded-lg p-3 sm:p-4">
-                  <span className="text-muted-foreground block mb-1">
-                    Sound Mix
-                  </span>
-                  <span className="text-foreground font-medium">
-                    {movie.sound_mix.join(", ")}
-                  </span>
-                </div>
-              )}
             </div>
           </section>
         )}

@@ -18,7 +18,7 @@ import { Eye, EyeOff, Film } from "lucide-react";
 import Link from "next/link";
 import { AuthProvider, useAuth } from "@/components/customer/auth-provider";
 import { useRouter } from "next/navigation";
-import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
+// import { requestCustomerOtp, verifyCustomerOtp } from "@/lib/api";
 import { useEffect } from "react";
 
 export default function LoginPage() {
@@ -27,7 +27,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "customer",
+    role: "admin",
   });
   const [otpPhase, setOtpPhase] = useState<"request" | "verify">("request");
   const [otpForm, setOtpForm] = useState({
@@ -49,6 +49,9 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
 
+    console.log("Login attempt with role:", formData.role);
+    console.log("Form data:", formData);
+
     try {
       await login(formData.email, formData.password, formData.role as any);
       if (formData.role === "super-admin") router.push("/super-admin");
@@ -59,83 +62,83 @@ export default function LoginPage() {
     }
   };
 
-  const handleRequestOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      // simple validation
-      const nextErrors: typeof errors = {};
-      if (otpForm.channel === "sms") {
-        if (!otpForm.phone) nextErrors.phone = "Phone is required";
-        else if (!/^\+?[0-9]{8,15}$/.test(otpForm.phone))
-          nextErrors.phone = "Enter a valid phone (e.g. +91XXXXXXXXXX)";
-      } else {
-        if (!otpForm.email) nextErrors.email = "Email is required";
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpForm.email))
-          nextErrors.email = "Enter a valid email";
-      }
-      setErrors(nextErrors);
-      if (Object.keys(nextErrors).length > 0) return;
-      await requestCustomerOtp({
-        email: otpForm.channel === "email" ? otpForm.email : undefined,
-        phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
-        channel: otpForm.channel,
-        purpose: "login",
-      });
-      setOtpPhase("verify");
-      setResendSeconds(30);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleRequestOtp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   try {
+  //     // simple validation
+  //     const nextErrors: typeof errors = {};
+  //     if (otpForm.channel === "sms") {
+  //       if (!otpForm.phone) nextErrors.phone = "Phone is required";
+  //       else if (!/^\+?[0-9]{8,15}$/.test(otpForm.phone))
+  //         nextErrors.phone = "Enter a valid phone (e.g. +91XXXXXXXXXX)";
+  //     } else {
+  //       if (!otpForm.email) nextErrors.email = "Email is required";
+  //       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(otpForm.email))
+  //         nextErrors.email = "Enter a valid email";
+  //     }
+  //     setErrors(nextErrors);
+  //     if (Object.keys(nextErrors).length > 0) return;
+  //     await requestCustomerOtp({
+  //       email: otpForm.channel === "email" ? otpForm.email : undefined,
+  //       phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
+  //       channel: otpForm.channel,
+  //       purpose: "login",
+  //     });
+  //     setOtpPhase("verify");
+  //     setResendSeconds(30);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      // validate code
-      const nextErrors: typeof errors = {};
-      if (!otpForm.code) nextErrors.code = "OTP is required";
-      else if (!/^\d{6}$/.test(otpForm.code))
-        nextErrors.code = "Enter 6-digit OTP";
-      setErrors(nextErrors);
-      if (Object.keys(nextErrors).length > 0) return;
-      await verifyCustomerOtp({
-        email: otpForm.channel === "email" ? otpForm.email : undefined,
-        phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
-        channel: otpForm.channel,
-        code: otpForm.code,
-      });
-      router.push("/");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleVerifyOtp = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   try {
+  //     // validate code
+  //     const nextErrors: typeof errors = {};
+  //     if (!otpForm.code) nextErrors.code = "OTP is required";
+  //     else if (!/^\d{6}$/.test(otpForm.code))
+  //       nextErrors.code = "Enter 6-digit OTP";
+  //     setErrors(nextErrors);
+  //     if (Object.keys(nextErrors).length > 0) return;
+      // await verifyCustomerOtp({
+      //   email: otpForm.channel === "email" ? otpForm.email : undefined,
+      //   phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
+      //   channel: otpForm.channel,
+      //   code: otpForm.code,
+      // });
+  //     router.push("/");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleResend = async () => {
-    if (resendSeconds > 0) return;
-    setIsLoading(true);
-    try {
-      await requestCustomerOtp({
-        email: otpForm.channel === "email" ? otpForm.email : undefined,
-        phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
-        channel: otpForm.channel,
-        purpose: "login",
-      });
-      setResendSeconds(30);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const handleResend = async () => {
+  //   if (resendSeconds > 0) return;
+  //   setIsLoading(true);
+  //   try {
+  //     await requestCustomerOtp({
+  //       email: otpForm.channel === "email" ? otpForm.email : undefined,
+  //       phone: otpForm.channel === "sms" ? otpForm.phone : undefined,
+  //       channel: otpForm.channel,
+  //       purpose: "login",
+  //     });
+  //     setResendSeconds(30);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  useEffect(() => {
-    if (resendSeconds <= 0) return;
-    const t = setInterval(
-      () => setResendSeconds((s) => (s > 0 ? s - 1 : 0)),
-      1000
-    );
-    return () => clearInterval(t);
-  }, [resendSeconds]);
+  // useEffect(() => {
+  //   if (resendSeconds <= 0) return;
+  //   const t = setInterval(
+  //     () => setResendSeconds((s) => (s > 0 ? s - 1 : 0)),
+  //     1000
+  //   );
+  //   return () => clearInterval(t);
+  // }, [resendSeconds]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -148,23 +151,15 @@ export default function LoginPage() {
         <Card className="border-border/50">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl text-foreground">
-              Welcome Back
+              Welcome Back 
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Sign in to your account to continue
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="customer" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger
-                  value="customer"
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, role: "customer" }))
-                  }
-                >
-                  Customer
-                </TabsTrigger>
+            <Tabs defaultValue="admin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger
                   value="admin"
                   onClick={() =>
@@ -183,7 +178,7 @@ export default function LoginPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="customer" className="space-y-4">
+              {/* <TabsContent value="customer" className="space-y-4">
                 <div className="text-sm text-muted-foreground">
                   Sign in as customer with OTP
                 </div>
@@ -317,7 +312,7 @@ export default function LoginPage() {
                     </div>
                   </form>
                 )}
-              </TabsContent>
+              </TabsContent> */}
 
               <TabsContent value="admin">
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -448,35 +443,6 @@ export default function LoginPage() {
                   </Button>
                 </form>
               </TabsContent>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Don't have an account?{" "}
-                  <Link
-                    href="/register"
-                    className="text-primary hover:underline"
-                  >
-                    Sign up
-                  </Link>
-                </p>
-              </div>
-
-              <div className="mt-6 p-4 bg-muted/20 rounded-lg border border-border/30">
-                <h4 className="text-sm font-medium text-foreground mb-2">
-                  Demo Credentials:
-                </h4>
-                <div className="text-xs text-muted-foreground space-y-1">
-                  <p>
-                    <strong>Customer:</strong> customer@demo.com / password
-                  </p>
-                  <p>
-                    <strong>Admin:</strong> admin@demo.com / password
-                  </p>
-                  <p>
-                    <strong>Super Admin:</strong> superadmin@demo.com / password
-                  </p>
-                </div>
-              </div>
             </Tabs>
           </CardContent>
         </Card>

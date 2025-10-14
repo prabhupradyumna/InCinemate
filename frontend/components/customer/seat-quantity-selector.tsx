@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatCategory {
   name: string;
@@ -33,6 +34,10 @@ export function SeatQuantitySelector({
   selectedQuantity = 1,
 }: SeatQuantitySelectorProps) {
   const [quantity, setQuantity] = useState(selectedQuantity);
+  const { user } = useAuth();
+  
+  // Determine if user is admin/superadmin (can see pricing)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
   const handleConfirm = () => {
     onConfirm(quantity);
@@ -62,6 +67,24 @@ export function SeatQuantitySelector({
         return "SOLD OUT";
       default:
         return "UNKNOWN";
+    }
+  };
+
+  // Color mapping for seat types
+  const getSeatTypeColors = (type: string) => {
+    switch (type.toLowerCase()) {
+      case "vip":
+        return { bg: "bg-purple-200", border: "border-purple-400", text: "text-purple-800" };
+      case "diamond":
+        return { bg: "bg-cyan-200", border: "border-cyan-400", text: "text-cyan-800" };
+      case "platinum":
+        return { bg: "bg-gray-200", border: "border-gray-400", text: "text-gray-800" };
+      case "gold":
+        return { bg: "bg-yellow-200", border: "border-yellow-400", text: "text-yellow-800" };
+      case "silver":
+        return { bg: "bg-slate-200", border: "border-slate-400", text: "text-slate-800" };
+      default:
+        return { bg: "bg-secondary", border: "border-border", text: "text-secondary-foreground" };
     }
   };
 
@@ -106,25 +129,31 @@ export function SeatQuantitySelector({
 
           {/* Seat Categories */}
           <div className="space-y-3">
-            {categories.map((category, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="font-medium">{category.name}</div>
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(category.status)}
-                  >
-                    {getStatusText(category.status)}
-                  </Badge>
+            {categories.map((category, index) => {
+              const colors = getSeatTypeColors(category.name);
+              return (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border bg-card"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-4 h-4 ${colors.bg} ${colors.border} border rounded-sm flex-shrink-0`}></div>
+                    <div className="font-medium capitalize">{category.name}</div>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(category.status)}
+                    >
+                      {getStatusText(category.status)}
+                    </Badge>
+                  </div>
+                  {isAdminUser && (
+                    <div className="font-semibold text-primary">
+                      AED {category.price}
+                    </div>
+                  )}
                 </div>
-                <div className="font-semibold text-primary">
-                  ₹{category.price}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Action Button */}

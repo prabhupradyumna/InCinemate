@@ -7,6 +7,7 @@ import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
 import { MobileLayout } from "@/components/customer/mobile-layout";
 import { BookingSummary } from "@/components/customer/booking-summary";
+import { SimpleBookingSummary } from "@/components/customer/simple-booking-summary";
 import { Separator } from "@/components/ui/separator";
 import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
 import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
@@ -31,6 +32,7 @@ export default function BookingPage({
   params: { movieId: string };
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showData, setShowData] = useState<any>(null);
@@ -39,7 +41,7 @@ export default function BookingPage({
       id: string;
       row: string;
       seat: number;
-      type: "premium" | "regular";
+      type: "vip" | "diamond" | "platinum" | "gold" | "silver";
       price?: number; // Individual seat price
     }>
   >([]);
@@ -47,6 +49,11 @@ export default function BookingPage({
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [simpleBookingData, setSimpleBookingData] = useState<any>(null);
+
+  // Determine if user is admin/superadmin (direct booking) or public (reservation)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
+  const isDirectBooking = isAdminUser;
 
   // Safely get user from auth context
   let user = null;
@@ -90,10 +97,6 @@ export default function BookingPage({
 
         // Transform API shape to SeatSelection expected shape
         // Prefer seat_map; if empty, attempt to build from seats_flat
-        const mapType = (cat: any): "premium" | "regular" => {
-          const c = String(cat || "").toLowerCase();
-          return c === "regular" ? "regular" : "premium";
-        };
 
         const seatIdMap: Record<string, string> = {};
         let rows = Object.entries(apiData.seat_map || {}).map(
@@ -104,7 +107,7 @@ export default function BookingPage({
             return {
               row,
               seats: (seats || []).map((s: any) => s.number),
-              type: mapType(seats && seats[0]?.category),
+              type: normalizeCategory(seats && seats[0]?.category),
             };
           }
         );
@@ -121,7 +124,7 @@ export default function BookingPage({
             return {
               row,
               seats: (seats || []).map((s: any) => s.number),
-              type: mapType(seats && seats[0]?.category),
+              type: normalizeCategory(seats && seats[0]?.category),
             };
           });
         }
@@ -165,7 +168,9 @@ export default function BookingPage({
                   minute: "2-digit",
                 })
               : "",
-            pricing: show.pricing || { premium: 0, regular: 0 },
+            pricing:
+              show.pricing ||
+              { vip: 0, diamond: 0, platinum: 0, gold: 0, silver: 0 },
           },
           bookedSeats,
           seatIdMap,
@@ -184,6 +189,20 @@ export default function BookingPage({
     loadSeatMap();
   }, [params.movieId]);
 
+  // Helper function to normalize seat categories
+  const normalizeCategory = (
+    cat: any
+  ): "vip" | "diamond" | "platinum" | "gold" | "silver" => {
+    const c = String(cat || "").toLowerCase();
+    if (c.includes("vip")) return "vip";
+    if (c.includes("diamond")) return "diamond";
+    if (c.includes("platinum")) return "platinum";
+    if (c.includes("gold")) return "gold";
+    if (c.includes("silver")) return "silver";
+    // Fallback: treat unknown as gold
+    return "gold";
+  };
+
   // Seat categories with pricing and availability from backend data
   const seatCategories = useMemo(() => {
     if (!showData) return [];
@@ -195,17 +214,20 @@ export default function BookingPage({
     const categoryMap = new Map();
 
     seatsFlat.forEach((seat: any) => {
-      const category = seat.category?.toUpperCase() || "REGULAR";
-      if (!categoryMap.has(category)) {
-        categoryMap.set(category, {
-          name: category,
-          price: pricing[seat.category] || pricing[`row_${seat.row}`] || 250,
+      // Normalize category to our new seat types
+      const normalizedCategory = normalizeCategory(seat.category);
+      const categoryKey = normalizedCategory.toUpperCase();
+      
+      if (!categoryMap.has(categoryKey)) {
+        categoryMap.set(categoryKey, {
+          name: normalizedCategory,
+          price: pricing[normalizedCategory] || pricing[seat.category] || pricing[`row_${seat.row}`] || 250,
           totalSeats: 0,
           availableSeats: 0,
         });
       }
 
-      const cat = categoryMap.get(category);
+      const cat = categoryMap.get(categoryKey);
       cat.totalSeats++;
       if (seat.is_available) {
         cat.availableSeats++;
@@ -238,16 +260,51 @@ export default function BookingPage({
     setShowQuantitySelector(false);
   };
 
-  // Show quantity selector only for admin users
-  useEffect(() => {
-    if (canSelectSeats && !showData) {
-      setShowQuantitySelector(true);
-    }
-  }, [canSelectSeats, showData]);
 
-  const handlePayNow = () => {
+  const handlePayNow = async () => {
     if (selectedSeats.length === 0) return;
-    setShowBookingFlow(true);
+
+    if (isDirectBooking) {
+      // For admin/superadmin users, use the existing booking flow
+      setShowBookingFlow(true);
+    } else {
+      // For public users, create a simple booking without authentication
+      try {
+        const isPremiumType = (t: any) =>
+          t === 'vip' || t === 'diamond' || t === 'platinum';
+        const mapCategory = (t: any) => {
+          // Map to our new seat types
+          if (t === 'vip') return 'vip';
+          if (t === 'diamond') return 'diamond';
+          if (t === 'platinum') return 'platinum';
+          if (t === 'gold') return 'gold';
+          if (t === 'silver') return 'silver';
+          // Fallback for unknown types
+          return isPremiumType(t) ? 'vip' : 'gold';
+        };
+        // Create a simple booking data structure for public users
+        const bookingData = {
+          booking_id: `temp_${Date.now()}`, // Temporary ID
+          booking_reference: `REF${Date.now()}`,
+          seats: selectedSeats.map(seat => ({
+            id: (seat as any).id,
+            row: seat.row,
+            number: seat.seat,
+            category: mapCategory(seat.type),
+            price: seat.price || (isPremiumType(seat.type) ? 250 : 200)
+          })),
+          subtotal: selectedSeats.reduce((sum, seat) => sum + (seat.price || (isPremiumType(seat.type) ? 250 : 200)), 0),
+          total_price: selectedSeats.reduce((sum, seat) => sum + (seat.price || (isPremiumType(seat.type) ? 250 : 200)), 0),
+          hold_expires_at: new Date(Date.now() + 3600000).toISOString()
+        } as any;
+
+        setSimpleBookingData(bookingData);
+        setShowBookingFlow(true);
+      } catch (error) {
+        console.error('Error creating simple booking:', error);
+        setError('Failed to create booking. Please try again.');
+      }
+    }
   };
 
   return (
@@ -293,15 +350,26 @@ export default function BookingPage({
             Show details not available.
           </div>
         ) : showBookingFlow ? (
-          <BookingSummary
-            showId={showData.show.id}
-            showData={showData}
-            selectedSeats={selectedSeats}
-            selectedQuantity={selectedQuantity}
-            onBack={handleBackFromBooking}
-            onBookingCreated={setActiveBookingId}
-            onBookingCancelled={() => setActiveBookingId(null)}
-          />
+          isDirectBooking ? (
+            <BookingSummary
+              showId={showData.show.id}
+              showData={showData}
+              selectedSeats={selectedSeats}
+              selectedQuantity={selectedQuantity}
+              onBack={handleBackFromBooking}
+              onBookingCreated={setActiveBookingId}
+              onBookingCancelled={() => setActiveBookingId(null)}
+            />
+          ) : (
+            <SimpleBookingSummary
+              showData={showData}
+              bookingDetails={simpleBookingData}
+              onBookingComplete={(bookingId) => {
+                console.log("Simple booking completed:", bookingId);
+                setActiveBookingId(bookingId);
+              }}
+            />
+          )
         ) : (
           <>
             <div className="space-y-6 sm:space-y-8">
@@ -326,16 +394,13 @@ export default function BookingPage({
                 </div>
               )}
             </div>
-            {/* Only show quantity selector for admin users */}
-            {canSelectSeats && (
-              <SeatQuantitySelector
-                isOpen={showQuantitySelector}
-                onClose={() => setShowQuantitySelector(false)}
-                onConfirm={handleQuantityConfirm}
-                categories={seatCategories}
-                selectedQuantity={selectedQuantity}
-              />
-            )}
+            <SeatQuantitySelector
+              isOpen={showQuantitySelector}
+              onClose={() => setShowQuantitySelector(false)}
+              onConfirm={handleQuantityConfirm}
+              categories={seatCategories} 
+              selectedQuantity={selectedQuantity}
+            />
           </>
         )}
       </div>

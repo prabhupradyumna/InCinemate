@@ -216,14 +216,14 @@ export default function BookingSuccessPage() {
                       {seat.row}{seat.number} ({seat.category})
                     </span>
                     <span className="text-green-600 font-semibold">
-                      ₹{seat.price}
+                      AED {seat.price}
                     </span>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between items-center font-semibold text-lg">
                   <span>Total Amount:</span>
-                  <span className="text-green-600">₹{bookingData.total_price}</span>
+                  <span className="text-green-600">AED {bookingData.total_price}</span>
                 </div>
               </div>
             </CardContent>

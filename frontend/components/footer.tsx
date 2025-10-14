@@ -6,15 +6,15 @@ export function Footer() {
           <div>
             <h4 className="text-foreground font-semibold mb-2">About</h4>
             <p>
-              BooknWatch is a demo movie ticketing interface inspired by modern
-              cinema apps.
+              BooknWatch is a movie ticketing interface inspired by modern
+              cinema apps to help customers reserve seats for their favorite movies.
             </p>
           </div>
           <div>
             <h4 className="text-foreground font-semibold mb-2">Contact</h4>
             <ul className="space-y-1">
-              <li>Email: support@screenlease.app</li>
-              <li>Phone: +91 90000 00000</li>
+              <li>Email: info@sunmatrixproduction.com</li>
+              <li>Phone: +91 7411842999</li>
             </ul>
           </div>
           <div>

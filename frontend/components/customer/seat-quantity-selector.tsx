@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatCategory {
   name: string;
@@ -33,6 +34,10 @@ export function SeatQuantitySelector({
   selectedQuantity = 1,
 }: SeatQuantitySelectorProps) {
   const [quantity, setQuantity] = useState(selectedQuantity);
+  const { user } = useAuth();
+  
+  // Determine if user is admin/superadmin (can see pricing)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
   const handleConfirm = () => {
     onConfirm(quantity);
@@ -120,9 +125,11 @@ export function SeatQuantitySelector({
                     {getStatusText(category.status)}
                   </Badge>
                 </div>
-                <div className="font-semibold text-primary">
-                  ₹{category.price}
-                </div>
+                {isAdminUser && (
+                  <div className="font-semibold text-primary">
+                    ₹{category.price}
+                  </div>
+                )}
               </div>
             ))}
           </div>

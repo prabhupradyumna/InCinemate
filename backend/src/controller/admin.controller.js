@@ -555,4 +555,143 @@ export default class AdminController {
       })
     }
   }
+
+  // ==============================
+  // BOOKING MANAGEMENT
+  // ==============================
+
+  static async getAllBookings(req, res) {
+    try {
+      const { status, search, page = 1, limit = 50 } = req.query
+      
+      // Use centralized models with pre-configured associations
+      const { Booking, Show, Movie, Auditorium, Theatre, BookedSeat, Seat } = req.models
+
+      // Build where clause
+      let whereClause = {}
+      if (req.tenantId) {
+        whereClause.tenant_id = req.tenantId
+      }
+
+      // Add status filter
+      if (status && status !== 'all') {
+        whereClause.status = status
+      }
+
+      // Add search filter
+      if (search) {
+        whereClause[Op.or] = [
+          { booking_reference: { [Op.iLike]: `%${search}%` } },
+          { customer_name: { [Op.iLike]: `%${search}%` } },
+          { customer_phone: { [Op.iLike]: `%${search}%` } },
+          { customer_email: { [Op.iLike]: `%${search}%` } }
+        ]
+      }
+
+      // Calculate pagination
+      const offset = (parseInt(page) - 1) * parseInt(limit)
+
+      // Get bookings with related data
+      const { count, rows: bookings } = await Booking.findAndCountAll({
+        where: whereClause,
+        include: [
+          {
+            model: Show,
+            as: 'Show',
+            include: [
+              {
+                model: Movie,
+                as: 'Movie'
+              },
+              {
+                model: Auditorium,
+                as: 'Auditorium',
+                include: [
+                  {
+                    model: Theatre,
+                    as: 'Theatre'
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: parseInt(limit),
+        offset: offset
+      })
+
+      // Get seat details for each booking
+      const bookingsWithSeats = await Promise.all(
+        bookings.map(async (booking) => {
+          let seats = []
+          
+          // For public reservations (pending status), use requested_seats from booking
+          if (booking.status === 'pending' && booking.requested_seats) {
+            seats = booking.requested_seats.map(seat => ({
+              row: seat.row || 'Unknown',
+              number: seat.number || 0,
+              category: seat.category || 'Unknown',
+              price: seat.price || 0
+            }))
+          } else {
+            // For confirmed bookings, get seats from BookedSeat table
+            const bookedSeats = await BookedSeat.findAll({
+              where: { booking_id: booking.id },
+              include: [
+                {
+                  model: Seat
+                }
+              ]
+            })
+            
+            seats = bookedSeats.map(bs => ({
+              row: bs.Seat?.row || 'Unknown',
+              number: bs.Seat?.number || 0,
+              category: bs.Seat?.category || 'Unknown',
+              price: bs.price_paid || 0
+            }))
+          }
+
+          return {
+            id: booking.id,
+            booking_reference: booking.booking_reference,
+            customer_name: booking.customer_name,
+            customer_phone: booking.customer_phone,
+            customer_email: booking.customer_email,
+            movie_title: booking.Show?.Movie?.title || 'Unknown Movie',
+            show_date: booking.Show?.show_datetime ? booking.Show.show_datetime.toISOString().split('T')[0] : 'Unknown Date',
+            show_time: booking.Show?.show_datetime ? booking.Show.show_datetime.toTimeString().split(' ')[0].substring(0, 5) : 'Unknown Time',
+            venue_name: booking.Show?.Auditorium?.Theatre?.name || 'Unknown Venue',
+            screen_name: booking.Show?.Auditorium?.name || 'Unknown Screen',
+            seats: seats,
+            total_price: booking.total_price || 0,
+            booking_status: booking.status || 'unknown',
+            created_at: booking.createdAt
+          }
+        })
+      )
+
+      return res.json({
+        success: true,
+        data: {
+          bookings: bookingsWithSeats,
+          pagination: {
+            total: count,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            totalPages: Math.ceil(count / parseInt(limit))
+          }
+        },
+        message: 'Bookings retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[AdminController]-[getAllBookings]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to retrieve bookings'
+      })
+    }
+  }
 }

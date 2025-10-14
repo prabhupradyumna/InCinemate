@@ -42,6 +42,16 @@ router.get('/shows',
 )
 
 // ==============================
+// BOOKING MANAGEMENT ROUTES
+// ==============================
+
+// Get all bookings for management
+router.get('/bookings', 
+  requirePermission('Manage Bookings'),
+  AdminController.getAllBookings
+)
+
+// ==============================
 // COUPON MANAGEMENT ROUTES
 // ==============================
 

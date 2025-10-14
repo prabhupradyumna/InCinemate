@@ -18,6 +18,7 @@ import { defineBooking } from './Booking.js'
 import { defineBookedSeat } from './BookedSeat.js'
 import { defineCoupon } from './Coupon.js'
 import { defineSeatPricing } from './SeatPricing.js'
+// import { definePayment } from './Payment.js' // Removed - using simplified booking flow
 
 // Import relationship setups
 import { setupMovieRelationships } from './MovieRelationships.js'
@@ -85,6 +86,7 @@ class ModelManager {
       BookedSeat: defineBookedSeat(this.sequelize),
       Coupon: defineCoupon(this.sequelize),
       SeatPricing: defineSeatPricing(this.sequelize)
+      // Payment: definePayment(this.sequelize) // Removed - using simplified booking flow
     }
 
     // Setup core associations
@@ -110,6 +112,7 @@ class ModelManager {
       User, Tenant, RefreshToken, Permission, AdminPermission,
       Theatre, AuditoriumRequest, Auditorium, Seat,
       Movie, Show, Booking, BookedSeat, Coupon
+      // Payment // Removed - using simplified booking flow
     } = models
 
     // User & Tenant associations
@@ -202,6 +205,8 @@ class ModelManager {
     Booking.belongsTo(Coupon, { foreignKey: 'coupon_id' })
     Coupon.hasMany(Booking, { foreignKey: 'coupon_id' })
 
+    // Payment associations removed - using simplified booking flow
+
     // Call associate methods for models that have them
     Object.values(models).forEach(model => {
       if (model.associate) {
@@ -273,6 +278,7 @@ class ModelManager {
       BookedSeat: defineBookedSeat(this.sequelize),
       Coupon: defineCoupon(this.sequelize),
       SeatPricing: defineSeatPricing(this.sequelize)
+      // Payment: definePayment(this.sequelize) // Removed - using simplified booking flow
     }
   }
 

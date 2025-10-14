@@ -102,7 +102,7 @@ async function setupDatabase() {
         CURRENT_DATE + INTERVAL '1 day',
         '19:00:00',
         250.00,
-        '{"premium": 500, "regular": 250}',
+        '{"vip": 1000, "diamond": 800, "platinum": 600, "gold": 400, "silver": 250}',
         true
       FROM movies m
       CROSS JOIN screens s

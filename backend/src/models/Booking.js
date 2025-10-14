@@ -42,6 +42,11 @@ export function defineBooking(sequelize) {
         allowNull: true,
         comment: 'Customer phone for the booking'
       },
+      requested_seats: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: 'Requested seat details for public reservations (JSON array)'
+      },
       subtotal: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
@@ -146,6 +151,7 @@ export function defineBooking(sequelize) {
     },
     { 
       tableName: 'bookings',
+      timestamps: true,
       indexes: [
         {
           fields: ['tenant_id', 'status']

@@ -52,9 +52,11 @@ export function PricingEditor({
   const [categoryPricing, setCategoryPricing] = useState<
     Record<string, number>
   >({
-    premium: 300,
-    regular: 200,
-    vip: 500,
+    vip: 1000,
+    diamond: 800,
+    platinum: 600,
+    gold: 400,
+    silver: 250,
   });
   const [selectedSeat, setSelectedSeat] = useState<Seat | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -100,9 +102,9 @@ export function PricingEditor({
           );
         } else {
           // Fallback to category pricing
-          const category = seat.category?.toLowerCase() || "regular";
+          const category = seat.category?.toLowerCase() || "silver";
           initialPricing[seat.id] =
-            categoryPricing[category] || categoryPricing.regular;
+            categoryPricing[category] || categoryPricing.silver;
           console.log(
             `Seat ${seat.row}${seat.number}: Using category price ${initialPricing[seat.id]} (${category})`
           );
@@ -115,9 +117,9 @@ export function PricingEditor({
       console.log("PricingEditor: No pricing data, using category defaults");
       const initialPricing: Record<string, number> = {};
       auditoriumSeats.forEach((seat) => {
-        const category = seat.category?.toLowerCase() || "regular";
+        const category = seat.category?.toLowerCase() || "silver";
         initialPricing[seat.id] =
-          categoryPricing[category] || categoryPricing.regular;
+          categoryPricing[category] || categoryPricing.silver;
       });
       setSeatPricing(initialPricing);
     }
@@ -239,9 +241,9 @@ export function PricingEditor({
   const handleReset = () => {
     const resetPricing: Record<string, number> = {};
     auditoriumSeats.forEach((seat) => {
-      const category = seat.category?.toLowerCase() || "regular";
+      const category = seat.category?.toLowerCase() || "silver";
       resetPricing[seat.id] =
-        categoryPricing[category] || categoryPricing.regular;
+        categoryPricing[category] || categoryPricing.silver;
     });
     setSeatPricing(resetPricing);
   };
@@ -291,12 +293,16 @@ export function PricingEditor({
 
   const getCategoryColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case "premium":
-        return "bg-blue-500 hover:bg-blue-600 border-blue-600";
       case "vip":
+        return "bg-yellow-500 hover:bg-yellow-600 border-yellow-600";
+      case "diamond":
         return "bg-purple-500 hover:bg-purple-600 border-purple-600";
-      case "regular":
-        return "bg-green-500 hover:bg-green-600 border-green-600";
+      case "platinum":
+        return "bg-gray-400 hover:bg-gray-500 border-gray-500";
+      case "gold":
+        return "bg-yellow-400 hover:bg-yellow-500 border-yellow-500";
+      case "silver":
+        return "bg-gray-500 hover:bg-gray-600 border-gray-600";
       default:
         return "bg-gray-500 hover:bg-gray-600 border-gray-600";
     }
@@ -304,12 +310,16 @@ export function PricingEditor({
 
   const getCategoryTextColor = (category: string) => {
     switch (category?.toLowerCase()) {
-      case "premium":
-        return "text-blue-800";
       case "vip":
+        return "text-yellow-900";
+      case "diamond":
         return "text-purple-800";
-      case "regular":
-        return "text-green-800";
+      case "platinum":
+        return "text-gray-800";
+      case "gold":
+        return "text-yellow-800";
+      case "silver":
+        return "text-gray-800";
       default:
         return "text-gray-800";
     }

@@ -7,11 +7,13 @@ import { SeatSelection } from "@/components/customer/seat-selection";
 import { Header } from "@/components/header";
 import { MobileLayout } from "@/components/customer/mobile-layout";
 import { BookingSummary } from "@/components/customer/booking-summary";
+import { SimpleBookingSummary } from "@/components/customer/simple-booking-summary";
 import { Separator } from "@/components/ui/separator";
 import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
 import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useAuth } from "@/components/customer/auth-provider";
 
 type PublicMovie = {
   id: string;
@@ -30,6 +32,7 @@ export default function BookingPage({
   params: { movieId: string };
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showData, setShowData] = useState<any>(null);
@@ -38,7 +41,7 @@ export default function BookingPage({
       id: string;
       row: string;
       seat: number;
-      type: "premium" | "regular";
+      type: "vip" | "diamond" | "platinum" | "gold" | "silver";
       price?: number; // Individual seat price
     }>
   >([]);
@@ -46,6 +49,11 @@ export default function BookingPage({
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
+  const [simpleBookingData, setSimpleBookingData] = useState<any>(null);
+
+  // Determine if user is admin/superadmin (direct booking) or public (reservation)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
+  const isDirectBooking = isAdminUser;
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback((seats: any[]) => {
@@ -223,9 +231,41 @@ export default function BookingPage({
     setShowQuantitySelector(false);
   };
 
-  const handlePayNow = () => {
+  const handlePayNow = async () => {
     if (selectedSeats.length === 0) return;
-    setShowBookingFlow(true);
+
+    if (isDirectBooking) {
+      // For admin/superadmin users, use the existing booking flow
+      setShowBookingFlow(true);
+    } else {
+      // For public users, create a simple booking without authentication
+      try {
+        const isPremiumType = (t: any) =>
+          t === 'vip' || t === 'diamond' || t === 'platinum';
+        const mapCategory = (t: any) => (isPremiumType(t) ? 'Premium' : 'Regular');
+        // Create a simple booking data structure for public users
+        const bookingData = {
+          booking_id: `temp_${Date.now()}`, // Temporary ID
+          booking_reference: `REF${Date.now()}`,
+          seats: selectedSeats.map(seat => ({
+            id: (seat as any).id,
+            row: seat.row,
+            number: seat.seat,
+            category: mapCategory(seat.type),
+            price: seat.price || (isPremiumType(seat.type) ? 250 : 200)
+          })),
+          subtotal: selectedSeats.reduce((sum, seat) => sum + (seat.price || (isPremiumType(seat.type) ? 250 : 200)), 0),
+          total_price: selectedSeats.reduce((sum, seat) => sum + (seat.price || (isPremiumType(seat.type) ? 250 : 200)), 0),
+          hold_expires_at: new Date(Date.now() + 3600000).toISOString()
+        } as any;
+
+        setSimpleBookingData(bookingData);
+        setShowBookingFlow(true);
+      } catch (error) {
+        console.error('Error creating simple booking:', error);
+        setError('Failed to create booking. Please try again.');
+      }
+    }
   };
 
   return (
@@ -271,15 +311,26 @@ export default function BookingPage({
             Show details not available.
           </div>
         ) : showBookingFlow ? (
-          <BookingSummary
-            showId={showData.show.id}
-            showData={showData}
-            selectedSeats={selectedSeats}
-            selectedQuantity={selectedQuantity}
-            onBack={handleBackFromBooking}
-            onBookingCreated={setActiveBookingId}
-            onBookingCancelled={() => setActiveBookingId(null)}
-          />
+          isDirectBooking ? (
+            <BookingSummary
+              showId={showData.show.id}
+              showData={showData}
+              selectedSeats={selectedSeats}
+              selectedQuantity={selectedQuantity}
+              onBack={handleBackFromBooking}
+              onBookingCreated={setActiveBookingId}
+              onBookingCancelled={() => setActiveBookingId(null)}
+            />
+          ) : (
+            <SimpleBookingSummary
+              showData={showData}
+              bookingDetails={simpleBookingData}
+              onBookingComplete={(bookingId) => {
+                console.log("Simple booking completed:", bookingId);
+                setActiveBookingId(bookingId);
+              }}
+            />
+          )
         ) : (
           <>
             <div className="space-y-6 sm:space-y-8">
@@ -305,7 +356,7 @@ export default function BookingPage({
               isOpen={showQuantitySelector}
               onClose={() => setShowQuantitySelector(false)}
               onConfirm={handleQuantityConfirm}
-              categories={seatCategories}
+              categories={seatCategories} 
               selectedQuantity={selectedQuantity}
             />
           </>

@@ -85,23 +85,8 @@ export function Header() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Bengaluru">Bengaluru</SelectItem>
+                  <SelectItem value="Dubai">Dubai</SelectItem>
                   <SelectItem value="Mumbai">Mumbai</SelectItem>
-                  <SelectItem value="Delhi / NCR">Delhi / NCR</SelectItem>
-                  <SelectItem value="Chennai">Chennai</SelectItem>
-                  <SelectItem value="Hyderabad">Hyderabad</SelectItem>
-                  <SelectItem value="Kolkata">Kolkata</SelectItem>
-                  <SelectItem value="Pune">Pune</SelectItem>
-                  <SelectItem value="Ahmedabad">Ahmedabad</SelectItem>
-                  <SelectItem value="Kochi">Kochi</SelectItem>
-                  <SelectItem value="Jaipur">Jaipur</SelectItem>
-                  <SelectItem value="Chandigarh">Chandigarh</SelectItem>
-                  <SelectItem value="Lucknow">Lucknow</SelectItem>
-                  <SelectItem value="Nagpur">Nagpur</SelectItem>
-                  <SelectItem value="Indore">Indore</SelectItem>
-                  <SelectItem value="Bhopal">Bhopal</SelectItem>
-                  <SelectItem value="Visakhapatnam">Visakhapatnam</SelectItem>
-                  <SelectItem value="Surat">Surat</SelectItem>
                 </SelectContent>
               </Select>
             </div>

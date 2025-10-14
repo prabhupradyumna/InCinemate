@@ -10,13 +10,16 @@
     "seed": "node ./src/scripts/seed.js",
     "seed:permissions": "node ./src/scripts/seed-permissions.js",
     "migrate:add-movie-city": "node ./src/scripts/add-movie-city.js",
+    "migrate:payment": "psql $DATABASE_URL -f ./migrations/2025-01-08_create_payment_table.sql",
+    "setup:payment": "node ./setup-payment-env.js",
     "test:redis": "node ./src/scripts/test-redis.js",
     "test:fallback": "node ./src/scripts/test-fallback.js",
     "test:startup": "node ./src/scripts/test-startup-time.js"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.0",
     "axios": "^1.12.2",
-    "bcrypt": "^5.1.1",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -29,7 +32,6 @@
     "redis": "^4.6.12",
     "sequelize": "^6.37.3",
     "twilio": "^4.23.0",
-    "@sendgrid/mail": "^8.1.0",
     "uuid": "^9.0.1"
   }
 }

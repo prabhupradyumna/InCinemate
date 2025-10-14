@@ -6,11 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Monitor } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatData {
   row: string;
   seat: number;
-  type: "premium" | "regular";
+  type: "vip" | "diamond" | "platinum" | "gold" | "silver";
   status: "available" | "selected" | "booked";
   price?: number; // Individual seat price
   id?: string; // Seat ID for backend operations
@@ -35,7 +36,7 @@ interface ShowData {
       rows: Array<{
         row: string;
         seats: number[];
-        type: "premium" | "regular";
+        type: "vip" | "diamond" | "platinum" | "gold" | "silver";
       }>;
     };
   };
@@ -43,8 +44,11 @@ interface ShowData {
     date: string;
     time: string;
     pricing: {
-      premium: number;
-      regular: number;
+      vip: number;
+      diamond: number;
+      platinum: number;
+      gold: number;
+      silver: number;
     };
   };
   bookedSeats: Array<{
@@ -73,6 +77,10 @@ export function SeatSelection({
   maxSeats,
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
+  const { user } = useAuth();
+
+  // Determine if user is admin/superadmin (can see pricing)
+  const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
@@ -213,7 +221,7 @@ export function SeatSelection({
 
           {/* Seat Grid */}
           <div className="space-y-2 sm:space-y-3 overflow-x-auto">
-            {showData.screen.seatMap.rows.map((rowData) => (
+            {showData.screen.seatMap.rows.slice().reverse().map((rowData) => (
               <div
                 key={rowData.row}
                 className="flex items-center justify-center gap-1 sm:gap-2 min-w-max"
@@ -293,9 +301,11 @@ export function SeatSelection({
                 </p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-xl sm:text-2xl font-bold text-primary">
-                  ₹{totalPrice.toFixed(2)}
-                </p>
+                {isAdminUser && (
+                  <p className="text-xl sm:text-2xl font-bold text-primary">
+                    ₹{totalPrice.toFixed(2)}
+                  </p>
+                )}
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   {selectedSeats.length} seat(s)
                 </p>

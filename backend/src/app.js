@@ -3,7 +3,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { attachTenantDb } from './middleware/tenant-db.js'
+import { sequelize } from './db.js'
 import routes from './routes/index.routes.js'
 import { SERVER_CONFIG } from './constants.js'
 
@@ -36,7 +36,29 @@ app.options('*', cors({
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(attachTenantDb())
+
+// Simple middleware to provide models without timeout issues
+app.use(async (req, res, next) => {
+  try {
+    req.db = sequelize
+    
+    // Always ensure models are properly initialized with associations
+    const { getModelManager } = await import('./models/index.js')
+    const modelManager = getModelManager(sequelize)
+    const models = await modelManager.initialize()
+    
+    // Resolve tenant ID using the tenant resolver
+    const { createTenantResolver } = await import('./tenant-resolver.js')
+    const tenantResolver = createTenantResolver({ strategy: 'host' })
+    req.tenantId = await tenantResolver(req)
+    
+    req.models = models
+    next()
+  } catch (error) {
+    console.error('[App] Model initialization error:', error)
+    next(error)
+  }
+})
 
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))

@@ -12,6 +12,7 @@ import { PlatformSettings } from "@/components/super-admin/platform-settings";
 import { AuditoriumRequests } from "@/components/super-admin/auditorium-requests";
 import { AuditoriumBuilder } from "@/components/super-admin/auditorium-builder";
 import { ShowsManagement } from "@/components/super-admin/shows-management";
+import { BookingsManagement } from "@/components/super-admin/bookings-management";
 import {
   Building2,
   DollarSign,
@@ -134,7 +135,7 @@ export function SuperAdminDashboard() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-9 bg-secondary">
+        <TabsList className="grid w-full grid-cols-10 bg-secondary">
           <TabsTrigger
             value="overview"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
@@ -158,6 +159,12 @@ export function SuperAdminDashboard() {
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             Shows
+          </TabsTrigger>
+          <TabsTrigger
+            value="bookings"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+          >
+            Bookings
           </TabsTrigger>
           <TabsTrigger
             value="auditorium-requests"
@@ -353,6 +360,10 @@ export function SuperAdminDashboard() {
 
         <TabsContent value="shows">
           <ShowsManagement />
+        </TabsContent>
+
+        <TabsContent value="bookings">
+          <BookingsManagement />
         </TabsContent>
 
         <TabsContent value="auditorium-requests">

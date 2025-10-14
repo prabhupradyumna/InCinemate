@@ -33,6 +33,16 @@ export async function listAdmins(): Promise<AdminUserDTO[]> {
   return res.data?.data || [];
 }
 
+export async function getAllBookings(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}): Promise<any> {
+  const res = await api.get("/superadmin/bookings", { params });
+  return res.data;
+}
+
 export async function createAdmin(payload: CreateAdminPayload) {
   const res = await api.post("/superadmin/admins", payload);
   return res.data?.data;
@@ -394,6 +404,27 @@ export interface CreateMoviePayload {
   // Music
   has_songs?: boolean;
   song_count?: number;
+  movie_songs?: Array<{
+    name?: string;
+    youtube_url?: string;
+    duration?: string;
+  }>;
+
+  // News & Reviews
+  news_reviews?: Array<{
+    title?: string;
+    youtube_url?: string;
+    source?: string;
+    published_date?: string;
+  }>;
+
+  // Gallery Images
+  gallery_images?: Array<{
+    name?: string;
+    image_url?: string;
+    type?: "poster" | "still" | "behind_scenes";
+    display_order?: number;
+  }>;
 
   // Booking & Status
   platform_status?:

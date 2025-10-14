@@ -26,7 +26,20 @@ export function createTenantResolver({ strategy, header }) {
     // For localhost development, return a default tenant ID
     if (!tenantIdentifier || host === 'localhost') {
       console.log('[TenantResolver] Using default tenant for localhost');
-      return 'test-tenant-id'; // Return a default tenant ID for development
+      // Look up the default development tenant by tenant_id string
+      try {
+        const Tenant = defineTenant(sequelize)
+        const defaultTenant = await Tenant.findOne({
+          where: { tenant_id: 'client1' }
+        })
+        if (defaultTenant) {
+          console.log('[TenantResolver] Found default tenant:', defaultTenant.id);
+          return defaultTenant.id // Return the UUID for database operations
+        }
+      } catch (error) {
+        console.error('[TenantResolver] Error finding default tenant:', error)
+      }
+      return null
     }
 
     try {

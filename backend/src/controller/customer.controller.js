@@ -501,6 +501,268 @@ export default class CustomerController {
     }
   }
 
+  static async createSeatReservation(req, res) {
+    try {
+      const { 
+        show_id, 
+        seat_ids, 
+        customer_name, 
+        customer_phone,
+        customer_email 
+      } = req.body
+
+      if (!show_id || !seat_ids || !customer_name || !customer_phone) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'show_id, seat_ids, customer_name, and customer_phone are required',
+          message: 'Seat reservation creation failed'
+        })
+      }
+
+      // Use centralized models with pre-configured associations
+      const { Show, Seat, Booking, BookedSeat } = req.models
+
+      // Verify show exists and is available
+      const show = await Show.findOne({
+        where: { 
+          id: show_id,
+          status: { [Op.in]: ['scheduled', 'live'] },
+          show_datetime: { [Op.gte]: new Date() }
+        }
+      })
+
+      if (!show) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Show not found or not available for booking',
+          message: 'Seat reservation creation failed'
+        })
+      }
+
+      // Verify seats exist and are available
+      const seats = await Seat.findAll({
+        where: { 
+          id: { [Op.in]: seat_ids },
+          auditorium_id: show.auditorium_id
+        }
+      })
+
+      if (seats.length !== seat_ids.length) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'Some seats are invalid',
+          message: 'Seat reservation creation failed'
+        })
+      }
+
+      // For public reservations, we don't check seat availability
+      // The admin will handle seat allocation when approving the request
+      // This allows multiple people to request the same seats
+
+      // Calculate pricing using SeatPricing with fallback to Show.pricing
+      const seatIds = seats.map(s => s.id)
+      const resolvedMap = await PricingService.resolvePricesForSeats({
+        sequelize: req.db,
+        models: { SeatPricing: defineSeatPricing(req.db) },
+        seatIds,
+        show,
+        defaultPrice: 250
+      })
+
+      const seatPricing = []
+      let subtotal = 0
+      for (const seat of seats) {
+        let price = resolvedMap.get(seat.id)
+        if (price == null) {
+          // fallback to show matrix
+          if (show.pricing && show.pricing[seat.category] != null) price = show.pricing[seat.category]
+          else if (show.pricing && show.pricing[`row_${seat.row}`] != null) price = show.pricing[`row_${seat.row}`]
+          else price = 250
+        }
+        seatPricing.push({ seat_id: seat.id, price })
+        subtotal += price
+      }
+
+      const totalPrice = subtotal
+
+      // Create booking with "pending" status for admin approval
+      const bookingReference = `REF${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+      
+      // Prepare seat details for storage
+      const requestedSeatsData = seats.map(seat => ({
+        id: seat.id,
+        row: seat.row,
+        number: seat.number,
+        category: seat.category,
+        price: seatPricing.find(sp => sp.seat_id === seat.id).price
+      }))
+      
+      const booking = await Booking.create({
+        show_id,
+        customer_email: customer_email || null,
+        customer_name,
+        customer_phone,
+        subtotal,
+        discount_amount: 0,
+        total_price: totalPrice,
+        status: 'pending', // Pending admin approval
+        booking_reference: bookingReference,
+        tenant_id: show.tenant_id,
+        requested_seats: requestedSeatsData // Store seat details for admin reference
+      })
+
+      // For public reservations, DO NOT create BookedSeat records
+      // This prevents seat blocking and allows multiple people to request the same seats
+      // Admin will handle seat allocation when approving the request
+
+      return res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: {
+          booking_id: booking.id,
+          booking_reference: booking.booking_reference,
+          seats: seats.map(seat => ({
+            id: seat.id,
+            row: seat.row,
+            number: seat.number,
+            category: seat.category,
+            price: seatPricing.find(sp => sp.seat_id === seat.id).price
+          })),
+          subtotal,
+          total_price: totalPrice,
+          status: booking.status
+        },
+        message: 'Seat reservation created successfully. Awaiting admin approval.'
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[createSeatReservation]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Seat reservation creation failed'
+      })
+    }
+  }
+
+  static async confirmSimpleBooking(req, res) {
+    try {
+      const { booking_id, customer_name, customer_phone, customer_email } = req.body
+
+      if (!booking_id || !customer_name || !customer_phone) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'booking_id, customer_name, and customer_phone are required',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      const sequelize = req.db
+      const Booking = defineBooking(sequelize)
+      const BookedSeat = defineBookedSeat(sequelize)
+      const Show = defineShow(sequelize)
+      const Movie = defineMovie(sequelize)
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+
+      await Promise.all([
+        Booking.sync(),
+        BookedSeat.sync(),
+        Show.sync(),
+        Movie.sync(),
+        Auditorium.sync(),
+        Theatre.sync()
+      ])
+
+      // Find the booking
+      const booking = await Booking.findByPk(booking_id)
+      if (!booking) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Booking not found',
+          message: 'Booking confirmation failed'
+        })
+      }
+
+      // Update booking with customer details and confirm it
+      await booking.update({
+        customer_name,
+        customer_phone,
+        customer_email: customer_email || null,
+        booking_status: 'CONFIRMED',
+        confirmed_at: new Date()
+      })
+
+      // Get booking details with related data
+      const bookingWithDetails = await Booking.findByPk(booking_id, {
+        include: [
+          {
+            model: Show,
+            as: 'Show',
+            include: [
+              {
+                model: Movie,
+                as: 'Movie'
+              },
+              {
+                model: Auditorium,
+                as: 'Auditorium',
+                include: [
+                  {
+                    model: Theatre,
+                    as: 'Theatre'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      })
+
+      // Get booked seats
+      const bookedSeats = await BookedSeat.findAll({
+        where: { booking_id },
+        include: [
+          {
+            model: defineSeat(sequelize),
+            as: 'Seat'
+          }
+        ]
+      })
+
+      return res.json({
+        success: true,
+        data: {
+          booking_id: booking.id,
+          booking_reference: booking.booking_reference,
+          customer_name: booking.customer_name,
+          customer_phone: booking.customer_phone,
+          customer_email: booking.customer_email,
+          movie_title: bookingWithDetails.Show.Movie.title,
+          show_date: bookingWithDetails.Show.show_datetime.toISOString().split('T')[0],
+          show_time: bookingWithDetails.Show.show_datetime.toTimeString().split(' ')[0].substring(0, 5),
+          venue_name: bookingWithDetails.Show.Auditorium.Theatre.name,
+          screen_name: bookingWithDetails.Show.Auditorium.name,
+          seats: bookedSeats.map(bs => ({
+            row: bs.Seat.row,
+            number: bs.Seat.number,
+            category: bs.Seat.category,
+            price: bs.Seat.price
+          })),
+          total_price: booking.total_price,
+          booking_status: booking.booking_status,
+          created_at: booking.created_at
+        },
+        message: 'Booking confirmed successfully'
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[confirmSimpleBooking]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Booking confirmation failed'
+      })
+    }
+  }
+
   static async confirmBooking(req, res) {
     try {
       const { booking_id, payment_method, payment_details } = req.body
@@ -600,6 +862,115 @@ export default class CustomerController {
         success: false,
         error: err.message,
         message: 'Booking confirmation failed'
+      })
+    }
+  }
+
+  static async getBookingDetails(req, res) {
+    try {
+      const { bookingId } = req.params
+
+      if (!bookingId) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'bookingId is required',
+          message: 'Failed to fetch booking details'
+        })
+      }
+
+      const sequelize = req.db
+      const Booking = defineBooking(sequelize)
+      const BookedSeat = defineBookedSeat(sequelize)
+      const Show = defineShow(sequelize)
+      const Movie = defineMovie(sequelize)
+      const Auditorium = defineAuditorium(sequelize)
+      const Theatre = defineTheatre(sequelize)
+
+      await Promise.all([
+        Booking.sync(),
+        BookedSeat.sync(),
+        Show.sync(),
+        Movie.sync(),
+        Auditorium.sync(),
+        Theatre.sync()
+      ])
+
+      // Find the booking with all related data
+      const booking = await Booking.findByPk(bookingId, {
+        include: [
+          {
+            model: Show,
+            as: 'Show',
+            include: [
+              {
+                model: Movie,
+                as: 'Movie'
+              },
+              {
+                model: Auditorium,
+                as: 'Auditorium',
+                include: [
+                  {
+                    model: Theatre,
+                    as: 'Theatre'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      })
+
+      if (!booking) {
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
+          success: false,
+          error: 'Booking not found',
+          message: 'Failed to fetch booking details'
+        })
+      }
+
+      // Get booked seats
+      const bookedSeats = await BookedSeat.findAll({
+        where: { booking_id: bookingId },
+        include: [
+          {
+            model: defineSeat(sequelize),
+            as: 'Seat'
+          }
+        ]
+      })
+
+      return res.json({
+        success: true,
+        data: {
+          booking_id: booking.id,
+          booking_reference: booking.booking_reference,
+          customer_name: booking.customer_name,
+          customer_phone: booking.customer_phone,
+          customer_email: booking.customer_email,
+          movie_title: booking.Show.Movie.title,
+          show_date: booking.Show.show_datetime.toISOString().split('T')[0],
+          show_time: booking.Show.show_datetime.toTimeString().split(' ')[0].substring(0, 5),
+          venue_name: booking.Show.Auditorium.Theatre.name,
+          screen_name: booking.Show.Auditorium.name,
+          seats: bookedSeats.map(bs => ({
+            row: bs.Seat.row,
+            number: bs.Seat.number,
+            category: bs.Seat.category,
+            price: bs.Seat.price
+          })),
+          total_price: booking.total_price,
+          booking_status: booking.booking_status,
+          created_at: booking.created_at
+        },
+        message: 'Booking details retrieved successfully'
+      })
+    } catch (err) {
+      console.error(`[CustomerController]-[getBookingDetails]: ${err.message}`)
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: err.message,
+        message: 'Failed to fetch booking details'
       })
     }
   }

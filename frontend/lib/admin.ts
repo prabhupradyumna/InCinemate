@@ -31,6 +31,20 @@ export async function getMyAuditoriumRequests(): Promise<AuditoriumRequest[]> {
 }
 
 // ==============================
+// BOOKING MANAGEMENT SERVICES
+// ==============================
+
+export async function getAllBookings(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  search?: string;
+}): Promise<PaginatedResponse<any>> {
+  const res = await api.get('/admin/bookings', { params });
+  return res.data;
+}
+
+// ==============================
 // SHOW MANAGEMENT SERVICES
 // ==============================
 

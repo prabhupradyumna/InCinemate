@@ -1,0 +1,24 @@
+[Unit]
+Description=InCinemate Application Service
+After=network.target
+
+[Service]
+Type=forking
+User=ubuntu
+WorkingDirectory=/home/ubuntu/InCinemate
+ExecStart=/home/ubuntu/InCinemate/start-app.sh
+ExecStop=/home/ubuntu/InCinemate/stop-app.sh
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Environment variables
+Environment=NODE_ENV=production
+Environment=HOME=/home/ubuntu
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target
+

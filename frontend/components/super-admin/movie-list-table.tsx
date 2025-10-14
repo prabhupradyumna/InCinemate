@@ -149,10 +149,9 @@ function MovieListTableContent() {
   const getImageUrl = (imageUrl: string | null | undefined) => {
     if (!imageUrl) return undefined;
     if (imageUrl.startsWith('http')) return imageUrl;
-    const raw = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000').trim();
-    const origin = raw.replace(/\/+$/, '').replace(/\/?api$/, '');
-    const path = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-    return `${origin}${path}`;
+    
+    // Use relative path since Next.js rewrite will handle /uploads
+    return imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
   };
 
   // Helper to format platform status nicely

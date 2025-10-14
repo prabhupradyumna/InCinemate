@@ -32,7 +32,7 @@ interface MovieWithShows extends Movie {
   }>
 }
 
-const DEFAULT_CITY = "Mumbai" // Default city for movie search
+const DEFAULT_CITY = "Dubai" // Default city for movie search
 const genres = ["All", "Action", "Comedy", "Drama", "Sci-Fi", "Romance", "Thriller", "Animation", "Horror", "Adventure"]
 
 export function MovieBrowser() {

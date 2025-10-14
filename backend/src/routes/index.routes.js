@@ -5,7 +5,7 @@ import adminRoutes from './admin.js'
 import customerRoutes from './customer.js'
 import publicRoutes from './public.js'
 import uploadRoutes from './upload.js'
-import paymentRoutes from './payments.js'
+// import paymentRoutes from './payments.js' // Removed - using simplified booking flow
 import { createShowsRouter } from './shows.js'
 import { createBookingsRouter } from './bookings.js'
 
@@ -33,7 +33,7 @@ router.use('/admin', adminRoutes)
 router.use('/customer', customerRoutes)
 router.use('/public', publicRoutes)
 router.use('/upload', uploadRoutes)
-router.use('/payments', paymentRoutes)
+// router.use('/payments', paymentRoutes) // Removed - using simplified booking flow
 
 // Legacy routes (for backward compatibility)
 router.use('/shows', createShowsRouter())

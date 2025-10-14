@@ -4,7 +4,12 @@ import { authenticate, authorizeRoles } from '../middleware/auth.middleware.js'
 
 const router = Router()
 
-// All customer routes require authentication and customer role
+// Public routes (no authentication required)
+router.post('/confirm-simple-booking', CustomerController.confirmSimpleBooking)
+router.post('/create-seat-reservation', CustomerController.createSeatReservation)
+router.get('/booking/:bookingId', CustomerController.getBookingDetails)
+
+// All other customer routes require authentication and customer role
 router.use(authenticate)
 router.use(authorizeRoles('customer', 'admin', 'super_admin'))
 
@@ -32,11 +37,13 @@ router.post('/bookings/:id/cancel', CustomerController.cancelBooking)
 // Hold seats for a show
 router.post('/bookings/hold-seats', CustomerController.holdSeats)
 
-  // Confirm booking with payment
-  router.post('/bookings/confirm', CustomerController.confirmBooking)
-  
-  // Release seat hold manually
-  router.post('/bookings/release-hold', CustomerController.releaseSeatHold)
+// Confirm booking with payment
+router.post('/bookings/confirm', CustomerController.confirmBooking)
+
+// Routes moved to public section above
+
+// Release seat hold manually
+router.post('/bookings/release-hold', CustomerController.releaseSeatHold)
   
   // ==============================
 // COUPON ROUTES

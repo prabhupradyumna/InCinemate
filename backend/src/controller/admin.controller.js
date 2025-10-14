@@ -393,14 +393,14 @@ export default class AdminController {
         order: [['row', 'ASC'], ['number', 'ASC']]
       })
 
-      // Get booked seats - only confirmed bookings (paid status)
+      // Get booked seats
       const bookedSeats = await BookedSeat.findAll({
         where: {
           booking_id: {
             [Op.in]: sequelize.literal(`(
               SELECT id FROM bookings 
               WHERE show_id = '${show_id}' 
-              AND status = 'paid'
+              AND status IN ('paid', 'pending')
             )`)
           }
         },
@@ -428,9 +428,9 @@ export default class AdminController {
         booking: seatStatusMap.get(seat.id)?.booking || null
       }))
 
-      // Get booking statistics - only confirmed bookings
+      // Get booking statistics
       const totalBookings = await Booking.count({
-        where: { show_id, status: 'paid' }
+        where: { show_id, status: { [Op.in]: ['paid', 'pending'] } }
       })
 
       const totalRevenue = await Booking.sum('total_price', {

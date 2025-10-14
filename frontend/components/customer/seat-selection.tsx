@@ -81,20 +81,6 @@ export function SeatSelection({
   // Determine if user is admin/superadmin (can see pricing)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
-  // Safely get user from auth context
-  let user = null;
-  let canSelectSeats = false;
-
-  try {
-    const authContext = useAuth();
-    user = authContext.user;
-    canSelectSeats =
-      user && (user.role === "admin" || user.role === "super-admin");
-  } catch (error) {
-    // Auth context not available, treat as unauthenticated user
-    console.log("Auth context not available, treating as unauthenticated user");
-  }
-
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
     const seats: SeatData[] = [];
@@ -130,9 +116,6 @@ export function SeatSelection({
   };
 
   const handleSeatClick = (clickedSeat: SeatData) => {
-    // Only allow seat selection for admin and super-admin users
-    if (!canSelectSeats) return;
-
     if (clickedSeat.status === "booked") return;
 
     const seatKey = `${clickedSeat.row}-${clickedSeat.seat}`;
@@ -368,45 +351,8 @@ export function SeatSelection({
         </CardContent>
       </Card>
 
-      {/* Contact Admin Message for Non-Admin Users */}
-      {!canSelectSeats && (
-        <Card className="bg-card border-border">
-          <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Seat Reservation Required
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  To book seats for this show, please contact our admin team
-                  directly.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4" />
-                  Call Admin
-                </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Email Admin
-                </Button>
-              </div>
-
-              <div className="text-xs text-muted-foreground">
-                <p>
-                  Available seats are shown above. Contact admin with your
-                  preferred seat numbers.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Selected Seats Summary - Only for Admin Users */}
-      {canSelectSeats && selectedSeats.length > 0 && (
+      {/* Selected Seats Summary */}
+      {selectedSeats.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="p-4 sm:p-6">
             <div className="space-y-4">

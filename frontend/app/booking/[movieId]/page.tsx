@@ -45,7 +45,7 @@ export default function BookingPage({
       price?: number; // Individual seat price
     }>
   >([]);
-  const [showQuantitySelector, setShowQuantitySelector] = useState(false);
+  const [showQuantitySelector, setShowQuantitySelector] = useState(true);
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [showBookingFlow, setShowBookingFlow] = useState(false);
   const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
@@ -54,20 +54,6 @@ export default function BookingPage({
   // Determine if user is admin/superadmin (direct booking) or public (reservation)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
   const isDirectBooking = isAdminUser;
-
-  // Safely get user from auth context
-  let user = null;
-  let canSelectSeats = false;
-
-  try {
-    const authContext = useAuth();
-    user = authContext.user;
-    canSelectSeats =
-      user && (user.role === "admin" || user.role === "super-admin");
-  } catch (error) {
-    // Auth context not available, treat as unauthenticated user
-    console.log("Auth context not available, treating as unauthenticated user");
-  }
 
   // Stable updater that only sets state when selection truly changes
   const handleSelectionChange = useCallback((seats: any[]) => {
@@ -260,7 +246,6 @@ export default function BookingPage({
     setShowQuantitySelector(false);
   };
 
-
   const handlePayNow = async () => {
     if (selectedSeats.length === 0) return;
 
@@ -380,19 +365,16 @@ export default function BookingPage({
                   maxSeats={selectedQuantity}
                 />
               </div>
-              {/* Only show booking summary for admin users */}
-              {canSelectSeats && (
-                <div className="flex justify-center px-2 sm:px-0">
-                  <div className="w-full max-w-md">
-                    <SeatSelectionSummary
-                      showData={showData}
-                      selectedSeats={selectedSeats}
-                      selectedQuantity={selectedQuantity}
-                      onPayNow={handlePayNow}
-                    />
-                  </div>
+              <div className="flex justify-center px-2 sm:px-0">
+                <div className="w-full max-w-md">
+                  <SeatSelectionSummary
+                    showData={showData}
+                    selectedSeats={selectedSeats}
+                    selectedQuantity={selectedQuantity}
+                    onPayNow={handlePayNow}
+                  />
                 </div>
-              )}
+              </div>
             </div>
             <SeatQuantitySelector
               isOpen={showQuantitySelector}

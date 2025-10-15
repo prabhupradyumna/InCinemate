@@ -315,49 +315,51 @@ export default function MobileMovieDetailPage({
                 </Button>
               </Link>
             </div>
-            <div className="space-y-3">
-              {movie.news_reviews.slice(0, 2).map((item: any, index: number) => (
-                <div key={index} className="bg-card border border-border rounded-lg p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <h4 className="font-semibold text-foreground text-sm line-clamp-2">
-                        {item.title || `Review ${index + 1}`}
-                      </h4>
-                      {item.youtube_url && (
-                        <a
-                          href={item.youtube_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-shrink-0 ml-2"
-                        >
-                          <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </a>
-                      )}
-                    </div>
-                    {item.source && (
-                      <p className="text-xs text-muted-foreground">
-                        Source: {item.source}
-                      </p>
-                    )}
-                    {item.published_date && (
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(item.published_date).toLocaleDateString()}
-                      </p>
-                    )}
-                    {item.youtube_url && (
-                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                        <iframe
-                          src={item.youtube_url.replace('watch?v=', 'embed/')}
-                          title={item.title || `Review ${index + 1}`}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-3 pb-2">
+                {movie.news_reviews.map((item: any, index: number) => (
+                  <div key={index} className="flex-shrink-0 w-72">
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-semibold text-foreground text-sm line-clamp-2">
+                            {item.title || `Review ${index + 1}`}
+                          </h4>
+                          {item.youtube_url && (
+                            <a
+                              href={item.youtube_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-shrink-0 ml-2"
+                            >
+                              <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </a>
+                          )}
+                        </div>
+                        {item.source && (
+                          <p className="text-xs text-muted-foreground">Source: {item.source}</p>
+                        )}
+                        {item.published_date && (
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.published_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        {item.youtube_url && (
+                          <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                            <iframe
+                              src={item.youtube_url.replace('watch?v=', 'embed/')}
+                              title={item.title || `Review ${index + 1}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -377,44 +379,46 @@ export default function MobileMovieDetailPage({
                 </Button>
               </Link>
             </div>
-            <div className="space-y-3">
-              {movie.movie_songs.slice(0, 2).map((song: any, index: number) => (
-                <div key={index} className="bg-card border border-border rounded-lg p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <h4 className="font-semibold text-foreground text-sm line-clamp-2">
-                        {song.name || `Song ${index + 1}`}
-                      </h4>
-                      {song.youtube_url && (
-                        <a
-                          href={song.youtube_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-shrink-0 ml-2"
-                        >
-                          <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                        </a>
-                      )}
-                    </div>
-                    {song.duration && (
-                      <p className="text-xs text-muted-foreground">
-                        Duration: {song.duration}
-                      </p>
-                    )}
-                    {song.youtube_url && (
-                      <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                        <iframe
-                          src={song.youtube_url.replace('watch?v=', 'embed/')}
-                          title={song.name || `Song ${index + 1}`}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-3 pb-2">
+                {movie.movie_songs.map((song: any, index: number) => (
+                  <div key={index} className="flex-shrink-0 w-72">
+                    <div className="bg-card border border-border rounded-lg p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-semibold text-foreground text-sm line-clamp-2">
+                            {song.name || `Song ${index + 1}`}
+                          </h4>
+                          {song.youtube_url && (
+                            <a
+                              href={song.youtube_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex-shrink-0 ml-2"
+                            >
+                              <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                            </a>
+                          )}
+                        </div>
+                        {song.duration && (
+                          <p className="text-xs text-muted-foreground">Duration: {song.duration}</p>
+                        )}
+                        {song.youtube_url && (
+                          <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                            <iframe
+                              src={song.youtube_url.replace('watch?v=', 'embed/')}
+                              title={song.name || `Song ${index + 1}`}
+                              className="w-full h-full"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -434,36 +438,36 @@ export default function MobileMovieDetailPage({
                 </Button>
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              {movie.gallery_images.slice(0, 4).map((image: any, index: number) => (
-                <div key={index} className="group relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-                  {image.image_url ? (
-                    <Image
-                      src={image.image_url}
-                      alt={image.name || `Gallery image ${index + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300" />
-                  {image.name && (
-                    <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <p className="text-white text-xs font-medium truncate">
-                        {image.name}
-                      </p>
-                      {image.type && (
-                        <p className="text-white/70 text-xs capitalize">
-                          {image.type.replace('_', ' ')}
-                        </p>
+            <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="flex gap-3 pb-2">
+                {movie.gallery_images.map((image: any, index: number) => (
+                  <div key={index} className="flex-shrink-0 w-40">
+                    <div className="group relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                      {image.image_url ? (
+                        <Image
+                          src={image.image_url}
+                          alt={image.name || `Gallery image ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Camera className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors duration-300" />
+                      {image.name && (
+                        <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="text-white text-xs font-medium truncate">{image.name}</p>
+                          {image.type && (
+                            <p className="text-white/70 text-xs capitalize">{image.type.replace('_', ' ')}</p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}

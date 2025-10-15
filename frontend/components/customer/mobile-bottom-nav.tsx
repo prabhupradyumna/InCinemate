@@ -1,6 +1,6 @@
 "use client";
 
-import { Film, Ticket, User, Play } from "lucide-react";
+import { Film, Ticket, User, Play, Settings } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/components/customer/auth-provider";
 
@@ -18,10 +18,11 @@ export function MobileBottomNav() {
         { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" }
       ];
     } else if (user.role === "admin" || user.role === "super-admin") {
-      // Admin/Super-admin: Movies, Trailers, and Profile
+      // Admin/Super-admin: Movies, Trailers, Admin, and Profile
       return [
         { id: "movies", label: "Movies", icon: Film, path: "/" },
         { id: "trailers", label: "Trailers", icon: Play, path: "/trailers" },
+        { id: "admin", label: "Admin", icon: Settings, path: user.role === "admin" ? "/admin" : "/super-admin" },
         { id: "profile", label: "Profile", icon: User, path: "/profile" }
       ];
     } else {

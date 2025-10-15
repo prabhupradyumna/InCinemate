@@ -122,8 +122,8 @@ export default function AppSidebar() {
       return [
         {
           icon: <Settings className="h-4 w-4" />,
-          name: "Bookings",
-          path: "/admin?tab=bookings",
+          name: "Customer Requests",
+          path: "/admin?tab=customer-requests",
         },
         {
           icon: <Square className="h-4 w-4" />,

@@ -10,11 +10,11 @@ import { BookedSeatsManagement } from "@/components/admin/booked-seats-managemen
 
 export function AdminDashboard() {
   const searchParams = useSearchParams()
-  const [activeTab, setActiveTab] = useState("bookings")
+  const [activeTab, setActiveTab] = useState("customer-requests")
 
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && ['bookings', 'booked-seats'].includes(tab)) {
+    if (tab && ['customer-requests', 'booked-seats'].includes(tab)) {
       setActiveTab(tab)
     }
   }, [searchParams])
@@ -30,10 +30,10 @@ export function AdminDashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2 bg-secondary">
           <TabsTrigger
-            value="bookings"
+            value="customer-requests"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
-            Bookings
+            Customer Requests
           </TabsTrigger>
           <TabsTrigger
             value="booked-seats"
@@ -43,7 +43,7 @@ export function AdminDashboard() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="bookings">
+        <TabsContent value="customer-requests">
           <BookingsOverview />
         </TabsContent>
         <TabsContent value="booked-seats">

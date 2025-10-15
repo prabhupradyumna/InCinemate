@@ -150,9 +150,9 @@ export default function BookingPage({
             date: dt ? dt.toISOString() : "",
             time: dt
               ? dt.toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })
+                hour: "2-digit",
+                minute: "2-digit",
+              })
               : "",
             pricing:
               show.pricing ||
@@ -203,7 +203,7 @@ export default function BookingPage({
       // Normalize category to our new seat types
       const normalizedCategory = normalizeCategory(seat.category);
       const categoryKey = normalizedCategory.toUpperCase();
-      
+
       if (!categoryMap.has(categoryKey)) {
         categoryMap.set(categoryKey, {
           name: normalizedCategory,
@@ -357,21 +357,22 @@ export default function BookingPage({
           )
         ) : (
           <>
-            <div className="space-y-6 sm:space-y-8">
-              <div className="w-full">
+            <div className="flex flex-col h-[calc(100vh-4rem)]">
+              <div className="flex-1 overflow-hidden">
                 <SeatSelection
                   showData={showData}
                   onSelectionChange={handleSelectionChange}
                   maxSeats={selectedQuantity}
                 />
               </div>
-              <div className="flex justify-center px-2 sm:px-0">
-                <div className="w-full max-w-md">
+              <div className="flex-shrink-0 p-2 sm:p-4 border-t border-border bg-background">
+                <div className="max-w-md mx-auto">
                   <SeatSelectionSummary
                     showData={showData}
                     selectedSeats={selectedSeats}
                     selectedQuantity={selectedQuantity}
                     onPayNow={handlePayNow}
+                    onEditQuantity={() => setShowQuantitySelector(true)}
                   />
                 </div>
               </div>
@@ -380,7 +381,7 @@ export default function BookingPage({
               isOpen={showQuantitySelector}
               onClose={() => setShowQuantitySelector(false)}
               onConfirm={handleQuantityConfirm}
-              categories={seatCategories} 
+              categories={seatCategories}
               selectedQuantity={selectedQuantity}
             />
           </>

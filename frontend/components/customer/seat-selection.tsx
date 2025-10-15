@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Monitor } from "lucide-react";
+import { Calendar, Clock, MapPin, Monitor, ZoomIn, ZoomOut } from "lucide-react";
 import { useAuth } from "@/components/customer/auth-provider";
 
 interface SeatData {
@@ -76,10 +76,15 @@ export function SeatSelection({
   maxSeats,
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
+  const [zoom, setZoom] = useState(1);
+  const seatMapRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
-  
+
   // Determine if user is admin/superadmin (can see pricing)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, 2));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.4));
 
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
@@ -203,7 +208,7 @@ export function SeatSelection({
 
     switch (seat.status) {
       case "booked":
-        return `${baseClass} bg-destructive/20 border-destructive/40 text-destructive cursor-not-allowed opacity-60`;
+        return `${baseClass} bg-red-600 border-red-900 text-white cursor-not-allowed`;
       case "selected":
         return `${baseClass} bg-primary border-primary text-primary-foreground shadow-lg scale-105 cursor-pointer hover:scale-110 active:scale-95`;
       case "available":
@@ -215,6 +220,7 @@ export function SeatSelection({
   };
 
   const seatData = createSeatData();
+  const reversedRows = showData.screen.seatMap.rows.slice().reverse();
   const totalPrice = selectedSeats.reduce((total, seat) => {
     // Use individual seat price if available, fallback to category pricing
     const seatPrice = seat.price || showData.showtime.pricing[seat.type];
@@ -222,212 +228,176 @@ export function SeatSelection({
   }, 0);
 
   return (
-    <div className="space-y-6">
-      {/* Movie Info */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-4">
-            <div className="w-16 h-20 sm:w-20 sm:h-28 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-              <Monitor className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground" />
+    <div className="flex flex-col h-full">
+      {/* Fixed Header - Movie Info */}
+      <div className="sticky top-0 z-10 bg-background border-b border-border shadow-sm">
+        <div className="p-3 md:p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-16 md:w-16 md:h-20 bg-muted rounded flex items-center justify-center flex-shrink-0">
+              <Monitor className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">
+              <h2 className="text-base md:text-lg font-bold text-foreground truncate">
                 {showData.movie.title}
               </h2>
-              <div className="space-y-1 mt-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MapPin className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{showData.venue.name}</span>
+              <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground mt-1">
+                <MapPin className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                <span className="truncate">{showData.venue.name}</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' })}</span>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    <span>{new Date(showData.showtime.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    <span>{showData.showtime.time}</span>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{showData.showtime.time}</span>
                 </div>
+                <Badge variant="outline" className="text-xs">{showData.screen.name}</Badge>
               </div>
             </div>
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      {/* Seat Map */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Select Your Seats</span>
-            <Badge variant="outline">{showData.screen.name}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 sm:space-y-6">
-          {/* Screen */}
-          <div className="flex justify-center">
-            <div className="w-2/3 sm:w-3/4 h-1 sm:h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
           </div>
-          <div className="text-center text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
-            SCREEN
+        </div>
+      </div>
+
+      {/* Scrollable Seat Map */}
+      <div className="flex-1 overflow-auto bg-background">
+        <div className="space-y-6">
+          {/* Zoom Controls */}
+          <div className="flex justify-end gap-2 px-4 pt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomOut}
+              disabled={zoom <= 0.4}
+              className="h-8 w-8 p-0"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              disabled={zoom >= 2}
+              className="h-8 w-8 p-0"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
           </div>
 
-          {/* Seat Grid */}
-          <div className="space-y-3 sm:space-y-4 overflow-x-auto px-2">
-            {showData.screen.seatMap.rows.slice().reverse().map((rowData) => (
+          {/* Zoomable Seat Grid with Sticky Row Letters - No horizontal padding */}
+          <div className="relative px-0">
+
+            {/* Scrollable Seat Container */
+            }
+            <div className="overflow-x-auto pb-4" ref={seatMapRef}>
               <div
-                key={rowData.row}
-                className="flex items-center justify-center gap-2 sm:gap-3 min-w-max"
+                className="space-y-3 sm:space-y-4 inline-block w-max px-4 sm:px-6"
+                style={{
+                  transform: `scale(${zoom})`,
+                  transformOrigin: 'center top',
+                  transition: 'transform 0.2s ease-out'
+                }}
               >
-                <div className="w-8 sm:w-10 text-center font-medium text-muted-foreground text-sm sm:text-base">
-                  {rowData.row}
+                {/* Screen (now part of zoomable container) */}
+                <div className="flex justify-center">
+                  <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
                 </div>
-                <div className="flex gap-1 sm:gap-1.5">
-                  {rowData.seats.map((seatNumber) => {
-                    const seat = seatData.find(
-                      (s) => s.row === rowData.row && s.seat === seatNumber
-                    )!;
-                    return (
-                      <Button
-                        key={`${rowData.row}-${seatNumber}`}
-                        variant="ghost"
-                        size="sm"
-                        className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold touch-manipulation active:scale-95`}
-                        onClick={() => handleSeatClick(seat)}
-                        disabled={seat.status === "booked"}
-                      >
-                        {seatNumber}
-                      </Button>
-                    );
-                  })}
+                <div className="text-center text-sm text-muted-foreground font-medium">
+                  SCREEN
                 </div>
-                <div className="w-8 sm:w-10 text-center font-medium text-muted-foreground text-sm sm:text-base">
-                  {rowData.row}
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Seat Type Legend */}
-          <div className="space-y-4 pt-4 sm:pt-6 border-t border-border">
-            <h4 className="text-base font-semibold text-center text-foreground">Seat Types & Pricing</h4>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {["vip", "diamond", "platinum", "gold", "silver"].map((type) => {
-                const colors = getSeatTypeColors(type);
-                const price = showData.showtime.pricing[type as keyof typeof showData.showtime.pricing] || 0;
-                const typeCount = seatData.filter(seat => seat.type === type && seat.status === "available").length;
-                
-                return (
-                  <div key={type} className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
-                    <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.bg} ${colors.border} border-2 rounded-md flex-shrink-0`}></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm sm:text-base font-semibold capitalize text-foreground">{type}</div>
-                      {isAdminUser && (
-                        <div className="text-sm font-medium text-primary">AED {price}</div>
-                      )}
-                      <div className="text-xs text-muted-foreground">{typeCount} available</div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Status Legend */}
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 pt-2">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-primary border-2 border-primary rounded-md"></div>
-                <span className="text-xs sm:text-sm text-muted-foreground">
-                  Selected
-                </span>
-              </div>
-              <div className="flex items-center gap-1 sm:gap-2">
-                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-destructive/20 border-2 border-destructive/40 rounded-md"></div>
-                <span className="text-xs sm:text-sm text-muted-foreground">
-                  Booked
-                </span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Selected Seats Summary */}
-      {selectedSeats.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 sm:p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-foreground">Selected Seats</h3>
-                <div className="text-right">
-                  {isAdminUser && (
-                    <p className="text-xl sm:text-2xl font-bold text-primary">
-                      AED {totalPrice.toFixed(0)}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Selected Seats List */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {selectedSeats.map((seat, index) => {
-                    const colors = getSeatTypeColors(seat.type);
-                    const seatPrice = seat.price || showData.showtime.pricing[seat.type];
-                    
-                    return (
-                      <div key={index} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
-                        <div className={`w-4 h-4 ${colors.bg} ${colors.border} border rounded-sm flex-shrink-0`}></div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground">{seat.row}{seat.seat}</div>
-                          <div className="text-xs text-muted-foreground capitalize">{seat.type}</div>
+                {reversedRows.map((rowData, idx) => {
+                  const prevType = idx > 0 ? reversedRows[idx - 1].type : rowData.type;
+                  const isNewCategory = idx === 0 || rowData.type !== prevType;
+                  const typeLabel = rowData.type;
+                  const typePrice = showData.showtime.pricing[typeLabel as keyof typeof showData.showtime.pricing] || 0;
+                  return (
+                    <div key={rowData.row} className="flex flex-col">
+                      {isNewCategory && (
+                        <div className="flex items-center gap-3 w-full h-8 sm:h-10 my-1">
+                          <div className="flex-1 h-px bg-border/80 dark:bg-white/20" />
+                          <div className="px-2 py-0.5 rounded-full border border-border/70 bg-background/80 text-[10px] sm:text-xs capitalize text-foreground">
+                            {typeLabel}
+                            {isAdminUser && <span className="ml-2 text-muted-foreground">AED {typePrice}</span>}
+                          </div>
+                          <div className="flex-1 h-px bg-border/80 dark:bg-white/20" />
                         </div>
-                        {isAdminUser && (
-                          <div className="text-xs font-medium text-primary">AED {seatPrice}</div>
-                        )}
+                      )}
+                      <div className={`flex items-center gap-2 sm:gap-3`}>
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                          {rowData.row}
+                        </div>
+                        <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+                          {rowData.seats.map((seatNumber) => {
+                            const seat = seatData.find(
+                              (s) => s.row === rowData.row && s.seat === seatNumber
+                            )!;
+                            return (
+                              <Button
+                                key={`${rowData.row}-${seatNumber}`}
+                                variant="ghost"
+                                size="sm"
+                                className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold touch-manipulation active:scale-95`}
+                                onClick={() => handleSeatClick(seat)}
+                                disabled={seat.status === "booked"}
+                              >
+                                {seatNumber}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                          {rowData.row}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              {/* Seat Types Summary */}
-              <div className="space-y-2 pt-2 border-t border-border">
-                <p className="text-sm font-medium text-muted-foreground">Summary by Type:</p>
-                <div className="flex flex-wrap gap-2">
-                  {["vip", "diamond", "platinum", "gold", "silver"].map((type) => {
-                    const seatsOfType = selectedSeats.filter(seat => seat.type === type);
-                    if (seatsOfType.length === 0) return null;
-                    
-                    const colors = getSeatTypeColors(type);
-                    const typePrice = seatsOfType.reduce((sum, seat) => {
-                      const seatPrice = seat.price || showData.showtime.pricing[seat.type];
-                      return sum + seatPrice;
-                    }, 0);
-                    
-                    return (
-                      <div key={type} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50">
-                        <div className={`w-4 h-4 ${colors.bg} ${colors.border} border rounded-sm`}></div>
-                        <span className="text-sm font-medium capitalize">{type}</span>
-                        <span className="text-sm text-muted-foreground">
-                          ({seatsOfType.length})
-                        </span>
-                        {isAdminUser && (
-                          <span className="text-sm font-medium text-primary">
-                            AED {typePrice.toFixed(0)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed Footer - Seat Legend */}
+      <div className="sticky bottom-0 z-10 bg-background border-t border-border shadow-lg">
+        <div className="p-3 md:p-4">
+          {/* Seat Type Legend - Compact like status indicators */}
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide mb-3 items-center">
+            {["vip", "diamond", "platinum", "gold", "silver"].filter(type => {
+              return seatData.some(seat => seat.type === type && seat.status === "available");
+            }).map((type) => {
+              const colors = getSeatTypeColors(type);
+              const price = showData.showtime.pricing[type as keyof typeof showData.showtime.pricing] || 0;
+              const typeCount = seatData.filter(seat => seat.type === type && seat.status === "available").length;
+
+              return (
+                <div key={type} className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className={`w-3 h-3 ${colors.bg} ${colors.border} border-2 rounded`}></div>
+                  <span className="text-xs capitalize text-foreground">{type}</span>
+                  {isAdminUser && (
+                    <span className="text-xs text-muted-foreground">AED {price}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground">({typeCount})</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Status Legend */}
+          <div className="flex justify-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-primary border-2 border-primary rounded"></div>
+              <span className="text-muted-foreground">Selected</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 bg-destructive/20 border-2 border-destructive/40 rounded"></div>
+              <span className="text-muted-foreground">Booked</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

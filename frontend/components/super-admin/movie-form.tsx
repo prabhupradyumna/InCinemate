@@ -754,15 +754,31 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
           });
           actorId = actor?.id;
         }
+        // If a new profile image file is attached during update, upload and persist it via character_image_url
+        let characterImageUrl: string | undefined = undefined;
+        let nextProfileUrl = c.profile_image_url;
+        if (c.profile_image instanceof File) {
+          const uploaded = await uploadFile(c.profile_image, 'profile');
+          if (uploaded) {
+            characterImageUrl = uploaded;
+            nextProfileUrl = uploaded;
+          }
+        }
+
         const role_type = allowedCastRoles.includes(c.role_type as any) ? (c.role_type as any) : 'supporting';
         const payload = {
           ...(actorId ? { actor_id: actorId } : {}),
           character_name: (c.character_name && c.character_name.trim()) ? c.character_name : (c.actor_name || ''),
           role_type,
           display_order: c.display_order,
+          ...(characterImageUrl ? { character_image_url: characterImageUrl } : {}),
         };
         console.log('Updating cast member', c.id, payload);
         await updateMovieCast(movieId, c.id, payload as any);
+        // Optimistically update UI preview
+        if (nextProfileUrl) {
+          setCastMembers(prev => prev.map(cm => cm.id === c.id ? { ...cm, profile_image_url: nextProfileUrl, profile_image: null } : cm));
+        }
       } catch (err) {
         console.warn('Failed to update cast member', c, err);
         toast({ title: 'Cast update failed', description: `${c.actor_name} as ${c.character_name}`, variant: 'destructive' });
@@ -814,6 +830,8 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
       try {
         if (!m.id) continue;
         let personId = m.person_id;
+        // Track latest profile image URL for optimistic UI update
+        let nextProfileUrl = m.profile_image_url;
         if (!personId) {
           // Create new crew person if not linked
           const person = await createCrewPerson({
@@ -825,12 +843,22 @@ export function MovieForm({ movie: initialMovie, editId, onSuccess, onCancel }: 
           personId = person?.id;
         } else {
           // Update existing person with current details
+          // If a new profile image file is attached during update, upload it first
+          if (m.profile_image instanceof File) {
+            const uploaded = await uploadFile(m.profile_image, 'profile');
+            if (uploaded) nextProfileUrl = uploaded;
+          }
+
           await updateCrewPerson(personId, {
             name: m.person_name || '',
             bio: m.bio,
             specialty: m.specialty,
-            profile_image_url: m.profile_image_url
+            profile_image_url: nextProfileUrl
           });
+        }
+        // Optimistically update UI preview
+        if (nextProfileUrl) {
+          setCrewMembers(prev => prev.map(cm => cm.id === m.id ? { ...cm, profile_image_url: nextProfileUrl, profile_image: null } : cm));
         }
         const role_category = allowedCrewCats.includes(m.role_category as any) ? (m.role_category as any) : 'other';
         const role_title = (m.role_title && m.role_title.trim()) ? m.role_title : 'Contributor';

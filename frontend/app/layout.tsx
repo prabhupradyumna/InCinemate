@@ -18,9 +18,9 @@ export const metadata: Metadata = {
     "Book your movie tickets with BooknWatch - The ultimate cinematic experience",
   generator: "BooknWatch",
   icons: {
-    icon: "/BooknWatch - Icon.png",
-    shortcut: "/BooknWatch - Icon.png",
-    apple: "/BooknWatch - Icon.png",
+    icon: "/dxbposter.jpeg",
+    shortcut: "/dxbposter.jpeg",
+    apple: "/dxbposter.jpeg",
   },
 };
 

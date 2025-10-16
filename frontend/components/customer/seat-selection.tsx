@@ -78,6 +78,10 @@ export function SeatSelection({
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
   const [zoom, setZoom] = useState(1);
   const seatMapRef = useRef<HTMLDivElement>(null);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const isPinchingRef = useRef(false);
+  const baseZoomRef = useRef(1);
+  const initialPinchDistanceRef = useRef(0);
   const { user } = useAuth();
 
   // Determine if user is admin/superadmin (can see pricing)
@@ -85,6 +89,97 @@ export function SeatSelection({
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, 2));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.4));
+
+  // Clamp helper
+  const clampZoom = (value: number) => Math.min(2, Math.max(0.4, value));
+
+  // Trackpad pinch / Ctrl+Wheel zoom support
+  useEffect(() => {
+    const container = seatMapRef.current;
+    if (!container) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Browser pinch-to-zoom on trackpads often sends wheel with ctrlKey=true
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = -e.deltaY; // invert so natural pinch in zooms in
+        const factor = delta > 0 ? 1.05 : 0.95;
+        setZoom((prev) => clampZoom(prev * factor));
+      }
+    };
+
+    // Add as non-passive to allow preventDefault
+    container.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', onWheel as any);
+    };
+  }, []);
+
+  // Pointer-based pinch-zoom for touch
+  useEffect(() => {
+    const target = zoomContainerRef.current;
+    if (!target) return;
+
+    const activePointers = new Map<number, PointerEvent>();
+
+    const getDistance = (a: PointerEvent, b: PointerEvent) => {
+      const dx = a.clientX - b.clientX;
+      const dy = a.clientY - b.clientY;
+      return Math.hypot(dx, dy);
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      // Only engage for touch pointers
+      if (e.pointerType !== 'touch') return;
+      target.setPointerCapture?.(e.pointerId);
+      activePointers.set(e.pointerId, e);
+      if (activePointers.size === 2) {
+        const [p1, p2] = Array.from(activePointers.values());
+        initialPinchDistanceRef.current = getDistance(p1, p2);
+        baseZoomRef.current = zoom;
+        isPinchingRef.current = true;
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, e);
+      if (activePointers.size === 2 && isPinchingRef.current) {
+        e.preventDefault();
+        const [p1, p2] = Array.from(activePointers.values());
+        const currentDistance = getDistance(p1, p2);
+        if (initialPinchDistanceRef.current > 0) {
+          const scale = currentDistance / initialPinchDistanceRef.current;
+          const nextZoom = clampZoom(baseZoomRef.current * scale);
+          setZoom(nextZoom);
+        }
+      }
+    };
+
+    const endPointer = (e: PointerEvent) => {
+      if (e.pointerType !== 'touch') return;
+      activePointers.delete(e.pointerId);
+      if (activePointers.size < 2) {
+        isPinchingRef.current = false;
+        initialPinchDistanceRef.current = 0;
+      }
+    };
+
+    target.addEventListener('pointerdown', onPointerDown);
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', endPointer);
+    target.addEventListener('pointercancel', endPointer);
+    target.addEventListener('pointerleave', endPointer);
+
+    return () => {
+      target.removeEventListener('pointerdown', onPointerDown);
+      target.removeEventListener('pointermove', onPointerMove);
+      target.removeEventListener('pointerup', endPointer);
+      target.removeEventListener('pointercancel', endPointer);
+      target.removeEventListener('pointerleave', endPointer);
+    };
+  }, [zoom]);
 
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
@@ -148,59 +243,8 @@ export function SeatSelection({
     onSelectionChange?.(selectedSeats);
   }, [selectedSeats, onSelectionChange]);
 
-  // Color mapping for seat types
-  const getSeatTypeColors = (type: string) => {
-    switch (type) {
-      case "vip":
-        return {
-          bg: "bg-purple-200",
-          border: "border-purple-400",
-          text: "text-purple-800",
-          hover: "hover:bg-purple-300 hover:border-purple-500",
-          legend: "bg-purple-200 border-purple-400"
-        };
-      case "diamond":
-        return {
-          bg: "bg-cyan-200",
-          border: "border-cyan-400",
-          text: "text-cyan-800",
-          hover: "hover:bg-cyan-300 hover:border-cyan-500",
-          legend: "bg-cyan-200 border-cyan-400"
-        };
-      case "platinum":
-        return {
-          bg: "bg-gray-200",
-          border: "border-gray-400",
-          text: "text-gray-800",
-          hover: "hover:bg-gray-300 hover:border-gray-500",
-          legend: "bg-gray-200 border-gray-400"
-        };
-      case "gold":
-        return {
-          bg: "bg-yellow-200",
-          border: "border-yellow-400",
-          text: "text-yellow-800",
-          hover: "hover:bg-yellow-300 hover:border-yellow-500",
-          legend: "bg-yellow-200 border-yellow-400"
-        };
-      case "silver":
-        return {
-          bg: "bg-slate-200",
-          border: "border-slate-400",
-          text: "text-slate-800",
-          hover: "hover:bg-slate-300 hover:border-slate-500",
-          legend: "bg-slate-200 border-slate-400"
-        };
-      default:
-        return {
-          bg: "bg-secondary",
-          border: "border-border",
-          text: "text-secondary-foreground",
-          hover: "hover:bg-secondary/80 hover:border-border/80",
-          legend: "bg-secondary border-border"
-        };
-    }
-  };
+  // Unified styling for all available seats (no type-based colors)
+  const availableSeatClass = "bg-slate-200 border-slate-400 text-slate-800 hover:bg-slate-300 hover:border-slate-500";
 
   const getSeatButtonClass = (seat: SeatData) => {
     const baseClass =
@@ -212,8 +256,7 @@ export function SeatSelection({
       case "selected":
         return `${baseClass} bg-primary border-primary text-primary-foreground shadow-lg scale-105 cursor-pointer hover:scale-110 active:scale-95`;
       case "available":
-        const colors = getSeatTypeColors(seat.type);
-        return `${baseClass} ${colors.bg} ${colors.border} ${colors.text} cursor-pointer ${colors.hover} hover:shadow-md active:scale-95`;
+        return `${baseClass} ${availableSeatClass} cursor-pointer hover:shadow-md active:scale-95`;
       default:
         return baseClass;
     }
@@ -292,11 +335,14 @@ export function SeatSelection({
             }
             <div className="overflow-x-auto pb-4" ref={seatMapRef}>
               <div
-                className="space-y-3 sm:space-y-4 inline-block w-max px-4 sm:px-6"
+                ref={zoomContainerRef}
+                className="space-y-3 sm:space-y-4 inline-block w-max px-4 sm:px-6 select-none"
                 style={{
                   transform: `scale(${zoom})`,
                   transformOrigin: 'center top',
-                  transition: 'transform 0.2s ease-out'
+                  transition: 'transform 0.2s ease-out',
+                  // Enable custom pinch handling without browser gestures while pinching
+                  touchAction: isPinchingRef.current ? 'none' as any : 'manipulation'
                 }}
               >
                 {/* Screen (now part of zoomable container) */}
@@ -363,27 +409,7 @@ export function SeatSelection({
       {/* Fixed Footer - Seat Legend */}
       <div className="sticky bottom-0 z-10 bg-background border-t border-border shadow-lg">
         <div className="p-3 md:p-4">
-          {/* Seat Type Legend - Compact like status indicators */}
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide mb-3 items-center">
-            {["vip", "diamond", "platinum", "gold", "silver"].filter(type => {
-              return seatData.some(seat => seat.type === type && seat.status === "available");
-            }).map((type) => {
-              const colors = getSeatTypeColors(type);
-              const price = showData.showtime.pricing[type as keyof typeof showData.showtime.pricing] || 0;
-              const typeCount = seatData.filter(seat => seat.type === type && seat.status === "available").length;
-
-              return (
-                <div key={type} className="flex items-center gap-1.5 flex-shrink-0">
-                  <div className={`w-3 h-3 ${colors.bg} ${colors.border} border-2 rounded`}></div>
-                  <span className="text-xs capitalize text-foreground">{type}</span>
-                  {isAdminUser && (
-                    <span className="text-xs text-muted-foreground">AED {price}</span>
-                  )}
-                  <span className="text-xs text-muted-foreground">({typeCount})</span>
-                </div>
-              );
-            })}
-          </div>
+          {/* Seat Type Legend removed to avoid color confusion */}
 
           {/* Status Legend */}
           <div className="flex justify-center gap-4 text-xs">

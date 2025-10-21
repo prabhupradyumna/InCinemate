@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Header } from "@/components/header"
-import { CheckCircle, Calendar, Clock, MapPin, Mail, Download, Home } from "lucide-react"
+import { CheckCircle, Calendar, Clock, MapPin, Mail, Download, Home, Phone } from "lucide-react"
 import Link from "next/link"
 import { formatDate } from "@/lib/utils"
 
@@ -199,6 +199,14 @@ export default function BookingConfirmationPage() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
+            <Button asChild className="flex-1 bg-green-600 hover:bg-green-700">
+              <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+                <span className="inline-flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Contact
+                </span>
+              </a>
+            </Button>
             <Button className="flex-1 cinema-glow">
               <Download className="mr-2 h-4 w-4" />
               Download Ticket

@@ -55,7 +55,7 @@ export default function BookingSuccessPage() {
     try {
       const { getBookingDetails } = await import("@/lib/api");
       const response = await getBookingDetails(bookingId);
-      
+
       if (response.success) {
         setBookingData(response.data);
       } else {
@@ -247,6 +247,14 @@ export default function BookingSuccessPage() {
 
         {/* Action Buttons */}
         <div className="flex gap-4 justify-center mt-8">
+          <Button asChild className="px-8 bg-green-600 hover:bg-green-700">
+            <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+              <span className="inline-flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Contact
+              </span>
+            </a>
+          </Button>
           <Button
             onClick={() => router.push("/")}
             variant="outline"

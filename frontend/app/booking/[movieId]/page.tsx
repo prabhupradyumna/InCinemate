@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { SeatQuantitySelector } from "@/components/customer/seat-quantity-selector";
 import { SeatSelectionSummary } from "@/components/customer/seat-selection-summary";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronRight, Phone } from "lucide-react";
 import { useAuth } from "@/components/customer/auth-provider";
 
 type PublicMovie = {
@@ -299,6 +299,16 @@ export default function BookingPage({
         <Header />
       </div>
 
+      {/* Persistent bottom contact button (visible across all steps) */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button asChild className="bg-green-600 hover:bg-green-700 shadow-lg gap-2">
+          <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+            <Phone className="h-4 w-4" />
+            Contact
+          </a>
+        </Button>
+      </div>
+
       <div>
         {/* Navigation Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
@@ -374,6 +384,14 @@ export default function BookingPage({
                     onPayNow={handlePayNow}
                     onEditQuantity={() => setShowQuantitySelector(true)}
                   />
+                  <div className="mt-3 flex justify-center">
+                    <Button asChild variant="outline" className="gap-2">
+                      <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+                        <Phone className="h-4 w-4" />
+                        Contact
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

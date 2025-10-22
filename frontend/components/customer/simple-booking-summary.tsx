@@ -118,22 +118,15 @@ export function SimpleBookingSummary({
 
   const handleCompleteBooking = async () => {
     if (!bookingDetails) return;
-    
+
     // Validate required fields
     if (!customerDetails.fullName.trim()) {
       setBookingError("Please enter your full name");
       return;
     }
-    
+
     if (!customerDetails.phone.trim()) {
       setBookingError("Please enter your phone number");
-      return;
-    }
-
-    // Basic phone validation
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(customerDetails.phone)) {
-      setBookingError("Please enter a valid 10-digit phone number");
       return;
     }
 
@@ -252,7 +245,7 @@ export function SimpleBookingSummary({
                   );
                 })}
               </div>
-              
+
               {isDirectBooking && (
                 <div className="flex justify-between items-center pt-3 border-t border-border">
                   <span className="text-base font-semibold text-foreground">Total</span>

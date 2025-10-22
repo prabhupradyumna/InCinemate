@@ -82,16 +82,49 @@ export function SeatSelection({
   const isPinchingRef = useRef(false);
   const baseZoomRef = useRef(1);
   const initialPinchDistanceRef = useRef(0);
+  const isDraggingRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartYRef = useRef(0);
+  const startScrollLeftRef = useRef(0);
+  const startScrollTopRef = useRef(0);
+  const dragIntentDecidedRef = useRef(false);
+  const didInitialCenterRef = useRef(false);
   const { user } = useAuth();
 
   // Determine if user is admin/superadmin (can see pricing)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
-  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, 2));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, 0.4));
+  const MAX_ZOOM = 4; // wider range for faster perceived zoom-in
+  const MIN_ZOOM = 0.2; // allow smaller min
+  const DEFAULT_ZOOM = 0.35; // starting zoom level (tweak as desired)
+  const PINCH_SENSITIVITY_IN = 10.0; // very strong zoom-in response
+  const PINCH_SENSITIVITY_OUT = 10.0; // keep zoom-out controlled
+  const WHEEL_STEP_IN = 1.6; // faster zoom-in per wheel event
+  const WHEEL_STEP_OUT = 0.85; // controlled zoom-out per wheel event
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, MAX_ZOOM));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, MIN_ZOOM));
 
   // Clamp helper
-  const clampZoom = (value: number) => Math.min(2, Math.max(0.4, value));
+  const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+
+  // Set default zoom on mount
+  useEffect(() => {
+    setZoom(clampZoom(DEFAULT_ZOOM));
+  }, []);
+
+  // After initial zoom set, center horizontally at the top
+  useEffect(() => {
+    if (didInitialCenterRef.current) return;
+    const container = seatMapRef.current;
+    if (!container) return;
+    requestAnimationFrame(() => {
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+      container.scrollLeft = Math.floor(maxScrollLeft / 2);
+      container.scrollTop = 0;
+      didInitialCenterRef.current = true;
+    });
+  }, [zoom]);
 
   // Trackpad pinch / Ctrl+Wheel zoom support
   useEffect(() => {
@@ -103,7 +136,7 @@ export function SeatSelection({
       if (e.ctrlKey) {
         e.preventDefault();
         const delta = -e.deltaY; // invert so natural pinch in zooms in
-        const factor = delta > 0 ? 1.05 : 0.95;
+        const factor = delta > 0 ? WHEEL_STEP_IN : WHEEL_STEP_OUT;
         setZoom((prev) => clampZoom(prev * factor));
       }
     };
@@ -131,13 +164,24 @@ export function SeatSelection({
     const onPointerDown = (e: PointerEvent) => {
       // Only engage for touch pointers
       if (e.pointerType !== 'touch') return;
-      target.setPointerCapture?.(e.pointerId);
       activePointers.set(e.pointerId, e);
+      if (activePointers.size === 1) {
+        const container = seatMapRef.current;
+        if (container) {
+          isDraggingRef.current = true;
+          dragStartXRef.current = e.clientX;
+          dragStartYRef.current = e.clientY;
+          startScrollLeftRef.current = container.scrollLeft;
+          startScrollTopRef.current = container.scrollTop;
+          dragIntentDecidedRef.current = false;
+        }
+      }
       if (activePointers.size === 2) {
         const [p1, p2] = Array.from(activePointers.values());
         initialPinchDistanceRef.current = getDistance(p1, p2);
         baseZoomRef.current = zoom;
         isPinchingRef.current = true;
+        isDraggingRef.current = false;
       }
     };
 
@@ -150,9 +194,35 @@ export function SeatSelection({
         const [p1, p2] = Array.from(activePointers.values());
         const currentDistance = getDistance(p1, p2);
         if (initialPinchDistanceRef.current > 0) {
-          const scale = currentDistance / initialPinchDistanceRef.current;
-          const nextZoom = clampZoom(baseZoomRef.current * scale);
+          const rawScale = currentDistance / initialPinchDistanceRef.current;
+          // Apply asymmetric sensitivity: faster in, controlled out
+          const effectiveScale = rawScale >= 1
+            ? 1 + (rawScale - 1) * PINCH_SENSITIVITY_IN
+            : 1 - (1 - rawScale) * PINCH_SENSITIVITY_OUT;
+          const nextZoom = clampZoom(baseZoomRef.current * effectiveScale);
           setZoom(nextZoom);
+        }
+      } else if (activePointers.size === 1 && isDraggingRef.current) {
+        const container = seatMapRef.current;
+        if (!container) return;
+        const dx = e.clientX - dragStartXRef.current;
+        const dy = e.clientY - dragStartYRef.current;
+        if (!dragIntentDecidedRef.current) {
+          const threshold = 6;
+          if (Math.abs(dx) > Math.abs(dy) + threshold) {
+            dragIntentDecidedRef.current = true; // horizontal pan
+          } else if (Math.abs(dy) > Math.abs(dx) + threshold) {
+            dragIntentDecidedRef.current = true;
+            isDraggingRef.current = false; // let native vertical scroll handle
+            return;
+          } else {
+            return;
+          }
+        }
+        if (dragIntentDecidedRef.current && isDraggingRef.current) {
+          e.preventDefault();
+          container.scrollLeft = startScrollLeftRef.current - dx;
+          container.scrollTop = startScrollTopRef.current - dy;
         }
       }
     };
@@ -164,20 +234,39 @@ export function SeatSelection({
         isPinchingRef.current = false;
         initialPinchDistanceRef.current = 0;
       }
+      if (activePointers.size === 0) {
+        isDraggingRef.current = false;
+      }
     };
 
-    target.addEventListener('pointerdown', onPointerDown);
-    target.addEventListener('pointermove', onPointerMove);
-    target.addEventListener('pointerup', endPointer);
-    target.addEventListener('pointercancel', endPointer);
-    target.addEventListener('pointerleave', endPointer);
+    // Double-tap to zoom in by a step
+    let lastTapTime = 0;
+    const onTouchEnd = (e: TouchEvent) => {
+      const now = Date.now();
+      if (e.touches.length === 0) {
+        if (now - lastTapTime < 300) {
+          setZoom((prev) => clampZoom(prev * 1.8));
+          lastTapTime = 0;
+        } else {
+          lastTapTime = now;
+        }
+      }
+    };
+
+    target.addEventListener('pointerdown', onPointerDown as any, { passive: false, capture: true } as any);
+    target.addEventListener('pointermove', onPointerMove as any, { passive: false, capture: true } as any);
+    target.addEventListener('pointerup', endPointer as any, { passive: false, capture: true } as any);
+    target.addEventListener('pointercancel', endPointer as any, { passive: false, capture: true } as any);
+    target.addEventListener('pointerleave', endPointer as any, { passive: false, capture: true } as any);
+    target.addEventListener('touchend', onTouchEnd as any, { passive: true } as any);
 
     return () => {
-      target.removeEventListener('pointerdown', onPointerDown);
-      target.removeEventListener('pointermove', onPointerMove);
-      target.removeEventListener('pointerup', endPointer);
-      target.removeEventListener('pointercancel', endPointer);
-      target.removeEventListener('pointerleave', endPointer);
+      target.removeEventListener('pointerdown', onPointerDown as any, true);
+      target.removeEventListener('pointermove', onPointerMove as any, true);
+      target.removeEventListener('pointerup', endPointer as any, true);
+      target.removeEventListener('pointercancel', endPointer as any, true);
+      target.removeEventListener('pointerleave', endPointer as any, true);
+      target.removeEventListener('touchend', onTouchEnd as any);
     };
   }, [zoom]);
 
@@ -216,6 +305,7 @@ export function SeatSelection({
   };
 
   const handleSeatClick = (clickedSeat: SeatData) => {
+    if (isPinchingRef.current || isDraggingRef.current) return;
     if (clickedSeat.status === "booked") return;
 
     const seatKey = `${clickedSeat.row}-${clickedSeat.seat}`;
@@ -254,9 +344,9 @@ export function SeatSelection({
       case "booked":
         return `${baseClass} bg-red-600 border-red-900 text-white cursor-not-allowed`;
       case "selected":
-        return `${baseClass} bg-primary border-primary text-primary-foreground shadow-lg scale-105 cursor-pointer hover:scale-110 active:scale-95`;
+        return `${baseClass} bg-primary border-primary text-primary-foreground shadow-lg cursor-pointer`;
       case "available":
-        return `${baseClass} ${availableSeatClass} cursor-pointer hover:shadow-md active:scale-95`;
+        return `${baseClass} ${availableSeatClass} cursor-pointer hover:shadow-md`;
       default:
         return baseClass;
     }
@@ -312,7 +402,7 @@ export function SeatSelection({
               variant="outline"
               size="sm"
               onClick={handleZoomOut}
-              disabled={zoom <= 0.4}
+              disabled={zoom <= MIN_ZOOM}
               className="h-8 w-8 p-0"
             >
               <ZoomOut className="h-4 w-4" />
@@ -321,7 +411,7 @@ export function SeatSelection({
               variant="outline"
               size="sm"
               onClick={handleZoomIn}
-              disabled={zoom >= 2}
+              disabled={zoom >= MAX_ZOOM}
               className="h-8 w-8 p-0"
             >
               <ZoomIn className="h-4 w-4" />
@@ -340,9 +430,9 @@ export function SeatSelection({
                 style={{
                   transform: `scale(${zoom})`,
                   transformOrigin: 'center top',
-                  transition: 'transform 0.2s ease-out',
-                  // Enable custom pinch handling without browser gestures while pinching
-                  touchAction: isPinchingRef.current ? 'none' as any : 'manipulation'
+                  transition: 'transform 80ms linear',
+                  // Allow native vertical scrolling while we handle horizontal pans/pinch
+                  touchAction: 'pan-y' as any
                 }}
               >
                 {/* Screen (now part of zoomable container) */}
@@ -361,13 +451,13 @@ export function SeatSelection({
                   return (
                     <div key={rowData.row} className="flex flex-col">
                       {isNewCategory && (
-                        <div className="flex items-center gap-3 w-full h-8 sm:h-10 my-1">
-                          <div className="flex-1 h-px bg-border/80 dark:bg-white/20" />
-                          <div className="px-2 py-0.5 rounded-full border border-border/70 bg-background/80 text-[10px] sm:text-xs capitalize text-foreground">
+                        <div className="flex items-center gap-4 w-full h-9 sm:h-12 my-2">
+                          <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30" />
+                          <div className="px-3 py-1 rounded-full border border-border bg-background/90 shadow-sm text-[11px] sm:text-sm uppercase font-semibold tracking-wide text-foreground">
                             {typeLabel}
-                            {isAdminUser && <span className="ml-2 text-muted-foreground">AED {typePrice}</span>}
+                            {isAdminUser && <span className="ml-2 text-muted-foreground normal-case font-normal">AED {typePrice}</span>}
                           </div>
-                          <div className="flex-1 h-px bg-border/80 dark:bg-white/20" />
+                          <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30" />
                         </div>
                       )}
                       <div className={`flex items-center gap-2 sm:gap-3`}>
@@ -384,7 +474,7 @@ export function SeatSelection({
                                 key={`${rowData.row}-${seatNumber}`}
                                 variant="ghost"
                                 size="sm"
-                                className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold touch-manipulation active:scale-95`}
+                                className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold`}
                                 onClick={() => handleSeatClick(seat)}
                                 disabled={seat.status === "booked"}
                               >

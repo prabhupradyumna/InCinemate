@@ -29,7 +29,7 @@ export function defineBooking(sequelize) {
       },
       customer_email: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         comment: 'Customer email for the booking'
       },
       customer_name: {

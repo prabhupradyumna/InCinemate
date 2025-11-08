@@ -353,7 +353,12 @@ export function SeatSelection({
   };
 
   const seatData = createSeatData();
-  const reversedRows = showData.screen.seatMap.rows.slice().reverse();
+  // Get the rows in the order they are in the seat map
+  // const reversedRows = showData.screen.seatMap.rows.slice().reverse();
+
+  const rows = showData.screen.seatMap.rows.slice();
+  // Calculate max seats per row for centering
+  const maxSeatsPerRow = Math.max(...rows.map(row => row.seats.length));
   const totalPrice = selectedSeats.reduce((total, seat) => {
     // Use individual seat price if available, fallback to category pricing
     const seatPrice = seat.price || showData.showtime.pricing[seat.type];
@@ -443,8 +448,13 @@ export function SeatSelection({
                   SCREEN
                 </div>
 
-                {reversedRows.map((rowData, idx) => {
-                  const prevType = idx > 0 ? reversedRows[idx - 1].type : rowData.type;
+
+                {/* row order from the seat map */}
+                {/* {reversedRows.map((rowData, idx) => {
+                  const prevType = idx > 0 ? reversedRows[idx - 1].type : rowData.type; */}
+
+                {rows.map((rowData, idx) => {
+                  const prevType = idx > 0 ? rows[idx - 1].type : rowData.type;
                   const isNewCategory = idx === 0 || rowData.type !== prevType;
                   const typeLabel = rowData.type;
                   const typePrice = showData.showtime.pricing[typeLabel as keyof typeof showData.showtime.pricing] || 0;
@@ -460,30 +470,32 @@ export function SeatSelection({
                           <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30" />
                         </div>
                       )}
-                      <div className={`flex items-center gap-2 sm:gap-3`}>
-                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                      <div className={`flex items-center gap-2 sm:gap-3 w-full`}>
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm flex-shrink-0">
                           {rowData.row}
                         </div>
-                        <div className="flex items-center justify-center gap-1 sm:gap-1.5">
-                          {rowData.seats.map((seatNumber) => {
-                            const seat = seatData.find(
-                              (s) => s.row === rowData.row && s.seat === seatNumber
-                            )!;
-                            return (
-                              <Button
-                                key={`${rowData.row}-${seatNumber}`}
-                                variant="ghost"
-                                size="sm"
-                                className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold`}
-                                onClick={() => handleSeatClick(seat)}
-                                disabled={seat.status === "booked"}
-                              >
-                                {seatNumber}
-                              </Button>
-                            );
-                          })}
+                        <div className="flex-1 flex justify-center">
+                          <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+                            {rowData.seats.map((seatNumber) => {
+                              const seat = seatData.find(
+                                (s) => s.row === rowData.row && s.seat === seatNumber
+                              )!;
+                              return (
+                                <Button
+                                  key={`${rowData.row}-${seatNumber}`}
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold`}
+                                  onClick={() => handleSeatClick(seat)}
+                                  disabled={seat.status === "booked"}
+                                >
+                                  {seatNumber}
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm flex-shrink-0">
                           {rowData.row}
                         </div>
                       </div>

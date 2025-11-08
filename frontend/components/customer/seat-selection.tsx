@@ -566,9 +566,12 @@ export function SeatSelection({
                 {/* Screen (now part of zoomable container) - Match row structure */}
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-6 sm:w-8 flex-shrink-0"></div>
-                  <div className="flex justify-center flex-shrink-0">
+                  <div className="flex justify-center" style={{ 
+                    width: `${maxSeatsPerRow * 48 + 16}px`,
+                    minWidth: `${maxSeatsPerRow * 48 + 16}px`
+                  }}>
                     <div className="h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60" style={{ 
-                      width: `${Math.max(...rows.map(row => row.seats.length)) * 48 + 16}px`,
+                      width: `${maxSeatsPerRow * 48 + 16}px`,
                       minWidth: '200px',
                       maxWidth: '600px'
                     }}></div>
@@ -577,10 +580,9 @@ export function SeatSelection({
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <div className="w-6 sm:w-8 flex-shrink-0"></div>
-                  <div className="text-center text-sm text-muted-foreground font-medium flex-shrink-0" style={{ 
-                    width: `${Math.max(...rows.map(row => row.seats.length)) * 48 + 16}px`,
-                    minWidth: '200px',
-                    maxWidth: '600px'
+                  <div className="text-center text-sm text-muted-foreground font-medium" style={{ 
+                    width: `${maxSeatsPerRow * 48 + 16}px`,
+                    minWidth: `${maxSeatsPerRow * 48 + 16}px`
                   }}>
                     SCREEN
                   </div>
@@ -599,9 +601,9 @@ export function SeatSelection({
                       {isNewCategory && (
                         <div className="flex items-center gap-2 sm:gap-3 h-9 sm:h-12 my-2">
                           <div className="w-6 sm:w-8 flex-shrink-0"></div>
-                          <div className="flex items-center gap-4 flex-shrink-0" style={{ 
-                            width: `${rowData.seats.length * 48 + 16}px`,
-                            minWidth: '200px'
+                          <div className="flex items-center gap-4 justify-center" style={{ 
+                            width: `${maxSeatsPerRow * 48 + 16}px`,
+                            minWidth: `${maxSeatsPerRow * 48 + 16}px`
                           }}>
                             <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30 min-w-[20px]" />
                             <div className="px-3 py-1 rounded-full border border-border bg-background/90 shadow-sm text-[11px] sm:text-sm uppercase font-semibold tracking-wide text-foreground whitespace-nowrap flex-shrink-0">
@@ -617,7 +619,10 @@ export function SeatSelection({
                         <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm flex-shrink-0">
                           {rowData.row}
                         </div>
-                        <div className="flex justify-center flex-shrink-0">
+                        <div className="flex justify-center" style={{ 
+                          width: `${maxSeatsPerRow * 48 + 16}px`,
+                          minWidth: `${maxSeatsPerRow * 48 + 16}px`
+                        }}>
                           <div className="flex items-center justify-center gap-1 sm:gap-1.5">
                             {rowData.seats.map((seatNumber) => {
                               const seat = seatData.find(

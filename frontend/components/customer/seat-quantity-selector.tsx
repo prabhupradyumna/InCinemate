@@ -171,7 +171,7 @@ export function SeatQuantitySelector({
                     </div>
                     {isAdminUser && (
                       <div className="text-xs md:text-sm font-bold text-gray-900 dark:text-white mb-0.5">
-                        AED {category.price}
+                        ₹ {category.price}
                       </div>
                     )}
                     <Badge

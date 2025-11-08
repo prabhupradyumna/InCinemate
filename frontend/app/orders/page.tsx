@@ -115,7 +115,7 @@ export default function OrdersPage() {
                           </div>
                           <div className="text-right">
                             <p className="text-lg font-semibold text-foreground">
-                              AED {o.total_price}
+                              ₹ {o.total_price}
                             </p>
                           </div>
                         </div>

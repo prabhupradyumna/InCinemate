@@ -152,7 +152,7 @@ export default function PaymentSuccessPage() {
           <CardTitle className="flex items-center justify-between">
             <span>Payment Status</span>
             <Badge variant="outline" className="text-xs">
-              AED {paymentStatus.amount.toFixed(0)}
+              ₹ {paymentStatus.amount.toFixed(0)}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -189,7 +189,7 @@ export default function PaymentSuccessPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
-                <span className="font-semibold">AED {paymentStatus.amount.toFixed(0)}</span>
+                <span className="font-semibold">₹ {paymentStatus.amount.toFixed(0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment Status:</span>

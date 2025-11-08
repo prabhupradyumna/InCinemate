@@ -77,6 +77,8 @@ export function SeatSelection({
 }: SeatSelectionProps) {
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.3); // Will be calculated dynamically
+  const [isPinching, setIsPinching] = useState(false); // Track pinch state for smooth transitions
   const seatMapRef = useRef<HTMLDivElement>(null);
   const zoomContainerRef = useRef<HTMLDivElement>(null);
   const isPinchingRef = useRef(false);
@@ -89,29 +91,98 @@ export function SeatSelection({
   const startScrollTopRef = useRef(0);
   const dragIntentDecidedRef = useRef(false);
   const didInitialCenterRef = useRef(false);
+  const didCalculateMinZoomRef = useRef(false);
   const { user } = useAuth();
 
   // Determine if user is admin/superadmin (can see pricing)
   const isAdminUser = user && (user.role === 'admin' || user.role === 'super-admin');
 
-  const MAX_ZOOM = 4; // wider range for faster perceived zoom-in
-  const MIN_ZOOM = 0.2; // allow smaller min
-  const DEFAULT_ZOOM = 0.35; // starting zoom level (tweak as desired)
-  const PINCH_SENSITIVITY_IN = 10.0; // very strong zoom-in response
-  const PINCH_SENSITIVITY_OUT = 10.0; // keep zoom-out controlled
-  const WHEEL_STEP_IN = 1.6; // faster zoom-in per wheel event
-  const WHEEL_STEP_OUT = 0.85; // controlled zoom-out per wheel event
+  const MAX_ZOOM = 2.5; // Maximum zoom for detailed seat selection
+  const PINCH_SENSITIVITY = 0.5; // Smooth pinch sensitivity (lower = smoother)
+  const WHEEL_STEP = 0.1; // Smooth wheel zoom step
 
-  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.2, MAX_ZOOM));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.2, MIN_ZOOM));
+  // Calculate minimum zoom to fit entire theater
+  const calculateMinZoom = () => {
+    const container = seatMapRef.current;
+    const content = zoomContainerRef.current;
+    if (!container || !content) return 0.3;
 
-  // Clamp helper
-  const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+    // Get container dimensions (visible area)
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
 
-  // Set default zoom on mount
+    // Get content dimensions (actual seat map size)
+    const contentWidth = content.scrollWidth;
+    const contentHeight = content.scrollHeight;
+
+    // Calculate zoom needed to fit content in container
+    // Add small padding (10px) to ensure content fits comfortably
+    const padding = 20;
+    const scaleX = (containerWidth - padding) / contentWidth;
+    const scaleY = (containerHeight - padding) / contentHeight;
+    
+    // Use the smaller scale to ensure everything fits
+    const calculatedMinZoom = Math.min(scaleX, scaleY, 0.3); // Cap at 0.3 minimum
+    
+    // Ensure minimum zoom is reasonable (not too small)
+    return Math.max(calculatedMinZoom, 0.2);
+  };
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, MAX_ZOOM));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, minZoom));
+
+  // Clamp helper with dynamic min zoom
+  const clampZoom = (value: number) => Math.min(MAX_ZOOM, Math.max(minZoom, value));
+
+  // Calculate and set minimum zoom when content is ready
   useEffect(() => {
-    setZoom(clampZoom(DEFAULT_ZOOM));
-  }, []);
+    const calculateAndSetMinZoom = () => {
+      const calculated = calculateMinZoom();
+      if (calculated > 0 && !didCalculateMinZoomRef.current) {
+        setMinZoom(calculated);
+        // Set initial zoom to fit the theater
+        setZoom(calculated);
+        didCalculateMinZoomRef.current = true;
+      }
+    };
+
+    // Calculate after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(calculateAndSetMinZoom, 100);
+    
+    // Also calculate on window resize
+    let resizeTimeoutId: NodeJS.Timeout | null = null;
+    const handleResize = () => {
+      if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
+      resizeTimeoutId = setTimeout(() => {
+        const calculated = calculateMinZoom();
+        if (calculated > 0) {
+          setMinZoom(calculated);
+          // Adjust current zoom if it's below new minimum
+          setZoom((prev) => Math.max(prev, calculated));
+        }
+      }, 150);
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    // Use ResizeObserver to detect container size changes (important for mobile)
+    const container = seatMapRef.current;
+    let resizeObserver: ResizeObserver | null = null;
+    
+    if (container && typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(container);
+    }
+    
+    return () => {
+      clearTimeout(timeoutId);
+      if (resizeTimeoutId) clearTimeout(resizeTimeoutId);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, [showData.screen.seatMap.rows]);
 
   // After initial zoom set, center horizontally at the top
   useEffect(() => {
@@ -124,7 +195,7 @@ export function SeatSelection({
       container.scrollTop = 0;
       didInitialCenterRef.current = true;
     });
-  }, [zoom]);
+  }, [zoom, minZoom]);
 
   // Trackpad pinch / Ctrl+Wheel zoom support
   useEffect(() => {
@@ -136,8 +207,8 @@ export function SeatSelection({
       if (e.ctrlKey) {
         e.preventDefault();
         const delta = -e.deltaY; // invert so natural pinch in zooms in
-        const factor = delta > 0 ? WHEEL_STEP_IN : WHEEL_STEP_OUT;
-        setZoom((prev) => clampZoom(prev * factor));
+        const zoomDelta = delta > 0 ? WHEEL_STEP : -WHEEL_STEP;
+        setZoom((prev) => clampZoom(prev + zoomDelta));
       }
     };
 
@@ -146,12 +217,13 @@ export function SeatSelection({
     return () => {
       container.removeEventListener('wheel', onWheel as any);
     };
-  }, []);
+  }, [minZoom]);
 
-  // Pointer-based pinch-zoom for touch
+  // Pointer-based pinch-zoom for touch (improved mobile support)
   useEffect(() => {
     const target = zoomContainerRef.current;
-    if (!target) return;
+    const container = seatMapRef.current;
+    if (!target || !container) return;
 
     const activePointers = new Map<number, PointerEvent>();
 
@@ -164,63 +236,76 @@ export function SeatSelection({
     const onPointerDown = (e: PointerEvent) => {
       // Only engage for touch pointers
       if (e.pointerType !== 'touch') return;
+      e.preventDefault(); // Prevent default touch behavior
       activePointers.set(e.pointerId, e);
+      
       if (activePointers.size === 1) {
-        const container = seatMapRef.current;
-        if (container) {
-          isDraggingRef.current = true;
-          dragStartXRef.current = e.clientX;
-          dragStartYRef.current = e.clientY;
-          startScrollLeftRef.current = container.scrollLeft;
-          startScrollTopRef.current = container.scrollTop;
-          dragIntentDecidedRef.current = false;
-        }
+        // Single touch - prepare for drag
+        isDraggingRef.current = true;
+        dragStartXRef.current = e.clientX;
+        dragStartYRef.current = e.clientY;
+        startScrollLeftRef.current = container.scrollLeft;
+        startScrollTopRef.current = container.scrollTop;
+        dragIntentDecidedRef.current = false;
       }
+      
       if (activePointers.size === 2) {
+        // Two touches - start pinch zoom
         const [p1, p2] = Array.from(activePointers.values());
         initialPinchDistanceRef.current = getDistance(p1, p2);
         baseZoomRef.current = zoom;
         isPinchingRef.current = true;
+        setIsPinching(true);
         isDraggingRef.current = false;
+        dragIntentDecidedRef.current = false;
       }
     };
 
     const onPointerMove = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       if (!activePointers.has(e.pointerId)) return;
+      
       activePointers.set(e.pointerId, e);
+      
       if (activePointers.size === 2 && isPinchingRef.current) {
+        // Pinch zoom gesture
         e.preventDefault();
         const [p1, p2] = Array.from(activePointers.values());
         const currentDistance = getDistance(p1, p2);
+        
         if (initialPinchDistanceRef.current > 0) {
-          const rawScale = currentDistance / initialPinchDistanceRef.current;
-          // Apply asymmetric sensitivity: faster in, controlled out
-          const effectiveScale = rawScale >= 1
-            ? 1 + (rawScale - 1) * PINCH_SENSITIVITY_IN
-            : 1 - (1 - rawScale) * PINCH_SENSITIVITY_OUT;
-          const nextZoom = clampZoom(baseZoomRef.current * effectiveScale);
+          // Calculate scale factor
+          const scale = currentDistance / initialPinchDistanceRef.current;
+          
+          // Apply smooth sensitivity
+          const zoomChange = (scale - 1) * PINCH_SENSITIVITY;
+          const nextZoom = clampZoom(baseZoomRef.current + zoomChange);
+          
           setZoom(nextZoom);
         }
-      } else if (activePointers.size === 1 && isDraggingRef.current) {
-        const container = seatMapRef.current;
-        if (!container) return;
+      } else if (activePointers.size === 1 && isDraggingRef.current && !isPinchingRef.current) {
+        // Single touch drag/pan
         const dx = e.clientX - dragStartXRef.current;
         const dy = e.clientY - dragStartYRef.current;
+        
         if (!dragIntentDecidedRef.current) {
-          const threshold = 6;
-          if (Math.abs(dx) > Math.abs(dy) + threshold) {
-            dragIntentDecidedRef.current = true; // horizontal pan
-          } else if (Math.abs(dy) > Math.abs(dx) + threshold) {
+          // Determine drag intent (horizontal vs vertical)
+          const threshold = 8;
+          if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
             dragIntentDecidedRef.current = true;
-            isDraggingRef.current = false; // let native vertical scroll handle
-            return;
+            // If primarily vertical, let native scroll handle it
+            if (Math.abs(dy) > Math.abs(dx) + threshold) {
+              isDraggingRef.current = false;
+              return;
+            }
           } else {
-            return;
+            return; // Wait for clear drag intent
           }
         }
+        
         if (dragIntentDecidedRef.current && isDraggingRef.current) {
           e.preventDefault();
+          // Pan the container
           container.scrollLeft = startScrollLeftRef.current - dx;
           container.scrollTop = startScrollTopRef.current - dy;
         }
@@ -230,45 +315,75 @@ export function SeatSelection({
     const endPointer = (e: PointerEvent) => {
       if (e.pointerType !== 'touch') return;
       activePointers.delete(e.pointerId);
+      
       if (activePointers.size < 2) {
         isPinchingRef.current = false;
+        setIsPinching(false);
         initialPinchDistanceRef.current = 0;
       }
+      
       if (activePointers.size === 0) {
         isDraggingRef.current = false;
+        dragIntentDecidedRef.current = false;
+      } else if (activePointers.size === 1) {
+        // Reset drag state when going from 2 touches to 1
+        isDraggingRef.current = true;
+        const remainingPointer = Array.from(activePointers.values())[0];
+        dragStartXRef.current = remainingPointer.clientX;
+        dragStartYRef.current = remainingPointer.clientY;
+        startScrollLeftRef.current = container.scrollLeft;
+        startScrollTopRef.current = container.scrollTop;
+        dragIntentDecidedRef.current = false;
       }
     };
 
     // Double-tap to zoom in by a step
     let lastTapTime = 0;
+    let lastTapX = 0;
+    let lastTapY = 0;
     const onTouchEnd = (e: TouchEvent) => {
-      const now = Date.now();
-      if (e.touches.length === 0) {
-        if (now - lastTapTime < 300) {
-          setZoom((prev) => clampZoom(prev * 1.8));
+      if (e.touches.length === 0 && e.changedTouches.length === 1) {
+        const now = Date.now();
+        const touch = e.changedTouches[0];
+        const tapX = touch.clientX;
+        const tapY = touch.clientY;
+        
+        // Check if it's a double tap (within 300ms and 50px distance)
+        const timeDiff = now - lastTapTime;
+        const distance = Math.hypot(tapX - lastTapX, tapY - lastTapY);
+        
+        if (timeDiff < 300 && distance < 50 && !isPinchingRef.current) {
+          // Double tap detected - zoom in
+          setZoom((prev) => {
+            const newZoom = prev < MAX_ZOOM ? Math.min(prev * 1.5, MAX_ZOOM) : minZoom;
+            return clampZoom(newZoom);
+          });
           lastTapTime = 0;
         } else {
           lastTapTime = now;
+          lastTapX = tapX;
+          lastTapY = tapY;
         }
       }
     };
 
-    target.addEventListener('pointerdown', onPointerDown as any, { passive: false, capture: true } as any);
-    target.addEventListener('pointermove', onPointerMove as any, { passive: false, capture: true } as any);
-    target.addEventListener('pointerup', endPointer as any, { passive: false, capture: true } as any);
-    target.addEventListener('pointercancel', endPointer as any, { passive: false, capture: true } as any);
-    target.addEventListener('pointerleave', endPointer as any, { passive: false, capture: true } as any);
-    target.addEventListener('touchend', onTouchEnd as any, { passive: true } as any);
+    // Use capture phase and non-passive for better mobile control
+    const options = { passive: false, capture: true };
+    
+    target.addEventListener('pointerdown', onPointerDown as any, options);
+    target.addEventListener('pointermove', onPointerMove as any, options);
+    target.addEventListener('pointerup', endPointer as any, options);
+    target.addEventListener('pointercancel', endPointer as any, options);
+    container.addEventListener('touchend', onTouchEnd as any, { passive: true });
 
     return () => {
       target.removeEventListener('pointerdown', onPointerDown as any, true);
       target.removeEventListener('pointermove', onPointerMove as any, true);
       target.removeEventListener('pointerup', endPointer as any, true);
       target.removeEventListener('pointercancel', endPointer as any, true);
-      target.removeEventListener('pointerleave', endPointer as any, true);
-      target.removeEventListener('touchend', onTouchEnd as any);
+      container.removeEventListener('touchend', onTouchEnd as any);
     };
-  }, [zoom]);
+  }, [zoom, minZoom]);
 
   // Create seat data with status and individual pricing
   const createSeatData = (): SeatData[] => {
@@ -353,7 +468,10 @@ export function SeatSelection({
   };
 
   const seatData = createSeatData();
-  const reversedRows = showData.screen.seatMap.rows.slice().reverse();
+  // Get the rows in descending order from the screen (farthest rows first)
+  const rows = showData.screen.seatMap.rows.slice().reverse();
+  // Calculate max seats per row for centering
+  const maxSeatsPerRow = Math.max(...rows.map(row => row.seats.length));
   const totalPrice = selectedSeats.reduce((total, seat) => {
     // Use individual seat price if available, fallback to category pricing
     const seatPrice = seat.price || showData.showtime.pricing[seat.type];
@@ -394,96 +512,133 @@ export function SeatSelection({
       </div>
 
       {/* Scrollable Seat Map */}
-      <div className="flex-1 overflow-auto bg-background">
-        <div className="space-y-6">
-          {/* Zoom Controls */}
-          <div className="flex justify-end gap-2 px-4 pt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomOut}
-              disabled={zoom <= MIN_ZOOM}
-              className="h-8 w-8 p-0"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomIn}
-              disabled={zoom >= MAX_ZOOM}
-              className="h-8 w-8 p-0"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="flex-1 overflow-auto bg-background relative">
+        {/* Fixed Zoom Controls */}
+        <div className="sticky top-4 right-4 z-20 flex justify-end gap-2 px-4 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomOut}
+            disabled={zoom <= minZoom}
+            className="h-8 w-8 p-0 bg-background/95 backdrop-blur-sm"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="h-8 w-8 p-0 bg-background/95 backdrop-blur-sm"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+        </div>
 
+        <div className="space-y-6">
           {/* Zoomable Seat Grid with Sticky Row Letters - No horizontal padding */}
           <div className="relative px-0">
 
-            {/* Scrollable Seat Container */
-            }
-            <div className="overflow-x-auto pb-4" ref={seatMapRef}>
+            {/* Scrollable Seat Container */}
+            <div 
+              className="overflow-x-auto overflow-y-auto pb-4" 
+              ref={seatMapRef}
+              style={{
+                // Ensure touch events work properly on mobile
+                touchAction: 'pan-x pan-y pinch-zoom' as any,
+                WebkitOverflowScrolling: 'touch' as any
+              }}
+            >
               <div
                 ref={zoomContainerRef}
-                className="space-y-3 sm:space-y-4 inline-block w-max px-4 sm:px-6 select-none"
+                className="space-y-3 sm:space-y-4 inline-block select-none"
                 style={{
                   transform: `scale(${zoom})`,
                   transformOrigin: 'center top',
-                  transition: 'transform 80ms linear',
-                  // Allow native vertical scrolling while we handle horizontal pans/pinch
-                  touchAction: 'pan-y' as any
+                  transition: isPinching ? 'none' : 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  // Allow pinch-zoom and pan
+                  touchAction: 'pan-x pan-y pinch-zoom' as any,
+                  width: 'max-content',
+                  maxWidth: '100%',
+                  padding: '0 1rem'
                 }}
               >
-                {/* Screen (now part of zoomable container) */}
-                <div className="flex justify-center">
-                  <div className="w-3/4 h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60"></div>
+                {/* Screen (now part of zoomable container) - Match row structure */}
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-6 sm:w-8 flex-shrink-0"></div>
+                  <div className="flex justify-center flex-shrink-0">
+                    <div className="h-2 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full opacity-60" style={{ 
+                      width: `${Math.max(...rows.map(row => row.seats.length)) * 48 + 16}px`,
+                      minWidth: '200px',
+                      maxWidth: '600px'
+                    }}></div>
+                  </div>
+                  <div className="w-6 sm:w-8 flex-shrink-0"></div>
                 </div>
-                <div className="text-center text-sm text-muted-foreground font-medium">
-                  SCREEN
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-6 sm:w-8 flex-shrink-0"></div>
+                  <div className="text-center text-sm text-muted-foreground font-medium flex-shrink-0" style={{ 
+                    width: `${Math.max(...rows.map(row => row.seats.length)) * 48 + 16}px`,
+                    minWidth: '200px',
+                    maxWidth: '600px'
+                  }}>
+                    SCREEN
+                  </div>
+                  <div className="w-6 sm:w-8 flex-shrink-0"></div>
                 </div>
 
-                {reversedRows.map((rowData, idx) => {
-                  const prevType = idx > 0 ? reversedRows[idx - 1].type : rowData.type;
+
+                {/* Rows in descending order from screen (farthest first) */}
+                {rows.map((rowData, idx) => {
+                  const prevType = idx > 0 ? rows[idx - 1].type : rowData.type;
                   const isNewCategory = idx === 0 || rowData.type !== prevType;
                   const typeLabel = rowData.type;
                   const typePrice = showData.showtime.pricing[typeLabel as keyof typeof showData.showtime.pricing] || 0;
                   return (
                     <div key={rowData.row} className="flex flex-col">
                       {isNewCategory && (
-                        <div className="flex items-center gap-4 w-full h-9 sm:h-12 my-2">
-                          <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30" />
-                          <div className="px-3 py-1 rounded-full border border-border bg-background/90 shadow-sm text-[11px] sm:text-sm uppercase font-semibold tracking-wide text-foreground">
-                            {typeLabel}
-                            {isAdminUser && <span className="ml-2 text-muted-foreground normal-case font-normal">AED {typePrice}</span>}
+                        <div className="flex items-center gap-2 sm:gap-3 h-9 sm:h-12 my-2">
+                          <div className="w-6 sm:w-8 flex-shrink-0"></div>
+                          <div className="flex items-center gap-4 flex-shrink-0" style={{ 
+                            width: `${rowData.seats.length * 48 + 16}px`,
+                            minWidth: '200px'
+                          }}>
+                            <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30 min-w-[20px]" />
+                            <div className="px-3 py-1 rounded-full border border-border bg-background/90 shadow-sm text-[11px] sm:text-sm uppercase font-semibold tracking-wide text-foreground whitespace-nowrap flex-shrink-0">
+                              {typeLabel}
+                              {isAdminUser && <span className="ml-2 text-muted-foreground normal-case font-normal">Rs {typePrice}</span>}
+                            </div>
+                            <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30 min-w-[20px]" />
                           </div>
-                          <div className="flex-1 h-[2px] bg-border/90 dark:bg-white/30" />
+                          <div className="w-6 sm:w-8 flex-shrink-0"></div>
                         </div>
                       )}
                       <div className={`flex items-center gap-2 sm:gap-3`}>
-                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm flex-shrink-0">
                           {rowData.row}
                         </div>
-                        <div className="flex items-center justify-center gap-1 sm:gap-1.5">
-                          {rowData.seats.map((seatNumber) => {
-                            const seat = seatData.find(
-                              (s) => s.row === rowData.row && s.seat === seatNumber
-                            )!;
-                            return (
-                              <Button
-                                key={`${rowData.row}-${seatNumber}`}
-                                variant="ghost"
-                                size="sm"
-                                className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold`}
-                                onClick={() => handleSeatClick(seat)}
-                                disabled={seat.status === "booked"}
-                              >
-                                {seatNumber}
-                              </Button>
-                            );
-                          })}
+                        <div className="flex justify-center flex-shrink-0">
+                          <div className="flex items-center justify-center gap-1 sm:gap-1.5">
+                            {rowData.seats.map((seatNumber) => {
+                              const seat = seatData.find(
+                                (s) => s.row === rowData.row && s.seat === seatNumber
+                              )!;
+                              return (
+                                <Button
+                                  key={`${rowData.row}-${seatNumber}`}
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`${getSeatButtonClass(seat)} w-10 h-10 sm:w-12 sm:h-12 p-0 text-sm sm:text-base font-semibold flex-shrink-0`}
+                                  onClick={() => handleSeatClick(seat)}
+                                  disabled={seat.status === "booked"}
+                                >
+                                  {seatNumber}
+                                </Button>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm">
+                        <div className="w-6 sm:w-8 h-10 sm:h-12 flex items-center justify-center font-medium text-muted-foreground text-xs sm:text-sm flex-shrink-0">
                           {rowData.row}
                         </div>
                       </div>

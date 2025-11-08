@@ -216,14 +216,14 @@ export default function BookingSuccessPage() {
                       {seat.row}{seat.number} ({seat.category})
                     </span>
                     <span className="text-green-600 font-semibold">
-                      AED {seat.price}
+                      ₹ {seat.price}
                     </span>
                   </div>
                 ))}
                 <Separator />
                 <div className="flex justify-between items-center font-semibold text-lg">
                   <span>Total Amount:</span>
-                  <span className="text-green-600">AED {bookingData.total_price}</span>
+                  <span className="text-green-600">₹ {bookingData.total_price}</span>
                 </div>
               </div>
             </CardContent>
@@ -248,7 +248,7 @@ export default function BookingSuccessPage() {
         {/* Action Buttons */}
         <div className="flex gap-4 justify-center mt-8">
           <Button asChild className="px-8 bg-green-600 hover:bg-green-700">
-            <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+            <a href="tel:+917411842999" aria-label="Call support +91 7411842999">
               <span className="inline-flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 Contact

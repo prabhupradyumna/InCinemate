@@ -144,7 +144,7 @@ export function SeatSelectionSummary({
             {isAdminUser && (
               <div className="flex justify-between items-center pt-2 border-t border-border/60">
                 <span className="text-sm font-semibold text-foreground">Total</span>
-                <span className="text-base sm:text-lg font-bold text-primary">AED {total.toFixed(0)}</span>
+                <span className="text-base sm:text-lg font-bold text-primary">₹ {total.toFixed(0)}</span>
               </div>
             )}
           </div>
@@ -158,7 +158,7 @@ export function SeatSelectionSummary({
         >
           {selectedSeats.length === selectedQuantity
             ? isAdminUser
-              ? `Pay AED ${total.toFixed(0)}`
+              ? `Pay ₹ ${total.toFixed(0)}`
               : "Reserve Seats"
             : `Select ${selectedQuantity - selectedSeats.length} more seat${selectedQuantity - selectedSeats.length !== 1 ? "s" : ""}`}
         </Button>

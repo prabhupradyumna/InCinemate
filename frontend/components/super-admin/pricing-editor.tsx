@@ -454,7 +454,7 @@ export function PricingEditor({
                   {category} Seats
                 </Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">AED </span>
+                  <span className="text-sm text-muted-foreground">₹ </span>
                   <Input
                     id={`category-${category}`}
                     type="number"
@@ -535,13 +535,13 @@ export function PricingEditor({
                           }
                           text-white hover:scale-105
                         `}
-                        title={`Seat ${seat.number} - ${seat.category || "Regular"} - AED ${seatPricing[seat.id] || 0}`}
+                        title={`Seat ${seat.number} - ${seat.category || "Regular"} - Rs ${seatPricing[seat.id] || 0}`}
                       >
                         {seat.number}
                       </button>
                       {showPrices && (
                         <div className="text-xs text-muted-foreground mt-1 font-medium">
-                          AED {seatPricing[seat.id] || 0}
+                          Rs {seatPricing[seat.id] || 0}
                         </div>
                       )}
                     </div>
@@ -621,13 +621,13 @@ export function PricingEditor({
                   </Badge>
                 </div>
                 <div>
-                  <strong>Current Price:</strong> AED 
+                  <strong>Current Price:</strong> Rs 
                   {seatPricing[selectedSeat.id] || 0}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="seat-price">New Price (AED )</Label>
+                <Label htmlFor="seat-price">New Price (Rs )</Label>
                 <Input
                   id="seat-price"
                   type="number"
@@ -679,7 +679,7 @@ export function PricingEditor({
             <div className="space-y-2">
               <Label htmlFor="bulk-price">Price for All Selected Seats</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">AED </span>
+                <span className="text-sm text-muted-foreground">Rs </span>
                 <Input
                   id="bulk-price"
                   type="number"

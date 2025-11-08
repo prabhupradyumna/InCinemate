@@ -302,7 +302,7 @@ export default function BookingPage({
       {/* Persistent bottom contact button (visible across all steps) */}
       <div className="fixed bottom-4 right-4 z-50">
         <Button asChild className="bg-green-600 hover:bg-green-700 shadow-lg gap-2">
-          <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+          <a href="tel:+917411842999" aria-label="Call support +91 7411842999">
             <Phone className="h-4 w-4" />
             Contact
           </a>
@@ -386,7 +386,7 @@ export default function BookingPage({
                   />
                   <div className="mt-3 flex justify-center">
                     <Button asChild variant="outline" className="gap-2">
-                      <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+                      <a href="tel:+917411842999" aria-label="Call support +91 7411842999">
                         <Phone className="h-4 w-4" />
                         Contact
                       </a>

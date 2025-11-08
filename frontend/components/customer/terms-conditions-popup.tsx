@@ -67,7 +67,7 @@ export function TermsConditionsPopup({
                 <strong>Show Time:</strong> {showTime}
               </p>
               <p>
-                <strong>Total Amount:</strong> AED {totalAmount}
+                <strong>Total Amount:</strong> ₹ {totalAmount}
               </p>
             </div>
           </div>

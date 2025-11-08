@@ -92,7 +92,7 @@ export function Header() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Dubai">Dubai</SelectItem>
+                    <SelectItem value="Dubai">Udupi</SelectItem>
                   </SelectContent>
                 </Select>
               )}

@@ -200,7 +200,7 @@ export default function BookingConfirmationPage() {
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
             <Button asChild className="flex-1 bg-green-600 hover:bg-green-700">
-              <a href="tel:+971521101162" aria-label="Call support +971 521101162">
+              <a href="tel:+917411842999" aria-label="Call support +91 7411842999">
                 <span className="inline-flex items-center gap-2">
                   <Phone className="h-4 w-4" />
                   Contact

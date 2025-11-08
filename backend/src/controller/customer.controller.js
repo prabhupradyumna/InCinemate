@@ -1131,7 +1131,7 @@ export default class CustomerController {
       if (coupon.min_purchase_amount && booking.subtotal < coupon.min_purchase_amount) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          error: `Minimum purchase amount of AED ${coupon.min_purchase_amount} required`,
+          error: `Minimum purchase amount of Rs ${coupon.min_purchase_amount} required`,
           message: 'Coupon validation failed'
         })
       }

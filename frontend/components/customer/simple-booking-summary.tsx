@@ -239,7 +239,7 @@ export function SimpleBookingSummary({
                         <div className="text-xs text-muted-foreground capitalize">{seat.category}</div>
                       </div>
                       {isDirectBooking && (
-                        <div className="text-sm font-semibold text-primary">AED {seat.price}</div>
+                        <div className="text-sm font-semibold text-primary">Rs {seat.price}</div>
                       )}
                     </div>
                   );
@@ -249,7 +249,7 @@ export function SimpleBookingSummary({
               {isDirectBooking && (
                 <div className="flex justify-between items-center pt-3 border-t border-border">
                   <span className="text-base font-semibold text-foreground">Total</span>
-                  <span className="text-xl font-bold text-primary">AED {bookingDetails.total_price}</span>
+                  <span className="text-xl font-bold text-primary">Rs {bookingDetails.total_price}</span>
                 </div>
               )}
             </div>

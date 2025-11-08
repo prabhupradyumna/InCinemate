@@ -247,7 +247,7 @@ export function BookingsOverview() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
-                      AED {booking.total_price}
+                      ₹ {booking.total_price}
                     </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(booking.booking_status)}>
@@ -333,12 +333,12 @@ export function BookingsOverview() {
                                   {selectedBooking.seats.map((seat, index) => (
                                     <div key={index} className="flex justify-between items-center text-sm">
                                       <span>{seat.row}{seat.number} ({seat.category})</span>
-                                      <span className="font-medium">AED {seat.price}</span>
+                                      <span className="font-medium">₹ {seat.price}</span>
                                     </div>
                                   ))}
                                   <div className="border-t pt-2 flex justify-between items-center font-semibold">
                                     <span>Total:</span>
-                                    <span>AED {selectedBooking.total_price}</span>
+                                    <span>₹ {selectedBooking.total_price}</span>
                                   </div>
                                 </div>
                               </div>

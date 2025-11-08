@@ -448,7 +448,7 @@ export function BookingSummary({
                     </div>
                     {isAdminUser && (
                       <span>
-                        AED 
+                        ₹ 
                         {(
                           (seat as any).price ||
                           showData.showtime.pricing[seat.type as keyof typeof showData.showtime.pricing]
@@ -468,7 +468,7 @@ export function BookingSummary({
             <div className="space-y-2">
               <div className="flex justify-between text-xs md:text-sm">
                 <span>Subtotal</span>
-                <span>AED {subtotal.toFixed(2)}</span>
+                <span>₹ {subtotal.toFixed(2)}</span>
               </div>
               <Separator />
               <div className="flex justify-between font-semibold text-sm md:text-base">
@@ -476,7 +476,7 @@ export function BookingSummary({
                 <span className="text-primary">
                   {isHoldingSeats
                     ? "Calculating..."
-                    : `AED ${(bookingDetails?.total_price || total).toFixed(2)}`}
+                    : `₹ ${(bookingDetails?.total_price || total).toFixed(2)}`}
                 </span>
               </div>
             </div>
@@ -495,7 +495,7 @@ export function BookingSummary({
                   {isHoldingSeats
                     ? "Processing..."
                     : isAdminUser 
-                      ? `Pay AED ${total.toFixed(0)}`
+                      ? `Pay ₹ ${total.toFixed(0)}`
                       : "Reserve Seats"}
                 </Button>
                 {onBack && (
